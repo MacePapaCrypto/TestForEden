@@ -63,6 +63,12 @@ const NFTAuth = (props = {}) => {
     });
   }, []);
 
+  // use effect
+  useEffect(() => {
+    // account changed
+    if (props.onAccount) props.onAccount(account);
+  }, [account]);
+
   // return jsx
   return (
     <Box component={ props.component || Paper } p={ props.p || 2 } elevation={ props.elevation || 1 } sx={ props.sx || {} }>
