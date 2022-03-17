@@ -1,10 +1,12 @@
 {
-  "name": "frontend",
+  "name": "@nft/ui",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/app.min.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
+    "watch": "rollup -w -c",
     "storybook": "start-storybook -p 6006",
     "build-storybook": "build-storybook"
   },

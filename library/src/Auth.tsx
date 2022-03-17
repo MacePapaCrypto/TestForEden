@@ -5,9 +5,37 @@ import {
   Alert,
   Paper,
   Button,
-  Divider,
 } from '@mui/material';
-import React, { useEffect, useState } from 'react';
+import {
+  Mainnet,
+  useEthers,
+  DAppProvider,
+} from '@usedapp/core';
+import React from 'react';
+
+// config
+const config = {
+  readOnlyChainId : Mainnet.chainId,
+  readOnlyUrls    : {
+    [Mainnet.chainId] : 'https://mainnet.infura.io/v3/62687d1a985d4508b2b7a24827551934',
+  },
+}
+
+/**
+ * NFT Wrapper
+ * 
+ * @param props 
+ * @returns 
+ */
+const NFTWrap = (props = {}) => {
+
+  // return jsx
+  return (
+    <DAppProvider config={ config }>
+      <NFTAuth { ...props } />
+    </DAppProvider>
+  );
+};
 
 /**
  * create nft login class
@@ -15,59 +43,8 @@ import React, { useEffect, useState } from 'react';
  * @param props 
  */
 const NFTAuth = (props = {}) => {
-  // state
-  const [account, setAccount] = useState('');
-  const [accounts, setAccounts] = useState([]);
-  const [connecting, setConnecting] = useState(true);
-
-  // on connect
-  const onConnect = async () => {
-    // check ethereum
-    if (!window?.ethereum) return;
-
-    // connecting
-    setConnecting(true);
-
-    // load accounts
-    const loadedAccounts = await window.ethereum.request({
-      method : 'eth_requestAccounts',
-    });
-
-    // add accounts
-    setAccounts(loadedAccounts);
-
-    // set address
-    if (loadedAccounts.length === 1) setAccount(loadedAccounts[0]);
-
-    // set connecting
-    setConnecting(false);
-  };
-
-  // check connected
-  useEffect(() => {
-    // check ethereum
-    if (!window?.ethereum) return;
-
-    // check existing account
-    window.ethereum.request({
-      method : 'eth_accounts',
-    }).then((accounts) => {
-      // check accounts
-      if (accounts?.length) {
-        // set accounts
-        setAccounts(accounts);
-      }
-  
-      // reset
-      setConnecting(false);
-    });
-  }, []);
-
-  // use effect
-  useEffect(() => {
-    // account changed
-    if (props.onAccount) props.onAccount(account);
-  }, [account]);
+  // use ethers
+  const { activateBrowserWallet, account } = useEthers();
 
   // return jsx
   return (
@@ -75,26 +52,9 @@ const NFTAuth = (props = {}) => {
       { window?.ethereum ? (
         account ? props.children : (
           <Box { ...(props.InnerBox || {}) }>
-
-            { accounts.map((available) => {
-              // return jsx
-              return (
-                <Box onClick={ () => setAccount(available) }>
-                  { JSON.stringify(available) }
-                </Box>
-              );
-            }) }
-
-            { !!accounts.length && (
-              <Box my={ 1 }>
-                <Divider />
-              </Box>
-            ) }
-
-            <Button color="primary" onClick={ () => onConnect() }>
+            <Button color="primary" onClick={ () => activateBrowserWallet() }>
               Connect
             </Button>
-
           </Box>
         )
       ) : (
@@ -107,4 +67,4 @@ const NFTAuth = (props = {}) => {
 }
 
 // export default
-export default NFTAuth;
+export default NFTWrap;
