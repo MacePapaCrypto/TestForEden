@@ -5,7 +5,6 @@ import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
 import builtIns from 'rollup-plugin-node-builtins';
 import commonjs from '@rollup/plugin-commonjs';
-import livereload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 
 // rollup
@@ -13,10 +12,10 @@ const production = !process.env.ROLLUP_WATCH;
 
 // extensions
 const extensions = ['.js', '.jsx', '.ts', '.tsx'];
-]
+
 // export default
 export default {
-  input  : 'src/main.js',
+  input  : 'src/index.tsx',
   output : {
     file      : 'dist/main.min.js',
     name      : 'app',
@@ -56,15 +55,11 @@ export default {
       extensions,
       babelrc : true,
       include : ['src/**/*'],
+      presets : [
+        '@babel/preset-env',
+        '@babel/preset-react',
+      ],
     }),
-
-    // In dev mode, call `npm run start` once
-    // the bundle has been generated
-    !production && serve(),
-
-    // Watch the `public` directory and refresh the
-    // browser on changes when not in production
-    !production && livereload('dist'),
 
     // If we're building for production (npm run build
     // instead of npm run dev), minify
