@@ -1,10 +1,12 @@
 
 import babel from '@rollup/plugin-babel';
+import serve from 'rollup-plugin-serve';
 import assets from 'rollup-plugin-copy-assets';
 import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
 import builtIns from 'rollup-plugin-node-builtins';
 import commonjs from '@rollup/plugin-commonjs';
+import livereoload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 
 // rollup
@@ -31,8 +33,8 @@ export default {
     // consult the documentation for details:
     // https://github.com/rollup/plugins/tree/master/packages/commonjs
     resolve({
-      dedupe  : ['react'],
-      browser : true,
+      dedupe  : ['react', '@mui/material', '@mui/icons-material'],
+      rootDir : process.cwd(),
       extensions,
     }),
     replace({
@@ -54,12 +56,17 @@ export default {
     babel({
       extensions,
       babelrc : true,
-      include : ['src/**/*'],
+      include : ['*/**'],
       presets : [
         '@babel/preset-env',
+        '@babel/preset-typescript',
         '@babel/preset-react',
       ],
     }),
+
+    // serve
+    !production && serve('dist'),
+    !production && livereoload(),
 
     // If we're building for production (npm run build
     // instead of npm run dev), minify

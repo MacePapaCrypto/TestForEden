@@ -1,5 +1,9 @@
 
 import React from 'react';
+import { Post } from '@nft/ui';
+import { Stack } from '@mui/material';
+
+console.log('test', Post);
 
 /**
  * home page
@@ -10,9 +14,13 @@ const HomePage = (props = {}) => {
 
   // return jsx
   return (
-    <div>
-      TEST
-    </div>
+    <Stack spacing={ 2 }>
+      <Post />
+      <Post />
+      <Post />
+      <Post />
+      <Post />
+    </Stack>
   );
 };
 

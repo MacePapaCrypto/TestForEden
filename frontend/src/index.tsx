@@ -1,6 +1,11 @@
 
+// regenerator
+import regeneratorRuntime from 'regenerator-runtime';
+window.regeneratorRuntime = regeneratorRuntime;
 
 // import react
+import ReactDOM from 'react-dom';
+import { ThemeProvider, CssBaseline } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import {
   Route,
@@ -8,38 +13,57 @@ import {
   BrowserRouter,
 } from 'react-router-dom';
 
+// themes
+import mainTheme from './themes/main';
+
 // layouts
 import MainLayout from './layouts/main';
 
 // pages
 import HomePage from './pages/home';
+import LoginPage from './pages/login';
 
 // main page
 const Main = (props = {}) => {
+  // account
+  const [account, setAccount] = useState(true);
 
 	// use effect
 	useEffect(() => {
 		// typeof
 		if (typeof window === 'undefined') return;
     
-	}, [typeof window === 'undefined'])
+	}, [typeof window === 'undefined']);
 
 	// return jsx
 	return (
-    <BrowserRouter>
+    <ThemeProvider theme={ mainTheme }>
+      <CssBaseline />
+      <BrowserRouter>
       
-      <Switch>
-        <Route exact path="/">
-          <MainLayout>
-            <HomePage />
-          </MainLayout>
-        </Route>
-        
-      </Switch>
+        <Switch>
+          { account ? (
+            <>
+              <Route exact path="/">
+                <MainLayout>
+                  <HomePage />
+                </MainLayout>
+              </Route>
+            </>
+          ) : (
+            <Route exact path="/">
+              <MainLayout>
+                <LoginPage />
+              </MainLayout>
+            </Route>
+          ) }
+          
+        </Switch>
       
-    </BrowserRouter>
+      </BrowserRouter>
+    </ThemeProvider>
 	);
 };
 
-// export default
-export default Main;
+// render
+window.app = ReactDOM.render(<Main />, document.getElementById('app'));
