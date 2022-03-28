@@ -15,27 +15,29 @@ const MainLayout = (props = {}) => {
   const theme = useTheme();
 
   // width
-  const sidebarWidth = '260px';
+  const sidebarWidth = '220px';
 
   // return jsx
   return (
     <>
-      <MainBar />
       <Container maxWidth="xl" sx={ {
-        mt : theme.spacing(4),
+        
       } }>
         <Stack direction="row" spacing={ 2 }>
-          <Box width={ sidebarWidth }>
+          <Box width={ sidebarWidth } py={ 2 }>
             <Typography variant="body2">
               LEFT
             </Typography>
           </Box>
 
-          <Box flex={ 1 }>
+          <Box flex={ 1 } py={ 2 } px={ 3 } sx={ {
+            minHeight  : '100vh',
+            background : 'rgba(0, 0, 0, 0.4)',
+          } }>
             { props.children }
           </Box>
 
-          <Box width={ sidebarWidth }>
+          <Box width={ sidebarWidth } py={ 2 }>
             <Typography variant="body2">
               Right
             </Typography>

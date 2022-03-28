@@ -1,7 +1,7 @@
 
 // import box
 import React from 'react';
-import { Box, useTheme } from '@mui/material';
+import { Paper, useTheme } from '@mui/material';
 
 // nft box
 const NFTBox = (props = {}) => {
@@ -10,17 +10,15 @@ const NFTBox = (props = {}) => {
 
   // return jsx
   return (
-    <Box { ...props } sx={ {
-      color        : '#fff',
-      border       : `1px solid ${theme.palette.primary.light}`,
+    <Paper { ...props } sx={ {
       padding      : theme.spacing(2),
-      background   : theme.palette.primary.main,
+      background   : theme.palette.background.default,
       borderRadius : theme.spacing(1),
 
       ...(props.sx || {}),
-    } }>
+    } } elevation={ props.elevation || 1 }>
       { props.children }
-    </Box>
+    </Paper>
   );
 };
 

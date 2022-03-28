@@ -1,11 +1,11 @@
 import { Box as NFTBox } from './';
+import Tag from '@mui/icons-material/Tag';
 import Share from '@mui/icons-material/Share';
 import Forum from '@mui/icons-material/Forum';
-import MoreVert from '@mui/icons-material/MoreVert';
 import ThumbUpOffAlt from '@mui/icons-material/ThumbUpOffAlt';
 import ReactMarkdown from 'react-markdown';
 import React, { useState } from 'react';
-import { Box, Grid, Stack, Menu, Button, MenuItem, Avatar, IconButton, Typography, useTheme } from '@mui/material';
+import { Box, Chip, Stack, Menu, MenuItem, Avatar, IconButton, Typography, useTheme } from '@mui/material';
 
 // nft post
 const NFTPost = (props = {}) => {
@@ -13,138 +13,88 @@ const NFTPost = (props = {}) => {
   const theme = useTheme();
 
   // state
-  const [menu, setMenu] = useState(false);
   const [share, setShare] = useState(false);
 
   // return jsx
   return (
-    <NFTBox>
-      <Stack spacing={ 2 }>
+    <Stack spacing={ 2 } direction="row">
 
-        { /* POST USER LINE */ }
-        <Grid container wrap="nowrap" alignItems="center" spacing={ 2 }>
-          <Grid item>
-            <Avatar alt="User 1" src={ null } />
-          </Grid>
-          <Grid item xs zeroMinWidth>
-            <Grid container alignItems="center" spacing={ 1 }>
-              <Grid item>
-                <Typography align="left" component="div" sx={ {
-                  mb         : 0,
-                  lineHeight : 1.1,
-                  fontWeight : 'bold',
-                } }>
-                  Test Name
-                </Typography>
-                <Typography align="left" variant="caption" sx={ {
-                  mb         : 0,
-                  mt         : -.5,
-                  lineHeight : 1.1,
-                } }>
-                  5m ago
-                </Typography>
-              </Grid>
-            </Grid>
-          </Grid>
-          <Grid item>
-            <IconButton sx={ {
-              color : '#fff',
-            } } onClick={ (e) => setMenu(e.target) } variant="text">
-              <MoreVert />
-            </IconButton>
+      { /* POST USER */ }
+      <Stack spacing={ 2 } my={ theme.spacing(1) }>
+        <Avatar alt="User 1" src={ null } />
+      </Stack>
+      { /* / POST USER */ }
 
-            <Menu
-              id="menu-post"
-              open={ !!menu }
-              onClose={ () => setMenu(false) }
-              variant="selectedMenu"
-              anchorEl={ menu }
-              keepMounted
-              anchorOrigin={ {
-                vertical   : 'bottom',
-                horizontal : 'right'
-              } }
-              transformOrigin={ {
-                vertical   : 'top',
-                horizontal : 'right'
-              } }
-            >
-              <MenuItem onClick={ () => setMenu(false) }>Edit</MenuItem>
-              <MenuItem onClick={ () => setMenu(false) }>Delete</MenuItem>
-            </Menu>
-          </Grid>
-        </Grid>
-        { /* / POST USER LINE */ }
+      <NFTBox sx={ {
+        flex    : 1,
+        padding : 0,
+      } }>
+        { /* EMBED */ }
+        { !!props.embed && (
+          <Box p={ theme.spacing(2) } pb={ 0 }>
+            { props.embed }
+          </Box>
+        ) }
+        { /* / EMBED */ }
 
-
-        { /* POST BODY LINE */ }
+        { /* POST BODY */ }
         <Box
+          p={ theme.spacing(2) }
           sx={ {
             '& > p' : {
               ...theme.typography.body2,
               my : 0,
-            }
+            },
           } }
         >
           <ReactMarkdown>
-            POST BODY
+            { props.body || 'N/A BODY' }
           </ReactMarkdown>
         </Box>
-        { /* POST BODY LINE */ }
+        { /* / POST BODY */ }
 
         { /* POST SHARE LINE */ }
-        <Box>
+        <Box p={ theme.spacing(2) } pt={ 0 }>
           <Stack
+            spacing={ 2 }
             direction="row"
             alignItems="center"
             justifyContent="space-between"
-            spacing={ 2 }
 
             sx={ {
               mt    : 0,
               color : theme.palette.mode === 'dark' ? 'grey.700' : 'grey.800'
             } }
           >
-            <Stack direction="row" spacing={ 2 } sx={ {
+            <Stack direction="row" spacing={ 1 } sx={ {
               flex : 1,
+
+              '& > .MuiChip-root' : {
+                background : `rgba(0, 0, 0, 0.4)`,
+              }
             } }>
-              <Button
-                sx={ {
-                  color : '#fff',
-                } }
-                size="small"
-                variant="text"
-                onClick={ () => {} }
-                startIcon={ (
-                  <ThumbUpOffAlt />
-                ) }
-              >
-                { 5 }
-                { ' ' }
-                likes
-              </Button>
-              <Button
-                sx={ {
-                  color : '#fff',
-                } }
-                size="small"
-                variant="text"
-                onClick={ () => {} }
-                startIcon={ (
-                  <Forum />
-                ) }
-              >
-                { 5 }
-                { ' ' }
-                comments
-              </Button>
+              <Chip icon={ (
+                <Tag />
+              ) } label="Chip Outlined" size="small" />
+              <Chip icon={ (
+                <Tag />
+              ) } label="Chip Outlined" size="small" />
+              <Chip icon={ (
+                <Tag />
+              ) } label="Chip Outlined" size="small" />
             </Stack>
 
-            <IconButton onClick={ (e) => setShare(e.target) } variant="text" sx={ {
-              color : '#fff',
-            } } size="small">
-              <Share />
-            </IconButton>
+            <Stack direction="row" spacing={ 1 }>
+              <IconButton onClick={ (e) => setShare(e.target) } variant="text" size="small">
+                <Forum size="small" />
+              </IconButton>
+              <IconButton onClick={ (e) => setShare(e.target) } variant="text" size="small">
+                <ThumbUpOffAlt size="small" />
+              </IconButton>
+              <IconButton onClick={ (e) => setShare(e.target) } variant="text" size="small">
+                <Share size="small" />
+              </IconButton>
+            </Stack>
 
             <Menu
               id="menu-post"
@@ -184,8 +134,9 @@ const NFTPost = (props = {}) => {
           </Stack>
         </Box>
         { /* / POST SHARE LINE */ }
-      </Stack>
-    </NFTBox>
+
+      </NFTBox>
+    </Stack>
   );
 };
 
