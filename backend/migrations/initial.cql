@@ -39,7 +39,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.refs_by_model (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.refs_asc (
+CREATE TABLE IF NOT EXISTS nftsocial.sorts_asc (
   sort     bigint,
   type     text,
   model_id TIMEUUID,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.refs_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.refs_desc (
+CREATE TABLE IF NOT EXISTS nftsocial.sorts_desc (
   sort     bigint,
   type     text,
   model_id TIMEUUID,

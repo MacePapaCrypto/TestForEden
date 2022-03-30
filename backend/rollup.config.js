@@ -1,8 +1,6 @@
-import pkg from './package.json';
 import json from '@rollup/plugin-json';
 import babel from '@rollup/plugin-babel';
 import resolve from '@rollup/plugin-node-resolve';
-import builtIns from 'rollup-plugin-node-builtins';
 import commonjs from '@rollup/plugin-commonjs';
 import peerDeps from 'rollup-plugin-peer-deps-external';
 import { terser } from 'rollup-plugin-terser';
@@ -18,13 +16,12 @@ export default {
   input  : 'src/index.ts',
   output : [
     {
-      file      : pkg.main,
-      format    : 'esm',
+      file      : 'dist/index.js',
+      format    : 'cjs',
       sourcemap : true,
     },
   ],
   plugins : [
-    builtIns(),
 
     // If you have external dependencies installed from
     // npm, you'll most likely need these plugins. In
@@ -32,7 +29,8 @@ export default {
     // consult the documentation for details:
     // https://github.com/rollup/plugins/tree/master/packages/commonjs
     resolve({
-      browser : true,
+      browser        : false,
+      preferBuiltins : true,
       extensions,
     }),
     commonjs({
@@ -46,8 +44,6 @@ export default {
     json(),
     babel({
       extensions,
-      babelrc : true,
-      include : ['src/**/*'],
       presets : [
         '@babel/preset-env',
         '@babel/preset-typescript',
