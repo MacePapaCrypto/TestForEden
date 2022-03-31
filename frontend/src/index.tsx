@@ -5,6 +5,7 @@ window.regeneratorRuntime = regeneratorRuntime;
 
 // import react
 import ReactDOM from 'react-dom';
+import { SocketProvider } from '@nft/ui';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import {
@@ -39,28 +40,31 @@ const Main = (props = {}) => {
 	return (
     <ThemeProvider theme={ mainTheme }>
       <CssBaseline />
-      <BrowserRouter>
       
-        <Switch>
-          { account ? (
-            <>
+      <SocketProvider url="ws://192.168.10.23:9696">
+        <BrowserRouter>
+        
+          <Switch>
+            { account ? (
+              <>
+                <Route exact path="/">
+                  <MainLayout>
+                    <HomePage />
+                  </MainLayout>
+                </Route>
+              </>
+            ) : (
               <Route exact path="/">
                 <MainLayout>
-                  <HomePage />
+                  <LoginPage />
                 </MainLayout>
               </Route>
-            </>
-          ) : (
-            <Route exact path="/">
-              <MainLayout>
-                <LoginPage />
-              </MainLayout>
-            </Route>
-          ) }
-          
-        </Switch>
-      
-      </BrowserRouter>
+            ) }
+            
+          </Switch>
+        
+        </BrowserRouter>
+      </SocketProvider>
     </ThemeProvider>
 	);
 };
