@@ -17,21 +17,22 @@ const NFTPost = (props = {}) => {
 
   // return jsx
   return (
-    <Stack spacing={ 2 } direction="row">
+    <NFTBox sx={ {
+      flex : 1,
+    } }>
+      <Stack spacing={ 1 } flex={ 1 }>
+        { /* POST USER `*/ }
+        <Stack spacing={ 2 } direction="row">
+          <Avatar alt="User 1" src={ null } sx={ {
+            width  : 50,
+            height : 50,
+          } } />
+        </Stack>
+        { /* / POST USER */ }
 
-      { /* POST USER */ }
-      <Stack spacing={ 2 } my={ theme.spacing(1) }>
-        <Avatar alt="User 1" src={ null } />
-      </Stack>
-      { /* / POST USER */ }
-
-      <NFTBox sx={ {
-        flex    : 1,
-        padding : 0,
-      } }>
         { /* EMBED */ }
         { !!props.embed && (
-          <Box p={ theme.spacing(2) } pb={ 0 }>
+          <Box>
             { props.embed }
           </Box>
         ) }
@@ -39,7 +40,6 @@ const NFTPost = (props = {}) => {
 
         { /* POST BODY */ }
         <Box
-          p={ theme.spacing(2) }
           sx={ {
             '& > p' : {
               ...theme.typography.body2,
@@ -54,7 +54,7 @@ const NFTPost = (props = {}) => {
         { /* / POST BODY */ }
 
         { /* POST SHARE LINE */ }
-        <Box p={ theme.spacing(2) } pt={ 0 }>
+        <Box pt={ 0 }>
           <Stack
             spacing={ 2 }
             direction="row"
@@ -95,48 +95,47 @@ const NFTPost = (props = {}) => {
                 <Share size="small" />
               </IconButton>
             </Stack>
-
-            <Menu
-              id="menu-post"
-              open={ !!share }
-              variant="selectedMenu"
-              onClose={ () => setShare(false) }
-              anchorEl={ share }
-              keepMounted
-              anchorOrigin={ {
-                vertical   : 'bottom',
-                horizontal : 'right'
-              } }
-              transformOrigin={ {
-                vertical   : 'top',
-                horizontal : 'right'
-              } }
-              sx={ {
-                '& .MuiSvgIcon-root': {
-                  fontSize    : '1.25rem',
-                  marginRight : '14px',
-                }
-              } }
-            >
-              <MenuItem onClick={ () => setShare(false) }>
-                <Share fontSize="inherit" /> Share Now
-              </MenuItem>
-              <MenuItem onClick={ () => setShare(false) }>
-                <Share fontSize="inherit" /> Share to Friends
-              </MenuItem>
-              <MenuItem onClick={ () => setShare(false) }>
-                <Share fontSize="inherit" /> Send in Messanger
-              </MenuItem>
-              <MenuItem onClick={ () => setShare(false) }>
-                <Share fontSize="inherit" /> Copy Link
-              </MenuItem>
-            </Menu>
           </Stack>
         </Box>
         { /* / POST SHARE LINE */ }
+      </Stack>
 
-      </NFTBox>
-    </Stack>
+      <Menu
+        id="menu-post"
+        open={ !!share }
+        variant="selectedMenu"
+        onClose={ () => setShare(false) }
+        anchorEl={ share }
+        keepMounted
+        anchorOrigin={ {
+          vertical   : 'bottom',
+          horizontal : 'right'
+        } }
+        transformOrigin={ {
+          vertical   : 'top',
+          horizontal : 'right'
+        } }
+        sx={ {
+          '& .MuiSvgIcon-root': {
+            fontSize    : '1.25rem',
+            marginRight : '14px',
+          }
+        } }
+      >
+        <MenuItem onClick={ () => setShare(false) }>
+          <Share fontSize="inherit" /> Share Now
+        </MenuItem>
+        <MenuItem onClick={ () => setShare(false) }>
+          <Share fontSize="inherit" /> Share to Friends
+        </MenuItem>
+        <MenuItem onClick={ () => setShare(false) }>
+          <Share fontSize="inherit" /> Send in Messanger
+        </MenuItem>
+        <MenuItem onClick={ () => setShare(false) }>
+          <Share fontSize="inherit" /> Copy Link
+        </MenuItem>
+      </Menu>
+    </NFTBox>
   );
 };
 

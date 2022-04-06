@@ -12,7 +12,7 @@ const NFTBox = (props = {}) => {
   return (
     <Paper { ...props } sx={ {
       padding      : theme.spacing(2),
-      background   : theme.palette.background.default,
+      background   : 'rgba(255,255,255,0.05)',
       borderRadius : theme.spacing(1),
 
       ...(props.sx || {}),

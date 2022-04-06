@@ -57,5 +57,11 @@ export default class NFTController extends Events {
         method   : Reflect.getMetadata('route:method', this, property),
         priority : Reflect.getMetadata('route:priority', this, property)
       }));
+    
+    // bind routes
+    this.routes.forEach(({ property }) => {
+      // bind property
+      this[property] = this[property].bind(this);
+    });
   }
 }

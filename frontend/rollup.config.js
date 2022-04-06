@@ -33,8 +33,7 @@ export default {
     // consult the documentation for details:
     // https://github.com/rollup/plugins/tree/master/packages/commonjs
     resolve({
-      dedupe  : ['react', '@mui/material', '@mui/icons-material'],
-      rootDir : process.cwd(),
+      dedupe  : ['react', 'react-dom', '@mui/material', '@mui/icons-material'],
       extensions,
     }),
     replace({

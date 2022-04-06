@@ -1,8 +1,8 @@
 
 import React from 'react';
 import Ratio from 'react-ratio';
-import { Post } from '@nft/ui';
-import { Box, Stack, ImageList, ImageListItem, useTheme } from '@mui/material';
+import { Box as NFTBox, Post, Layout, LayoutItem } from '@nft/ui';
+import { Box, Grid, Typography, Stack, useTheme } from '@mui/material';
 
 /**
  * home page
@@ -94,15 +94,66 @@ const HomePage = (props = {}) => {
     </Ratio>
   );
 
+  // layout
+  const layout = [
+    { i: "a", x: 0, y: 0, w: 1, h: 2 },
+    { i: "b", x: 1, y: 0, w: 3, h: 2 },
+    { i: "c", x: 4, y: 0, w: 1, h: 2 }
+  ];
+
+  // layout
+  return (
+    <Box flex={ 1 } display="flex">
+      <Layout layout={ layout }>
+        <div key="a" data-grid={ { maxW : 3 } }>
+          <LayoutItem>
+            <NFTBox sx={ {
+              flex : 1,
+            } } />
+          </LayoutItem>
+        </div>
+        <div key="b">
+          <LayoutItem isScrollable>
+            <Stack spacing={ 2 }>
+              <Post embed={ YoutubeEmbed } body="Video Embed" />
+              <Post embed={ ImagesEmbed } body="More than 2 Images Embed" />
+              <Post embed={ ImageEmbed } body="Single Image Embed" />
+              <Post embed={ TwoImageEmbed } body="Two Image Embed" />
+              <Post />
+            </Stack>
+          </LayoutItem>
+        </div>
+        <div key="c">
+          <LayoutItem>
+            <NFTBox sx={ {
+              flex : 1,
+            } } />
+          </LayoutItem>
+        </div>
+      </Layout>
+    </Box>
+  );
+
   // return jsx
   return (
-    <Stack spacing={ 2 }>
-      <Post embed={ YoutubeEmbed } body="Video Embed" />
-      <Post embed={ ImagesEmbed } body="More than 2 Images Embed" />
-      <Post embed={ ImageEmbed } body="Single Image Embed" />
-      <Post embed={ TwoImageEmbed } body="Two Image Embed" />
-      <Post />
-    </Stack>
+    <Grid container spacing={ 2 }>
+      <Grid item xs={ 3 }>
+        <Box py={ 2 }>
+          <Typography variant="body2">
+            LEFT
+          </Typography>
+        </Box>
+      </Grid>
+      <Grid item flex={ 1 }>
+      </Grid>
+      <Grid item xs={ 3 }>
+        <Box py={ 2 }>
+          <Typography variant="body2">
+            RIGHT
+          </Typography>
+        </Box>
+      </Grid>
+    </Grid>
   );
 };
 

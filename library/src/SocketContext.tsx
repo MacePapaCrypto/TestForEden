@@ -1,6 +1,6 @@
 
 // socketio client
-import { createContext } from 'react';
+import React, { createContext } from 'react';
 
 // global context
 const SocketContext = createContext(null);

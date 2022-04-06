@@ -201,7 +201,7 @@ export default class NFTModel extends Events {
    */
   async getRefs(): Promise<Array<any>> {
     // execute schema create
-    const data = await Model.query('SELECT * FROM refs_by_model WHERE model_id = ?', [this.__data.id]);
+    const data = await NFTModel.query('SELECT * FROM refs_by_model WHERE model_id = ?', [this.__data.id]);
 
     // get data
     return data.rows;
@@ -256,7 +256,7 @@ export default class NFTModel extends Events {
     if (!id) return null;
 
     // execute schema create
-    const data = await Model.query('SELECT * FROM models WHERE id = ?', [id]);
+    const data = await NFTModel.query('SELECT * FROM models WHERE id = ?', [id]);
 
     // get data
     return data.rows[0] ? new this(data.rows[0]) : null;
@@ -275,7 +275,7 @@ export default class NFTModel extends Events {
     if (!ref) return [];
 
     // execute schema create
-    const data = await Model.query(`SELECT * FROM refs_${sort} WHERE ref = ? AND type = ?${lastId ? ` AND model_id ${sort === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
+    const data = await NFTModel.query(`SELECT * FROM refs_${sort} WHERE ref = ? AND type = ?${lastId ? ` AND model_id ${sort === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
       lastId ? [`ref:${ref}`, type, lastId] : [`ref:${ref}`, type]
     );
 

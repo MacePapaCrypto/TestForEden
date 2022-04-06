@@ -1,6 +1,7 @@
 import pkg from './package.json';
 import json from '@rollup/plugin-json';
 import babel from '@rollup/plugin-babel';
+import styles from 'rollup-plugin-styles';
 import assets from 'rollup-plugin-copy-assets';
 import resolve from '@rollup/plugin-node-resolve';
 import builtIns from 'rollup-plugin-node-builtins';
@@ -58,6 +59,9 @@ export default {
         '@babel/preset-env',
         '@babel/preset-react',
       ],
+    }),
+    styles({
+      mode : 'inject',
     }),
     peerDeps(),
 

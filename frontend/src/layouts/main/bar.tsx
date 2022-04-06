@@ -1,6 +1,8 @@
 import React from 'react';
 import MenuIcon from '@mui/icons-material/Menu';
-import { AppBar, Box, Toolbar, IconButton, Typography, Menu, Container, Avatar, Button, Tooltip, MenuItem, useTheme } from '@mui/material';
+import AddReaction from '@mui/icons-material/AddReaction';
+import { useAuth } from '@nft/ui';
+import { AppBar, Chip, Box, Toolbar, IconButton, Typography, Menu, Container, Avatar, Button, Tooltip, MenuItem, useTheme } from '@mui/material';
 
 // pages
 const pages = ['Home'];
@@ -11,33 +13,51 @@ const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
 // main layout bar
 const MainBar = (props = {}) => {
   // theme
+  const auth = useAuth();
   const theme = useTheme();
 
   const [anchorElNav, setAnchorElNav] = React.useState(null);
-  const [anchorElUser, setAnchorElUser] = React.useState(null);
+  const [userMenu, setUserMenu] = React.useState(null);
 
   const handleOpenNavMenu = (event) => {
     setAnchorElNav(event.currentTarget);
-  };
-  const handleOpenUserMenu = (event) => {
-    setAnchorElUser(event.currentTarget);
   };
 
   const handleCloseNavMenu = () => {
     setAnchorElNav(null);
   };
 
-  const handleCloseUserMenu = () => {
-    setAnchorElUser(null);
+  // handle account click
+  const handleAccountClick = (e) => {
+    // check logged in
+    if (!auth.account) return auth.login();
+
+    // open menu
+    setUserMenu(e.currentTarget);
   };
 
+  /**
+   * logout
+   *
+   * @param e 
+   * @returns 
+   */
+  const handleLogoutClick = (e) => {
+    // close menu
+    setUserMenu(null);
+
+    // logout
+    if (auth.account) return auth.logout();
+  };
+
+  // return account
   return (
     <AppBar
       position="static"
       elevation={ 0 }
 
       sx={ {
-        borderBottom : `1px solid ${theme.palette.primary.light}`,
+        background : 'transparent',
       } }
     >
       <Container maxWidth="xl">
@@ -144,19 +164,24 @@ const MainBar = (props = {}) => {
           <Box sx={ {
             flexGrow : 0,
           } }>
-            <Tooltip title="Open settings">
-              <IconButton onClick={ handleOpenUserMenu } sx={ {
-                p : 0
-              } }>
-                <Avatar alt="Remy Sharp" src="/static/images/avatar/2.jpg" />
-              </IconButton>
+            <Tooltip title={ auth.account ? 'Open settings' : 'Connect Metamask' }>
+              <Chip
+                avatar={ (
+                  <Avatar alt="Remy Sharp">
+                    <AddReaction />
+                  </Avatar>
+                ) }
+                label={ auth.account ? auth.account : 'Connect' }
+                variant="outlined"
+                onClick={ handleAccountClick }
+              />
             </Tooltip>
             <Menu
               sx={ {
                 mt : '45px'
               } }
               id="menu-appbar"
-              anchorEl={ anchorElUser }
+              anchorEl={ userMenu }
               anchorOrigin={ {
                 vertical   : 'top',
                 horizontal : 'right',
@@ -166,16 +191,14 @@ const MainBar = (props = {}) => {
                 vertical   : 'top',
                 horizontal : 'right',
               } }
-              open={ !!anchorElUser }
-              onClose={ handleCloseUserMenu }
+              open={ !!userMenu }
+              onClose={ () => setUserMenu(null) }
             >
-              { settings.map((setting) => (
-                <MenuItem key={ setting } onClick={ handleCloseUserMenu }>
-                  <Typography textAlign="center">
-                    { setting }
-                  </Typography>
-                </MenuItem>
-              )) }
+              <MenuItem onClick={ handleLogoutClick }>
+                <Typography textAlign="center">
+                  Logout
+                </Typography>
+              </MenuItem>
             </Menu>
           </Box>
         </Toolbar>

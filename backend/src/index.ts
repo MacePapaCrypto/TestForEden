@@ -57,7 +57,7 @@ class NFTBackend extends Events {
 
     // socket io
     this.io = new Server(this.app.server, {
-      path : '/nft/',
+      path : '/nft',
       cors : {
         origin : '*',
       }
@@ -67,6 +67,9 @@ class NFTBackend extends Events {
     this.io.on('connection', (socket) => {
       // on connection
       this.emit('connection', socket);
+      
+      // set session id
+      socket.ssid = socket.handshake.query.ssid;
 
       // set initial acls
       socket.acl = ['nouser'];
@@ -121,7 +124,7 @@ class NFTBackend extends Events {
             // failed
             result = {
               success : false,
-              message : e,
+              message : `${e}`,
             }
           }
 

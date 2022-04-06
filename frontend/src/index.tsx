@@ -4,10 +4,12 @@ import regeneratorRuntime from 'regenerator-runtime';
 window.regeneratorRuntime = regeneratorRuntime;
 
 // import react
-import ReactDOM from 'react-dom';
-import { SocketProvider } from '@nft/ui';
-import { ThemeProvider, CssBaseline } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+
+// import react
+import ReactDOM from 'react-dom';
+import { ThemeProvider, CssBaseline } from '@mui/material';
+import { AuthProvider, SocketProvider } from '@nft/ui';
 import {
   Route,
   Switch,
@@ -41,29 +43,31 @@ const Main = (props = {}) => {
     <ThemeProvider theme={ mainTheme }>
       <CssBaseline />
       
-      <SocketProvider url="ws://192.168.10.23:9696">
-        <BrowserRouter>
-        
-          <Switch>
-            { account ? (
-              <>
+      <SocketProvider url="wss://nft.edenup.com">
+        <AuthProvider>
+          <BrowserRouter>
+          
+            <Switch>
+              { account ? (
+                <>
+                  <Route exact path="/">
+                    <MainLayout>
+                      <HomePage />
+                    </MainLayout>
+                  </Route>
+                </>
+              ) : (
                 <Route exact path="/">
                   <MainLayout>
-                    <HomePage />
+                    <LoginPage />
                   </MainLayout>
                 </Route>
-              </>
-            ) : (
-              <Route exact path="/">
-                <MainLayout>
-                  <LoginPage />
-                </MainLayout>
-              </Route>
-            ) }
-            
-          </Switch>
-        
-        </BrowserRouter>
+              ) }
+              
+            </Switch>
+          
+          </BrowserRouter>
+        </AuthProvider>
       </SocketProvider>
     </ThemeProvider>
 	);

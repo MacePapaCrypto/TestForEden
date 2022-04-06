@@ -9,11 +9,25 @@ import SocketContext from './SocketContext';
 
 // socket context
 const SocketProvider = (props = {}) => {
+  // session id
+  const ssid = localStorage?.getItem('ssid') || uuid();
+
+  // set item
+  localStorage?.setItem('ssid', ssid);
+  
+  // socket opts
+  const socketOpts = {
+    path  : '/nft',
+    query : {
+      ssid,
+    },
+    reconnect  : true,
+    transports : ['websocket'],
+  };
+
   // create socket
   const [url, setUrl] = useState(props.url);
-  const [socket, setSocket] = useState(url && socketio.connect(url, {
-    path : '/nft/'
-  }));
+  const [socket, setSocket] = useState(url && socketio.connect(url, socketOpts));
 
   // use effect
   useEffect(() => {
@@ -22,15 +36,14 @@ const SocketProvider = (props = {}) => {
 
     // set url
     setUrl(props.url);
-    setSocket(props.url && socketio.connect(props.url, {
-      path : '/nft/'
-    }));
+    setSocket(props.url && socketio.connect(props.url, socketOpts));
   }, [url]);
 
   // add call function
-  socket.call = (method, path, data) => {
+  socket.call = (method, path, data = {}) => {
     // get id
     const id = uuid();
+    console.log('DOING CALL', method, path, data, id);
 
     // create promise
     const result = new Promise((resolve, reject) => {
@@ -52,18 +65,25 @@ const SocketProvider = (props = {}) => {
   };
 
   // methods
-  socket.get = (path, data) => socket.call('GET', path, data);
-  socket.put = (path, data) => socket.call('PUT', path, data);
-  socket.post = (path, data) => socket.call('POST', path, data);
-  socket.patch = (path, data) => socket.call('PATCH', path, data);
-  socket.delete = (path, data) => socket.call('DELETE', path, data);
+  const fauxSocket = {
+    on : socket.on,
+    emit : socket.emit,
+    once : socket.once,
+    socket : socket,
+
+    get : (path, data) => socket.call('GET', path, data),
+    put : (path, data) => socket.call('PUT', path, data),
+    post : (path, data) => socket.call('POST', path, data),
+    patch : (path, data) => socket.call('PATCH', path, data),
+    delete : (path, data) => socket.call('DELETE', path, data),
+  };
 
   // to window
-  window.NFTSocket = socket;
+  window.NFTSocket = fauxSocket;
 
   // return jsx
   return (
-    <SocketContext.Provider value={ socket }>
+    <SocketContext.Provider value={ fauxSocket }>
       { props.children }
     </SocketContext.Provider>
   );
