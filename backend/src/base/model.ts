@@ -118,7 +118,7 @@ export default class NFTModel extends Events {
 
     // set id if not exists
     if (!this.__data.id) {
-      this.__data.id = `9x-${nanoid()}`;
+      this.__data.id = `${nanoid()}`;
       this.__data.createdAt = new Date();
     }
 

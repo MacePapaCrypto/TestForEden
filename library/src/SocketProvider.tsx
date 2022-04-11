@@ -13,7 +13,7 @@ import SocketContext from './SocketContext';
 // socket context
 const SocketProvider = (props = {}) => {
   // session id
-  const ssid = localStorage?.getItem('ssid') || `8x${nanoid()}`;
+  const ssid = localStorage?.getItem('ssid') || `${nanoid()}`;
 
   // set item
   localStorage?.setItem('ssid', ssid);
