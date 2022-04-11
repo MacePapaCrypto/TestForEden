@@ -47,8 +47,6 @@ export default class AuthController extends NFTController {
     
     // nonce
     const nonce = generateNonce();
-
-    console.log('test', nonce);
     
     // set to cache
     const cached = new CacheModel({
