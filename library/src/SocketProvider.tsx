@@ -1,8 +1,11 @@
 
 // socketio client
 import socketio from 'socket.io-client';
-import { v1 as uuid } from 'uuid';
+import { customAlphabet } from 'nanoid';
 import React, { useEffect, useState } from 'react';
+
+// create alphabet
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 40);
 
 // socket context
 import SocketContext from './SocketContext';
@@ -10,7 +13,7 @@ import SocketContext from './SocketContext';
 // socket context
 const SocketProvider = (props = {}) => {
   // session id
-  const ssid = localStorage?.getItem('ssid') || uuid();
+  const ssid = localStorage?.getItem('ssid') || `8x${nanoid()}`;
 
   // set item
   localStorage?.setItem('ssid', ssid);
@@ -42,7 +45,7 @@ const SocketProvider = (props = {}) => {
   // add call function
   socket.call = (method, path, data = {}) => {
     // get id
-    const id = uuid();
+    const id = nanoid(5);
     console.log('DOING CALL', method, path, data, id);
 
     // create promise

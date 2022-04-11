@@ -1,23 +1,18 @@
 
 // import nft controller
 import ethUtil from 'ethereumjs-util';
-import NodeCache from 'node-cache';
 import { generateNonce, SiweMessage } from 'siwe';
 
 // import local
 import NFTController, { Route } from '../base/controller';
-
-// create local cache
-const cache = new NodeCache({
-  stdTTL : 600,
-});
+import UserModel from '../models/user';
+import CacheModel from '../models/cache';
+import SessionModel from '../models/session';
 
 /**
  * create auth controller
  */
 export default class AuthController extends NFTController {
-  // set banner
-  private __banner: string = '*** WARNING *** Ask the site to change the default banner *** WARNING ***';
 
   /**
    * login route
@@ -34,15 +29,17 @@ export default class AuthController extends NFTController {
     };
 
     // check cache for session
-    // @todo cache should be redis
-    const alreadyAuthenticated = cache.get(req.ssid);
+    const alreadyAuthenticated = await SessionModel.findById(req.ssid);
 
     // check authenticated
     if (alreadyAuthenticated) {
+      // set to socket
+      req.account = alreadyAuthenticated.get('account');
+
       // already authed
       return {
         result : {
-          account : alreadyAuthenticated,
+          account : alreadyAuthenticated.get('account'),
         },
         success : true,
       };
@@ -50,13 +47,21 @@ export default class AuthController extends NFTController {
     
     // nonce
     const nonce = generateNonce();
+
+    console.log('test', nonce);
     
     // set to cache
-    cache.set(address.toLowerCase(), nonce);
+    const cached = new CacheModel({
+      refs  : [`auth:${address.toLowerCase()}`],
+      value : nonce,
+    });
+
+    // save
+    await cached.save();
 
     // return
     return {
-      result  : {
+      result : {
         nonce,
       },
       success : true,
@@ -90,8 +95,12 @@ export default class AuthController extends NFTController {
     // fields
     const fields = await actualMessage.validate(signature);
 
+    // get cached
+    const cached = await CacheModel.findByRef(`auth:${address.toLowerCase()}`);
+    const found = cached.find((c) => c.get('value') === fields.nonce);
+
     // failed nonce check
-    if (fields.nonce !== cache.get(address.toLowerCase())) {
+    if (!found) {
       // failed
       return {
         success : false,
@@ -99,12 +108,29 @@ export default class AuthController extends NFTController {
       };
     }
 
+    // delete
+    found.remove();
+
+    // create user
+    const user = await UserModel.findById(fields.address) || new UserModel({
+      id : fields.address,
+    });
+
+    // save
+    user.save();
+
     // set to socket
     req.account = fields.address;
-
-    // set to cache for later
-    // @todo cache should be redis
-    cache.set(req.ssid, req.account);
+    
+    // set to cache
+    const session = new SessionModel({
+      id      : req.ssid,
+      refs    : [`account:${address.toLowerCase()}`],
+      account : req.account,
+    });
+    
+    // save
+    await session.save();
 
     // success
     return {

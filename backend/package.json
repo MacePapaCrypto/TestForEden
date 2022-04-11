@@ -15,6 +15,7 @@
     "cassandra-driver": "^4.6.3",
     "cors": "^2.8.5",
     "crypto": "^1.0.1",
+    "deep-equal": "^2.0.5",
     "dot-prop": "^6.0.1",
     "eth-sig-util": "^3.0.1",
     "ethereumjs-util": "^5.1.4",
@@ -22,13 +23,15 @@
     "json5": "^2.2.1",
     "lodash": "^4.17.21",
     "meta-auth": "^1.1.2",
+    "nanoid": "^3.3.2",
     "node-cache": "^5.1.2",
     "polka": "^0.5.2",
     "reflect-metadata": "^0.1.13",
     "sirv": "^2.0.2",
     "siwe": "^1.1.6",
     "socket.io": "^4.4.1",
-    "uuid": "^8.3.2"
+    "uuid": "^8.3.2",
+    "winston": "^3.7.2"
   },
   "devDependencies": {
     "@babel/cli": "^7.17.6",

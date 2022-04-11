@@ -7,9 +7,6 @@ import { AppBar, Chip, Box, Toolbar, IconButton, Typography, Menu, Container, Av
 // pages
 const pages = ['Home'];
 
-// settings
-const settings = ['Profile', 'Account', 'Dashboard', 'Logout'];
-
 // main layout bar
 const MainBar = (props = {}) => {
   // theme
@@ -95,7 +92,7 @@ const MainBar = (props = {}) => {
             </IconButton>
             <Menu
               id="menu-appbar"
-              anchorEl={anchorElNav}
+              anchorEl={ anchorElNav }
               anchorOrigin={ {
                 vertical   : 'bottom',
                 horizontal : 'left',
@@ -114,13 +111,18 @@ const MainBar = (props = {}) => {
                 },
               } }
             >
-              { pages.map((page) => (
-                <MenuItem key={ page } onClick={ handleCloseNavMenu }>
+              <MenuItem>
+                <Typography textAlign="center">
+                  Home
+                </Typography>
+              </MenuItem>
+              { !!auth.account && (
+                <MenuItem>
                   <Typography textAlign="center">
-                    { page }
+                    Profile
                   </Typography>
                 </MenuItem>
-              )) }
+              ) }
             </Menu>
           </Box>
           <Typography
@@ -146,19 +148,26 @@ const MainBar = (props = {}) => {
               }
             } }
           >
-            { pages.map((page) => (
+            <Button
+              sx={ {
+                my      : 2,
+                color   : 'white',
+                display : 'block',
+              } }
+            >
+              Home
+            </Button>
+            { !!auth.account && (
               <Button
-                key={ page }
-                onClick={ handleCloseNavMenu }
                 sx={ {
                   my      : 2,
                   color   : 'white',
                   display : 'block',
                 } }
               >
-                { page }
+                Profile
               </Button>
-            )) }
+            ) }
           </Box>
 
           <Box sx={ {

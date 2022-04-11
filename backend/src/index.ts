@@ -4,12 +4,14 @@ import fs from 'fs-extra';
 import cors from 'cors';
 import polka from 'polka';
 import Events from 'events';
+import winston from 'winston';
 import Trouter from 'trouter';
 import cassandra from 'cassandra-driver';
 import { Server } from 'socket.io';
 
 // local dependencies
 import config from './config';
+import NFTModel from './base/model';
 import controllers from './controllers';
 
 // events
@@ -35,15 +37,48 @@ class NFTBackend extends Events {
    */
   async build() {
     // await database
+    await this.__logger();
     await this.__server();
     await this.__database();
     await this.__controllers();
   }
 
   /**
+   * create logger
+   */
+  async __logger() {
+    // create logger
+    this.logger = winston.createLogger({
+      level      : 'info',
+      format     : winston.format.json(),
+      transports : [
+        //
+        // - Write all logs with importance level of `error` or less to `error.log`
+        // - Write all logs with importance level of `info` or less to `combined.log`
+        //
+        new winston.transports.File({
+          level    : 'error',
+          filename : 'error.log',
+        }),
+      ],
+    });
+
+    // console logger
+    this.logger.add(new winston.transports.Console({
+      format: winston.format.simple(),
+    }));
+
+    // info
+    this.logger.info('logger created');
+  }
+
+  /**
    * setup server
    */
   async __server() {
+    // info
+    this.logger.info('server creating');
+
     // listen
     this.app = polka();
 
@@ -139,12 +174,18 @@ class NFTBackend extends Events {
         next();
       });
     });
+
+    // info
+    this.logger.info('server created');
   }
 
   /**
    * build database
    */
   async __database() {
+    // info
+    this.logger.info('db creating');
+
     // get config
     const db = config.get('db');
 
@@ -180,25 +221,34 @@ class NFTBackend extends Events {
       }
     });
 
+    // build model
+    NFTModel.build(this);
+
     // create on ready event
     this.clientReady = new Promise(async (resolve) => {
       // try/catch
       try {
         await this.client.execute('SELECT * FROM models LIMIT 1', []);
       } catch (e) { console.log(e) }
-      
-      // log cassandra ready
-      console.log('cassandra ready...');
+
+      // info
+      this.logger.info('db ready');
 
       // resolve
       resolve(true);
     });
+    
+    // info
+    this.logger.info('db created');
   }
 
   /**
    * builds controllers
    */
   async __controllers() {
+    // info
+    this.logger.info('controllers creating');
+
     // all routes
     let allRoutes = [];
 
@@ -242,6 +292,9 @@ class NFTBackend extends Events {
 
     // set routes
     this.__builtRoutes = allRoutes;
+
+    // info
+    this.logger.info('controllers created');
   }
 }
 

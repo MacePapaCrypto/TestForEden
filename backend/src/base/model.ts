@@ -2,9 +2,17 @@ import 'reflect-metadata';
 
 // Import aliases
 import _ from 'lodash';
+import equal from 'deep-equal';
 import JSON5 from 'json5';
 import Events from 'events';
-import { v1 as uuid } from 'uuid';
+import dotProp from 'dot-prop';
+import { customAlphabet } from 'nanoid';
+
+// create alphabet
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 40);
+
+// globals
+let client, logger;
 
 /**
  * Exports decorator function to set type of model
@@ -26,9 +34,12 @@ export default class NFTModel extends Events {
    *
    * @param args
    */
-  constructor(...args) {
+  constructor(data = {}) {
     // run super
-    super(...args);
+    super();
+
+    // set data
+    this.__data = data;
     
     // date
     if (typeof this.__data.data === 'string') {
@@ -42,8 +53,8 @@ export default class NFTModel extends Events {
     }
 
     // fix cammel case
-    this.__data.createdAt = this.__data.createdAt || this.__data.created_at;
-    this.__data.updatedAt = this.__data.updatedAt || this.__data.updated_at;
+    this.__data.createdAt = this.__data.createdAt || this.__data.created_at || new Date();
+    this.__data.updatedAt = this.__data.updatedAt || this.__data.updated_at || new Date();
 
     // delete
     delete this.__data.data;
@@ -52,6 +63,44 @@ export default class NFTModel extends Events {
 
     // check refs/subjects
     if (!this.__data.refs) this.__data.refs = [];
+  }
+
+  /**
+   * build
+   *
+   * @param base 
+   */
+  static build(base) {
+    // set globals
+    logger = base.logger;
+    client = base.client;
+  }
+
+  /**
+   * gets value
+   *
+   * @param {*} key 
+   */
+  public get(key) {
+    // get
+    return dotProp.get(this.__data, key);
+  }
+
+  /**
+   * sets value
+   *
+   * @param {*} key
+   * @param {*} value
+   */
+  public set(key, value) {
+    // check change
+    const changed = !equal(dotProp.get(this.__data, key), value);
+
+    // if changed
+    if (changed) this.__changed = true;
+  
+    // get
+    return this.__data = dotProp.set(this.__data, key, value);
   }
 
   /**
@@ -69,7 +118,7 @@ export default class NFTModel extends Events {
 
     // set id if not exists
     if (!this.__data.id) {
-      this.__data.id = uuid();
+      this.__data.id = `9x-${nanoid()}`;
       this.__data.createdAt = new Date();
     }
 
@@ -77,7 +126,7 @@ export default class NFTModel extends Events {
     this.__data.updatedAt = new Date();
 
     // keys
-    const keys = ['id', 'type', 'data', 'refs', 'version', 'created_at', 'updated_at'];
+    const keys = ['id', 'type', 'data', 'sorts', 'refs', 'version', 'created_at', 'updated_at'];
 
     // create query
     const query = `INSERT INTO models (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
@@ -153,7 +202,7 @@ export default class NFTModel extends Events {
     });
 
     // await actual query
-    // @todo
+    await NFTModel.batch(queries);
 
     // chainable
     return this;
@@ -191,7 +240,7 @@ export default class NFTModel extends Events {
     });
 
     // await actual query
-    // @todo
+    await NFTModel.batch(queries);
   }
 
   /**
@@ -301,5 +350,36 @@ export default class NFTModel extends Events {
       type,
       ...data,
     };
+  }
+  
+  /*
+   * create normal query
+   */
+  static async query(query, data) {
+    // query
+    logger.info(`executing ${query}`);
+
+    // get result
+    const result = await client.execute(query, data);
+
+    // resolve
+    return result;
+  }
+
+  /*
+   * create batch of insert/delete queries
+   */
+  static async batch(queries) {
+    // query
+    logger.info(`batch ${queries.map((q) => q.query).join(', ')}`);
+
+    // get result
+    const result = await client.batch(queries, {
+      logged  : false,
+      prepare : true,
+    });
+
+    // return result
+    return result;
   }
 }
