@@ -1,0 +1,8 @@
+version: '2'
+services:
+  keydb:
+    image: eqalpha/keydb:x86_64_v0.9.5
+    entrypoint: ["keydb-server"]
+    command: ["/etc/keydb/redis.conf", "--port", "6379", "--multi-master", "yes", "--protected-mode", "no", "--bind", "0.0.0.0"]          
+    ports:
+      - 6379:6379

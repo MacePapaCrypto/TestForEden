@@ -13,7 +13,7 @@ import { Server } from 'socket.io';
 import config from './config';
 import NFTModel from './base/model';
 import controllers from './controllers';
-
+import Message from './base/media';
 // events
 class NFTBackend extends Events {
   // built controllers
@@ -98,10 +98,13 @@ class NFTBackend extends Events {
       }
     });
 
+
+    this.message = new Message()
     // on connection
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', async (socket) => {
       // on connection
       this.emit('connection', socket);
+      await this.message.init(socket)
       
       // set session id
       socket.ssid = socket.handshake.query.ssid;
@@ -111,6 +114,15 @@ class NFTBackend extends Events {
 
       // on disconnect
       socket.on('disconnect', () => this.emit('disconnection', socket));
+      socket.on('message', (id, method, path, data) => {
+          console.log(id)
+          console.log(method)
+          console.log(path)
+          console.log(data)
+        this.message.HandleMessage(id, method)
+         
+        
+      });
 
       // add router listener
       socket.on('call', (id, method, path, data) => {
