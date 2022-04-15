@@ -20,7 +20,6 @@ import {
   WorkerLogTag,
   RtpCodecCapability
 } from "mediasoup/node/lib/types";
-import { Socket } from "socket.io";
 
 interface MessageObject {
   type: string;
