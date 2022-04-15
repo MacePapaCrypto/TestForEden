@@ -13,7 +13,7 @@ import { Server } from 'socket.io';
 import config from './config';
 import NFTModel from './base/model';
 import controllers from './controllers';
-import Message from './base/media';
+import Media from './base/media';
 // events
 class NFTBackend extends Events {
   // built controllers
@@ -99,12 +99,10 @@ class NFTBackend extends Events {
     });
 
 
-    this.message = new Message()
     // on connection
     this.io.on('connection', async (socket) => {
       // on connection
       this.emit('connection', socket);
-      await this.message.init(socket)
       
       // set session id
       socket.ssid = socket.handshake.query.ssid;
@@ -112,16 +110,41 @@ class NFTBackend extends Events {
       // set initial acls
       socket.acl = ['nouser'];
 
+      let media = new Media(socket)
       // on disconnect
       socket.on('disconnect', () => this.emit('disconnection', socket));
-      socket.on('message', (id, method, path, data) => {
-          console.log(id)
-          console.log(method)
-          console.log(path)
-          console.log(data)
-        this.message.HandleMessage(id, method)
-         
-        
+      socket.on('message', async (event, callback) => {
+        switch (event.type) {
+          case "getRouterRtpCapabilities":
+           media.onGetRouterRtpCapabilities(event, callback);
+            break;
+          case "createProducerTransport":
+            media.onCreateProducerTransport(event, callback);
+            break;
+          case "createConsumerTransport":
+            media.onCreateConsumerTransport(event, callback);
+            break;
+          case "connectProducerTransport":
+            media.onConnectProducerTransport(event, callback);
+            break;
+          case "connectConsumerTransport":
+            media.onConnectConsumerTransport(event, callback);
+            break;
+          case "produce":
+            media.onProduce(event, callback);
+            break;
+          case "consume":
+            media.onConsume(event, callback);
+            break;
+          case "resume":
+            media.onResume(event, callback);
+            break;
+          case "prepareRoom":
+            media.onPrepareRoom(event, callback);
+            break;
+          default:
+            break;
+        }
       });
 
       // add router listener
