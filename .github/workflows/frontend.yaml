@@ -21,10 +21,12 @@ jobs:
           node-version: ${{ matrix.node }}
       - name: Npm Install 
         run: npm install
+      - name: NPM lint 
+        run: npm run lint 
       - name: Npm test 
-        run: npm test
+        run: npm run test
       - name: Run Npm
-        run: npm build
+        run: npm run build
   deployment-development:
     name: Deployment Development
     runs-on: ubuntu-latest
