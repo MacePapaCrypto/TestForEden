@@ -1,0 +1,21 @@
+prometheus:
+  enabled: true
+  persistence:
+    accessModes:
+      - ReadWriteOnce
+    size: 200Gi
+
+alertmanager:
+  persistence:
+    enabled: true
+    accessModes:
+      - ReadWriteOnce
+    size: 200Gi
+
+# Depending on which DNS solution you have installed in your cluster, enable the right option
+# kubectl get po -n kube-system| grep dns
+coreDns:
+  enabled: false
+
+kubeProxy:
+  enabled: true

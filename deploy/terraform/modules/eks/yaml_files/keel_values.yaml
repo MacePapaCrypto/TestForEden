@@ -1,0 +1,18 @@
+keel:
+  # keel policy (all/major/minor/patch/force)
+  policy: all
+  # images to track and update
+  images:
+    - repository: image.repository # [1]
+      tag: image.tag # [2]
+
+# Helm provider support
+helmProvider:
+  enabled: true
+
+# Google Container Registry
+# GCP Project ID
+gcr:
+  enabled: true 
+  clusterName: "cluster"
+  pubSub: true
