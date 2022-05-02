@@ -230,4 +230,4 @@ class NFTPubSub {
  *
  * @type {NFTPubSub}
  */
-module.exports = NFTPubSub;
+export default NFTPubSub;

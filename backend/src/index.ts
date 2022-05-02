@@ -14,6 +14,7 @@ import config from './config';
 import NFTModel from './base/model';
 import NFTPubSub from './utilities/pubsub';
 import controllers from './controllers';
+import  Media from './base/media';
 
 // events
 class NFTBackend extends Events {
@@ -113,9 +114,9 @@ class NFTBackend extends Events {
         origin : '*',
       }
     });
-
+    
     // on connection
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', async (socket) => {
       // on connection
       this.emit('connection', socket);
       
@@ -124,7 +125,9 @@ class NFTBackend extends Events {
 
       // set initial acls
       socket.acl = ['nouser'];
+      
 
+      let media = new Media.Media(socket)
       // subscriptions
       socket.subscriptions = new Map();
 
@@ -173,6 +176,44 @@ class NFTBackend extends Events {
 
       // on disconnect
       socket.on('disconnect', () => this.emit('disconnection', socket));
+      socket.on('message', async (event, callback) => {
+        console.log(event);
+        switch (event.type) {
+          case Media.MessageNames.GetRouterRtpCapabilities:
+            media.onGetRouterRtpCapabilities(event, callback);
+            break;
+          case Media.MessageNames.CreateProducerTransport:
+            media.onCreateProducerTransport(event, callback);
+            break;
+          case Media.MessageNames.CreateConsumerTranspor: 
+            console.log("uwu hit")
+            media.onCreateConsumerTransport(event, callback);
+            break;
+          case Media.MessageNames.ConnectConsumerTransport: 
+            media.onConnectProducerTransport(event, callback);
+            break;
+          case Media.MessageNames.ConnectConsumerTransport: 
+            media.onConnectConsumerTransport(event, callback);
+            break;
+          case Media.MessageNames.Produce:
+            media.onProduce(event, callback);
+            break;
+          case Media.MessageNames.Consume:
+            media.onConsume(event, callback);
+            break;
+          case Media.MessageNames.Resume:
+            media.onResume(event, callback);
+            break;
+          case Media.MessageNames.GetCurrentProducers:
+            media.onGetCurrentProducers(event, callback);
+            break;
+          case Media.MessageNames.PrepareRoom:
+            media.onPrepareRoom(event, callback);
+            break;
+          default:
+            break;
+        }
+      });
 
       // add router listener
       socket.on('call', (id, method, path, data) => {
