@@ -11,7 +11,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [ '12', '14', '16' ]
+        node: ['17']
     name: Node ${{ matrix.node }} sample
     steps:
       - uses: actions/checkout@v3
@@ -19,6 +19,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
+      - name: Backend cd
+        run: cd frontend/
       - name: Npm Install 
         run: npm install
       - name: NPM lint 
