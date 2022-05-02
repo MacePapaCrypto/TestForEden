@@ -9,18 +9,19 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
     strategy:
       matrix:
         node: ['17']
-    name: Node ${{ matrix.node }} sample
+    name: Node ${{ matrix.node }} Backend 
     steps:
       - uses: actions/checkout@v3
       - name: Setup node
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node }}
-      - name: Backend cd
-        run: cd backend/
       - name: Npm Install 
         run: npm install
       - name: NPM lint
