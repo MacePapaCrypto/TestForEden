@@ -22,18 +22,20 @@ import {
 } from "mediasoup/node/lib/types";
 
 interface MessageObject {
-  type: string;
+  type: MessageNames;
   data: any;
   roomName: string;
   remoteId: string;
   dtlsParameters: DtlsParameters;
+  forceTcp: Boolean;
   kind: MediaKind;
   rtpParameters: RtpParameters;
   rtpCapabilities: RtpCapabilities;
+  clientId: string;
 }
 interface MessageResponse {
   id ? : string;
-  type?: string;
+  type?: MessageResponsesTypes;
   data?: any;
 }
 interface MessageError {
@@ -64,10 +66,18 @@ interface TransportResponse {
   params: TransportParams;
 }
 
+class MediaSoup {
+  constructor() {
+
+  }
+
+}
 class Room {
   // TODO GET/SET/DELETE methods should be replaced by redis/db store 
   name: String;
   router: Router;
+  worker: Worker;
+  io: any;
   producerTransports: Map<string, Transport>;
   videoProducers: Map<string, Producer>;
   audioProducers: Map< string, Producer>;
@@ -76,9 +86,21 @@ class Room {
   videoConsumers: Map<string, Map<string, Consumer>>;
   audioConsumers: Map<string, Map<string, Consumer>>;
 
-    constructor(name: string) {
+    constructor(name: string, worker: Worker, io: any) {
       this.name = name;
-      this.router = null;
+      this.worker = worker;
+      this.io = io
+      const mediaCodecs = config.get('router.mediaCodecs') as Array<RtpCodecCapability>;
+      this.worker.createRouter({
+        mediaCodecs
+      }).then((router) => {
+
+        this.router = router;
+        router.observer.on('close', () => {})
+        router.observer.on('newtransport', (transport) => {})
+      });
+      // router.roomname = roomName;
+
       this.producerTransports = new Map<string, Transport>(null);
       this.videoProducers = new Map<string, Producer>(null);
       this.audioProducers = new Map<string, Producer>(null);
@@ -96,6 +118,7 @@ class Room {
     return this.producerTransports.get(id);
   }
   addProducerTransport(id: string, producer: Transport) {
+    console.log(this.producerTransports);
     if (this.producerTransports.has(id)) {
       throw new Error("Existing Room name");
     }
@@ -183,8 +206,13 @@ class Room {
   // GET Producer remoteids
   getProducerRemoteIds(clientId: string, kind: string): Array <string> {
     let remoteIds: Array < string > = new Array < string > (null);
+    console.log(kind);
+    console.log(this.videoProducers);
+    console.log(this.audioProducers);
     if (kind === "video") {
       this.videoProducers.forEach((producer: Producer, key: string) => {
+        console.log(key);
+        console.log(clientId);
         if (key !== clientId) {
           remoteIds.push(key);
         }
@@ -356,6 +384,12 @@ class Room {
   getRouter(): Router {
     return this.router;
   }
+  getWorker(): Worker {
+    return this.worker;
+  }
+  setWorker(worker: Worker) {
+    this.worker = worker;
+  }
 }
 
 class Rooms {
@@ -364,140 +398,210 @@ class Rooms {
   defaultRoom: string;
   constructor() {
     this.rooms = new Map <string, Room>(null);
-    this.defaultRoom = "_default_room"
   }
-  getRoom(name: string = this.defaultRoom): Room {
+  getRoom(name: string = "_default_room"): Room {
+      console.log(name);
     if (!this.rooms.has(name)) {
       throw new Error("Room does not exist");
     }
     return this.rooms.get(name);
   }
-  removeRoom(name: string = this.defaultRoom): Boolean {
+  removeRoom(name: string = "_default_room"): Boolean {
     if (!this.rooms.has(name)) {
       throw new Error("Room does not exist");
     }
     return this.rooms.delete(name);
   }
-  addRoom(name: string = this.defaultRoom): Room {
+  addRoom(name: string = "_default_room", worker: Worker, io: any): Room {
     if (this.rooms.has(name)) {
       throw new Error("Existing Room name");
     }
-    let room = new Room(name)
+    let room = new Room(name, worker, io)
     this.rooms.set(name, room);
     return room
   }
 
-  getRoomProducerTransport(roomName: string = this.defaultRoom, id: string): Transport {
+  getRoomProducerTransport(roomName: string = "_default_room", id: string): Transport {
     return this.getRoom(roomName).getProducerTransport(id);
   }
-  addRoomProducerTransport(roomName: string = this.defaultRoom, id: string, producer: Transport) {
+  addRoomProducerTransport(roomName: string = "_default_room", id: string, producer: Transport) {
     return this.getRoom(roomName).addProducerTransport(id, producer);
   }
-  removeRoomProducerTransport(roomName: string = this.defaultRoom, id: string) {
+  removeRoomProducerTransport(roomName: string = "_default_room", id: string) {
     return this.getRoom(roomName).removeProducerTransport(id);
   }
-  getRoomProducerRemoteIds(roomName: string = this.defaultRoom, clientId: string, kind: string): Array < string > {
+  getRoomProducerRemoteIds(roomName: string = "_default_room", clientId: string, kind: string): Array < string > {
     return this.getRoom(roomName).getProducerRemoteIds(clientId, kind);
   }
-  getRoomProducer(roomName: string = this.defaultRoom, id: string, kind: string): Producer {
+  getRoomProducer(roomName: string = "_default_room", id: string, kind: string): Producer {
     return this.getRoom(roomName).getProducer(id, kind);
   }
-  addRoomProducer(roomName: string = this.defaultRoom, id: string, producer: Producer, kind: string) {
+  addRoomProducer(roomName: string = "_default_room", id: string, producer: Producer, kind: string) {
     return this.getRoom(roomName).addProducer(id, producer, kind);
   }
-  removeRoomProducer(roomName: string = this.defaultRoom, id: string, kind: string): Boolean {
+  removeRoomProducer(roomName: string = "_default_room", id: string, kind: string): Boolean {
     return this.getRoom(roomName).removeProducer(id, kind);
   }
-  getRoomConsumerTransport(roomName: string = this.defaultRoom, id: string): Transport {
+  getRoomConsumerTransport(roomName: string = "_default_room", id: string): Transport {
     return this.getRoom(roomName).getConsumerTransport(id);
   }
-  addRoomConsumerTransport(roomName: string = this.defaultRoom, id: string, consumer: Transport) {
+  addRoomConsumerTransport(roomName: string = "_default_room", id: string, consumer: Transport) {
     return this.getRoom(roomName).addConsumerTransport(id, consumer);
   }
-  removeRoomConsumerTransport(roomName: string = this.defaultRoom, id: string): Boolean {
+  removeRoomConsumerTransport(roomName: string = "_default_room", id: string): Boolean {
     return this.getRoom(roomName).removeConsumerTransport(id);
   }
-  getRoomConsumer(roomName: string = this.defaultRoom, id: string, remoteId: string, kind: string): Consumer {
+  getRoomConsumer(roomName: string = "_default_room", id: string, remoteId: string, kind: string): Consumer {
     return this.getRoom(roomName).getConsumer(id, remoteId, kind);
   }
-  addRoomConsumer(roomName: string = this.defaultRoom, id: string, remoteId: string, consumer: Consumer, kind: string) {
+  addRoomConsumer(roomName: string = "_default_room", id: string, remoteId: string, consumer: Consumer, kind: string) {
     return this.getRoom(roomName).addConsumer(id, remoteId, consumer, kind);
   }
-  removeRoomConsumer(roomName: string = this.defaultRoom, id: string, remoteId: string, kind: string): Boolean {
+  removeRoomConsumer(roomName: string = "_default_room", id: string, remoteId: string, kind: string): Boolean {
     return this.getRoom(roomName).removeConsumer(id, remoteId, kind);
   }
-  getRoomConsumerMap(roomName: string = this.defaultRoom, id: string, kind: string): Map < string, Consumer > {
+  getRoomConsumerMap(roomName: string = "_default_room", id: string, kind: string): Map < string, Consumer > {
     return this.getRoom(roomName).getConsumerMap(id, kind);
   }
-  addRoomConsumerMap(roomName: string = this.defaultRoom, id: string, set: Map < string, Consumer >, kind: string) {
+  addRoomConsumerMap(roomName: string = "_default_room", id: string, set: Map < string, Consumer >, kind: string) {
     return this.getRoom(roomName).addConsumerMap(id, set, kind);
   }
-  removeRoomConsumerMap(roomName: string = this.defaultRoom, id: string, kind: string): Boolean {
+  removeRoomConsumerMap(roomName: string = "_default_room", id: string, kind: string): Boolean {
     return this.getRoom(roomName).removeConsumerMap(id, kind);
   }
-  removeRoomConsumerSetDeep(roomName: string = this.defaultRoom, id: string): Boolean {
+  removeRoomConsumerSetDeep(roomName: string = "_default_room", id: string): Boolean {
     return this.getRoom(roomName).removeConsumerMapDeep(id);
   }
-  addRoomVideoConsumerMap(roomName: string = this.defaultRoom, id: string, set: Map < string, Consumer >) {
+  addRoomVideoConsumerMap(roomName: string = "_default_room", id: string, set: Map < string, Consumer >) {
     return this.getRoom(roomName).addVideoConsumerMap(id, set);
   }
-  removeRoomVideoConsumerMap(roomName: string = this.defaultRoom, id: string): Boolean {
+  removeRoomVideoConsumerMap(roomName: string = "_default_room", id: string): Boolean {
     return this.getRoom(roomName).removeVideoConsumerMap(id);
   }
-  getRoomVideoConsumerMap(roomName: string = this.defaultRoom, id: string): Map < string, Consumer > {
+  getRoomVideoConsumerMap(roomName: string = "_default_room", id: string): Map < string, Consumer > {
     return this.getRoom(roomName).getVideoConsumerMap(id);
   }
-  addRoomAudioConsumerMap(roomName: string = this.defaultRoom, id: string, set: Map < string, Consumer >) {
+  addRoomAudioConsumerMap(roomName: string = "_default_room", id: string, set: Map < string, Consumer >) {
     return this.getRoom(roomName).addAudioConsumerMap(id, set);
   }
-  removeRoomAudioConsumerMap(roomName: string = this.defaultRoom, id: string): Boolean {
+  removeRoomAudioConsumerMap(roomName: string = "_default_room", id: string): Boolean {
     return this.getRoom(roomName).removeAudioConsumerMap(id);
   }
-  getRoomRouter(roomName: string = this.defaultRoom): Router {
+  getRoomRouter(roomName: string = "_default_room"): Router {
     return this.getRoom(roomName).getRouter();
   }
-  setRoomRouter(roomName: string = this.defaultRoom, router: Router) {
+  setRoomRouter(roomName: string = "_default_room", router: Router) {
     return this.getRoom(roomName).setRouter(router);
   }
-  disconnectRoom(roomName: string = this.defaultRoom, id: string) {
+  disconnectRoom(roomName: string = "_default_room", id: string) {
     return this.getRoom(roomName).disconnect(id);
   }
 }
-export default class Media {
+
+enum MessageNames {
+  GetRouterRtpCapabilities = "getRouterRtpCapabilities",
+  CreateProducerTransport = "createProducerTransport",
+  CreateConsumerTranspor = "createConsumerTransport",
+  ConnectProducerTransport = "connectProducerTransport",
+  ConnectConsumerTransport = "connectConsumerTransport",
+  Produce = "produce",
+  Consume = "consume",
+  Resume= "resume",
+  PrepareRoom = "prepareRoom",
+  GetCurrentProducers = "getCurrentProducers",
+
+
+}
+enum MessageResponsesTypes {
+  RouterCap = "routerCap",
+  PubTransportCreated = "pubTransportCreated",
+  SubTransportCreated = "subTransportCreated",
+  PubConnected = "pubConnected",
+  SubConnected = "subConnected",
+  PubClosed = "pubClosed",
+  Published = "published",
+  Subscribed = "subscribed",
+  Resumed = "resumed",
+  CurrentProducers = "currentProducers",
+  RoomCreated = "roomCreated"
+}
+class Media {
   worker: Worker;
+  workers: Array<Worker>;
   io:  any;
+  nextMediasoupWorkerIdx: number;
   rooms: Rooms;
 
   constructor(io) {
     this.io = io;
     this.worker = null;
     this.rooms = new Rooms();
+    this.workers = [];
+    this.nextMediasoupWorkerIdx = 0;
     this.init()
     this.io.on('disconnect', () => {
-      const roomName = this.getSocketRoomName();
-      const id = this.getSocketId();
-      this.rooms.disconnectRoom(roomName, id);
-      this.io.leave(roomName);
+      try {
+
+        const roomName = this.getSocketRoomName();
+        const id = this.getSocketId();
+        this.rooms.disconnectRoom(roomName, id);
+        this.io.leave(roomName);
+      } catch (e) {
+        console.log(e)
+      }
     })
 
   }
   async init() {
-    await this.createWorker();
-    await this.setupRoom(null);
+    await this.createWorkers();
+    await this.setupRoom("_default_room");
+  }
+  async createWorkers()  {
+    const numWorkers = config.get('mediasoup.workers') as number;
+
+    for (let i = 0; i < numWorkers; i++) {
+      let worker = await mediasoup.createWorker({
+        logLevel: config.get('worker.logLevel') as WorkerLogLevel,
+        logTags: config.get('worker.logTags') as Array<WorkerLogTag>,
+        rtcMinPort: config.get('worker.rtcMinPort') as number,
+        rtcMaxPort: config.get('worker.rtcMaxPort') as number,
+      });
+
+      worker.on('died', () => {
+        console.error(
+          'mediasoup worker died, exiting in 2 seconds... [pid:%d]',
+          worker.pid
+        );
+        setTimeout(() => process.exit(1), 2000);
+      });
+      this.workers.push(worker);
+
+      // log worker resource usage
+      /*setInterval(async () => {
+              const usage = await worker.getResourceUsage();
+              console.info('mediasoup Worker resource usage [pid:%d]: %o', worker.pid, usage);
+          }, 120000);*/
+    }
+  }
+  getMediasoupWorker() {
+    const worker = this.workers[this.nextMediasoupWorkerIdx];
+
+    if (++this.nextMediasoupWorkerIdx === this.workers.length) {
+      this.nextMediasoupWorkerIdx = 0;
+    }
+
+    return worker;
   }
 
   async setupRoom(roomName: string) {
-    const room = this.rooms.addRoom(roomName);
-    const mediaCodecs = config.get('router.mediaCodecs') as Array<RtpCodecCapability>;
-    let router = await this.worker.createRouter({
-      mediaCodecs
-    });
-    // router.roomname = roomName;
-    router.observer.on('close', () => {})
-    router.observer.on('newtransport', (transport) => {})
+    try {
 
-    this.rooms.setRoomRouter(roomName, router);
-    return room
+      let worker = await this.getMediasoupWorker();
+      const room = this.rooms.addRoom(roomName, worker, this.io);
+      return room
+    } catch (error) {
+      console.log(error)
+    }
 
   }
 
@@ -515,7 +619,7 @@ export default class Media {
     });
   }
   async createWebRtcTransport(roomName ? : string): Promise<TransportResponse> {
-    const router = this.rooms.getRoom(roomName).getRouter();
+    const router = this.rooms.getRoomRouter(roomName);
 
     const webRtcTransport: WebRtcTransportOptions = config.get("webRtcTransport") as WebRtcTransportOptions;
     const transport = await router.createWebRtcTransport(webRtcTransport);
@@ -531,7 +635,7 @@ export default class Media {
     return response;
   }
   async createConsumer(roomName: string, transport: Transport, producer: Producer, rtpCapabilities: RtpCapabilities): Promise<ConsumerTransportResponse>{
-    const router = this.rooms.getRoom(roomName).getRouter();
+    const router = this.rooms.getRoomRouter(roomName);
     let consumer: Consumer = null;
     if (!router.canConsume({
         producerId: producer.id,
@@ -580,24 +684,49 @@ export default class Media {
     return this.io.ssid;
   }
 
-  sendResponse(room: string = "message", message: MessageResponse) {
-    this.io.emit(room,  message);
+  sendResponse(room: string = "_default_room", message: MessageResponse) {
+    // this.io.emit(room,  message);
+    this.io.in(room).emit("message", message);
+
   }
-  errorResponse(room: string = "message", message: MessageError) {
+  errorResponse(room: string = "_default_room", message: MessageError) {
     this.io.emit(room, message);
   }
 
-  callBack(message: MessageResponse, callback: Function) {
-    callback(null, message);
+  callBack(message: MessageResponse, ack: Function) {
+    ack(message);
   }
 
+  async onGetCurrentProducers(event: MessageObject, callback: Function) {
+    try {
+      const roomName = this.getSocketRoomName();
+
+      const remoteVideoIds = this.rooms.getRoomProducerRemoteIds(roomName, event.clientId, "video")
+      const remoteAudioIds =  this.rooms.getRoomProducerRemoteIds(roomName, event.clientId, "audio")
+      const res: MessageResponse = {
+        type: MessageResponsesTypes.CurrentProducers,
+        data: { remoteVideoIds: remoteVideoIds, remoteAudioIds: remoteAudioIds }
+      }
+      console.log(res);
+      this.callBack(res, callback);
+
+    } catch (error) {
+        console.log(error)
+        const errorMsg: MessageError = {
+          errorMsg: error.message, 
+          error: true
+        }
+        this.errorResponse("error", errorMsg)
+      
+    }
+  }
   async onGetRouterRtpCapabilities(event: MessageObject, callback: Function) {
     try {
 
       const router = this.rooms.getRoomRouter("_default_room");
       if (router) {
         const res: MessageResponse = {
-          "type": "routerCap",
+          "type": MessageResponsesTypes.RouterCap, 
           data: router.rtpCapabilities,
         }
         this.callBack(res, callback);
@@ -611,6 +740,7 @@ export default class Media {
         this.errorResponse("error", errorMsg)
       }
     } catch(error) {
+        console.log(error)
         const errorMsg: MessageError = {
           errorMsg: error.message, 
           error: true
@@ -622,30 +752,44 @@ export default class Media {
   }
   async onPrepareRoom(event: MessageObject, callback: Function) {
     try {
-      this.rooms.addRoom(event.roomName);
+      // this.rooms.addRoom(event.roomName);
       this.setupRoom(event.roomName);
       this.setSocketRoomName(event.roomName);
+      const msg: MessageResponse = {
+        type: MessageResponsesTypes.RoomCreated,
+        data: {
+          roomName: event.roomName
+        }
+      }
+      // this.io.emit("message", msg);
+      this.io.join(event.roomName);
+      this.callBack(msg, callback);
 
     } catch (error) {
-      const errorMsg: MessageError = {
-        errorMsg: "room exists", 
-        error: true
+      console.log(error);
+      const msg: MessageResponse = {
+        type: MessageResponsesTypes.RoomCreated,
+        data: {
+          roomName: event.roomName
+        }
       }
-      this.errorResponse("error", errorMsg)
-        
+      // this.io.emit("message", msg);
+      this.io.join(event.roomName);
+      this.callBack(msg, callback);
     }
 
   }
 
   async onCreateProducerTransport(event: MessageObject, callback: Function) {
     try {
+      console.log("oncreateProducerTransport")
       const roomName = this.getSocketRoomName();
       const {
         transport,
         params
       } = await this.createWebRtcTransport(roomName);
+      const id =this.getSocketId();
       transport.observer.on('close', () => {
-        const id =this.getSocketId();
         const videoProducer = this.rooms.getRoomProducer(roomName, id, 'video');
         if (videoProducer) {
           videoProducer.close();
@@ -658,13 +802,15 @@ export default class Media {
         }
         this.rooms.removeRoomProducerTransport(roomName, id);
       });
-      this.rooms.getRoom().addProducerTransport(roomName, transport)
+      this.rooms.addRoomProducerTransport(roomName, id, transport)
+      console.log(this.rooms.getRoomProducerTransport(roomName, id))
       const res: MessageResponse = {
-        "type": "pubTransportCreated",
+        "type": MessageResponsesTypes.PubTransportCreated, 
         data: params 
       }
       this.callBack(res, callback);
     } catch (error) {
+      console.log(error)
       const errorMsg: MessageError = {
         errorMsg: error.message, 
         error: true
@@ -677,10 +823,12 @@ export default class Media {
     try {
       const roomName = this.getSocketRoomName();
       const id = this.getSocketId();
+      console.log(roomName, id)
       const {
         transport,
         params
       } = await this.createWebRtcTransport(roomName)
+      console.log(params)
       transport.observer.on('close', () => {
         const id = this.getSocketId();
         this.rooms.removeRoomConsumerTransport(roomName, id);
@@ -688,11 +836,13 @@ export default class Media {
       })
       this.rooms.addRoomConsumerTransport(roomName,id, transport);
       const res: MessageResponse = {
-        "type": "subTransportCreated",
+        "type": MessageResponsesTypes.SubTransportCreated,
         data: params, 
       }
+      console.log(res);
       this.callBack(res, callback);
     } catch(error) {
+      console.log(error)
       const errorMsg: MessageError = {
         errorMsg: error.message, 
         error: true
@@ -711,10 +861,11 @@ export default class Media {
         dtlsParameters: event.dtlsParameters
       });
       const res: MessageResponse = {
-        "type": "pubConnected",
+        "type": MessageResponsesTypes.PubConnected, 
       }
       this.callBack(res, callback);
   } catch(error) {
+      console.log(error)
       const errorMsg: MessageError = {
         errorMsg: error.message, 
         error: true
@@ -739,10 +890,11 @@ export default class Media {
       });
 
       const res: MessageResponse = {
-        "type": "subConnected",
+        "type": MessageResponsesTypes.SubConnected, 
       }
       this.callBack(res, callback);
     } catch(error) {
+      console.log(error)
       const errorMsg: MessageError = {
         errorMsg: error.message, 
         error: true
@@ -769,22 +921,27 @@ export default class Media {
       });
       this.rooms.addRoomProducer(roomName,id, producer, kind);
       let res: MessageResponse = {
-        id: producer.id
-      }
-      // this.response("message", "published", res)
-      // this.response("message", "hasPublisher", "new user");
-      // 
+        type: MessageResponsesTypes.Published, 
+        data: {
 
+          id: producer.id,
+          socketId: id,
+          producerId: producer.id,
+          kind: producer.kind
+        }
+      }
+      this.callBack(res, callback);
       // inform clients about new producer
       if (roomName) {
         // broadcast to room
-      //   socket.broadcast.to(roomName).emit('newProducer', { socketId: id, producerId: producer.id, kind: producer.kind });
+        this.io.broadcast.to(roomName).emit('message', res);
       } else {
         // emit new producer 
-      //   socket.broadcast.emit('newProducer', { socketId: id, producerId: producer.id, kind: producer.kind });
+        this.io.emit('message', res);
       }
 
     } catch(error) {
+      console.log(error)
       const errorMsg: MessageError = {
         errorMsg: error.message, 
         error: true
@@ -816,10 +973,10 @@ export default class Media {
         consumer.close();
         this.rooms.removeRoomConsumer(roomName, id, remoteId, kind);
         let res: MessageResponse = {
-          "type": "pubClosed",
+          "type": MessageResponsesTypes.PubClosed, 
           data: { localId: id, remoteId: remoteId, kind: kind },
         }
-        this.sendResponse(roomName, res);
+        this.callBack(res, callback);
       })
       this.rooms.addRoomConsumer(roomName, id, remoteId, consumer, kind);
       const response: ConsumerTransportResponse = {
@@ -827,12 +984,13 @@ export default class Media {
           params: params,
       }
       const res: MessageResponse = {
-        "type": "subscribed",
+        "type": MessageResponsesTypes.Subscribed,
         data: response,
       }
       this.callBack(res, callback);
 
   } catch(error) {
+      console.log(error)
       const errorMsg: MessageError = {
         errorMsg: error.message, 
         error: true
@@ -853,11 +1011,12 @@ export default class Media {
       }
       await consumer.resume();
       const res: MessageResponse = {
-        "type": "resumed",
+        "type": MessageResponsesTypes.Resumed, 
       }
       this.callBack(res, callback);
 
     } catch(error) {
+      console.log(error)
       const errorMsg: MessageError = {
         errorMsg: error.message, 
         error: true
@@ -867,3 +1026,5 @@ export default class Media {
   }
 
 }
+
+export default { Media, Room, Rooms, MessageNames};

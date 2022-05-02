@@ -13,7 +13,10 @@ import { Server } from 'socket.io';
 import config from './config';
 import NFTModel from './base/model';
 import controllers from './controllers';
-import Media from './base/media';
+import  Media from './base/media';
+
+import { createAdapter } from "@socket.io/redis-adapter";
+import { createClient } from "redis";
 // events
 class NFTBackend extends Events {
   // built controllers
@@ -98,6 +101,13 @@ class NFTBackend extends Events {
       }
     });
 
+    // const pubClient = createClient({ url: "redis://127.0.0.1:6379" });
+    // const subClient = pubClient.duplicate();
+
+    // Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
+    //   this.io.adapter(createAdapter(pubClient, subClient));
+    // });
+
 
     // on connection
     this.io.on('connection', async (socket) => {
@@ -109,37 +119,43 @@ class NFTBackend extends Events {
 
       // set initial acls
       socket.acl = ['nouser'];
+      
 
-      let media = new Media(socket)
+      let media = new Media.Media(socket)
       // on disconnect
       socket.on('disconnect', () => this.emit('disconnection', socket));
       socket.on('message', async (event, callback) => {
+          console.log(event);
         switch (event.type) {
-          case "getRouterRtpCapabilities":
+          case Media.MessageNames.GetRouterRtpCapabilities:
            media.onGetRouterRtpCapabilities(event, callback);
             break;
-          case "createProducerTransport":
+          case Media.MessageNames.CreateProducerTransport:
             media.onCreateProducerTransport(event, callback);
             break;
-          case "createConsumerTransport":
+          case Media.MessageNames.CreateConsumerTranspor: 
+            console.log("uwu hit")
             media.onCreateConsumerTransport(event, callback);
             break;
-          case "connectProducerTransport":
+          case Media.MessageNames.ConnectConsumerTransport: 
             media.onConnectProducerTransport(event, callback);
             break;
-          case "connectConsumerTransport":
+          case Media.MessageNames.ConnectConsumerTransport: 
             media.onConnectConsumerTransport(event, callback);
             break;
-          case "produce":
+          case Media.MessageNames.Produce:
             media.onProduce(event, callback);
             break;
-          case "consume":
+          case Media.MessageNames.Consume:
             media.onConsume(event, callback);
             break;
-          case "resume":
+          case Media.MessageNames.Resume:
             media.onResume(event, callback);
             break;
-          case "prepareRoom":
+          case Media.MessageNames.GetCurrentProducers:
+            media.onGetCurrentProducers(event, callback);
+            break;
+          case Media.MessageNames.PrepareRoom:
             media.onPrepareRoom(event, callback);
             break;
           default:
