@@ -12,6 +12,7 @@ import { Server } from 'socket.io';
 // local dependencies
 import config from './config';
 import NFTModel from './base/model';
+import NFTPubSub from './utilities/pubsub';
 import controllers from './controllers';
 import  Media from './base/media';
 
@@ -41,6 +42,7 @@ class NFTBackend extends Events {
   async build() {
     // await database
     await this.__logger();
+    await this.__pubsub();
     await this.__server();
     await this.__database();
     await this.__controllers();
@@ -73,6 +75,20 @@ class NFTBackend extends Events {
 
     // info
     this.logger.info('logger created');
+  }
+
+  /**
+   * creat pubsub
+   */
+  async __pubsub() {
+    // info
+    this.logger.info('pubsub creating');
+
+    // create pubsub
+    this.pubsub = new NFTPubSub(config.get('pubsub'));
+
+    // info
+    this.logger.info('pubsub created');
   }
 
   /**
@@ -122,13 +138,59 @@ class NFTBackend extends Events {
       
 
       let media = new Media.Media(socket)
+      // subscriptions
+      socket.subscriptions = new Map();
+
+      // unsubscribe
+      socket.unsubscribe = (channel): void => {
+        // add unsubscribe logic
+        if (channel) {
+          // create subscription
+          this.pubsub.off(type, socket.subscriptions.get(type));
+          return socket.subscriptions.delete(type);
+        }
+        
+        // loop and unsubscribe
+        Array.from(socket.subscriptions.keys()).forEach((key) => {
+          // create subscription
+          this.pubsub.off(key, socket.subscriptions.get(key));
+          socket.subscriptions.delete(key);
+        });
+      };
+      socket.subscribe = (channel, fn): void => {
+        // check fn
+        if (typeof fn !== 'function') {
+          // log
+          console.error(`subscription function ${channel} not found`);
+          return;
+        }
+
+        // check has
+        if (socket.subscriptions.has(channel)) return;
+
+        // create pushed event
+        socket.subscriptions.set(channel, (...args) => {
+          // try/catch function
+          try {
+            // create event
+            fn(socket, ...args);
+          } catch (e) {
+            // error
+            console.error(`subscription function ${channel} failed ${e.toString()}`);
+          }
+        });
+
+        // create subscription
+        this.pubsub.on(channel, socket.subscriptions.get(channel));
+      };
+
       // on disconnect
       socket.on('disconnect', () => this.emit('disconnection', socket));
       socket.on('message', async (event, callback) => {
-          console.log(event);
+        console.log(event);
         switch (event.type) {
           case Media.MessageNames.GetRouterRtpCapabilities:
-           media.onGetRouterRtpCapabilities(event, callback);
+            media.onGetRouterRtpCapabilities(event, callback);
             break;
           case Media.MessageNames.CreateProducerTransport:
             media.onCreateProducerTransport(event, callback);
@@ -166,7 +228,7 @@ class NFTBackend extends Events {
       // add router listener
       socket.on('call', (id, method, path, data) => {
         // find routes
-        const { params, handlers } = this.__router.find(method, path);
+        const { params, handlers = [] } = this.__router.find(method, path);
 
         // handlers
         let handlerI = -1;

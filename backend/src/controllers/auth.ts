@@ -7,6 +7,7 @@ import { generateNonce, SiweMessage } from 'siwe';
 import NFTController, { Route } from '../base/controller';
 import UserModel from '../models/user';
 import CacheModel from '../models/cache';
+import FeedUitlity from '../utilities/feed';
 import SessionModel from '../models/session';
 
 /**
@@ -33,6 +34,9 @@ export default class AuthController extends NFTController {
 
     // check authenticated
     if (alreadyAuthenticated) {
+      // create feed
+      FeedUitlity.account(alreadyAuthenticated.get('account'));
+
       // set to socket
       req.account = alreadyAuthenticated.get('account');
 
@@ -116,6 +120,9 @@ export default class AuthController extends NFTController {
 
     // save
     user.save();
+
+    // create feed
+    FeedUitlity.account(fields.address);
 
     // set to socket
     req.account = fields.address;

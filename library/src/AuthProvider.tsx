@@ -77,6 +77,7 @@ const NFTAuthProvider = (props = {}) => {
     // try/catch
     try {
       // set loading
+      setAuthed(false);
       setLoading(true);
 
       // auth backend
@@ -134,6 +135,24 @@ const NFTAuthProvider = (props = {}) => {
     // authenticate account
     authBackend();
   }, [account]);
+
+  // once authed
+  useEffect(() => {
+    // check account
+    if (!account) return;
+
+    // auth backend on restart
+    socket.socket.on('connect', authBackend);
+
+    // return done
+    return () => {
+      // off
+      socket.socket.removeListener('connect', authBackend);
+    };
+  }, [authed]);
+
+  // to window
+  window.NFTAuth = auth;
 
   // context
   return (

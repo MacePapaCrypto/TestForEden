@@ -2,10 +2,7 @@
 // import react
 import React from 'react';
 import { Box } from '@mui/material';
-import PerfectScrollbar from 'react-perfect-scrollbar';
-
-// css
-import 'react-perfect-scrollbar/dist/css/styles.css';
+import ScrollBar from './ScrollBar';
 
 /**
  * layout item
@@ -21,7 +18,7 @@ const NFTLayoutItem = (props = {}) => {
         background : 'transparent!important',
       }
     } }>
-      <Box flex={ 1 } display="flex" flexDirection="column" component={ props.isScrollable ? PerfectScrollbar : undefined } { ...props } />
+      <Box flex={ 1 } display="flex" flexDirection="column" component={ props.isScrollable ? ScrollBar : undefined } isFlex={ props.isScrollable ? true : undefined } { ...props } />
     </Box>
   );
 };

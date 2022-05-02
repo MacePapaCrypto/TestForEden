@@ -7,9 +7,10 @@ const mainTheme = createTheme({
   palette : {
     mode    : 'dark',
     primary : {
-      main : '#001e3c',
+      main  : '#fdc07b',
     },
     background : {
+      paper   : 'rgba(255, 255, 255, 0)',
       default : '#0A1929',
     }
   }

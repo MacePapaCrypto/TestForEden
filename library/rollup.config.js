@@ -1,8 +1,10 @@
 import pkg from './package.json';
 import json from '@rollup/plugin-json';
+import image from '@rollup/plugin-image';
 import babel from '@rollup/plugin-babel';
 import styles from 'rollup-plugin-styles';
 import assets from 'rollup-plugin-copy-assets';
+import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
 import builtIns from 'rollup-plugin-node-builtins';
 import commonjs from '@rollup/plugin-commonjs';
@@ -50,6 +52,11 @@ export default {
         'src/assets',
       ],
     }),
+    replace({
+      '\} catch \{' : `} catch(e) {`,
+      delimiters : ['', '']
+    }),
+    image(),
     json(),
     babel({
       extensions,
