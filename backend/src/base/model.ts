@@ -6,13 +6,14 @@ import equal from 'deep-equal';
 import JSON5 from 'json5';
 import Events from 'events';
 import dotProp from 'dot-prop';
+import { chunks } from 'chunk-array';
 import { customAlphabet } from 'nanoid';
 
 // create alphabet
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 40);
 
 // globals
-let client, logger;
+let base, client, pubsub, logger;
 
 /**
  * Exports decorator function to set type of model
@@ -29,6 +30,8 @@ export function Type(type: string) {
  * Create Controller class
  */
 export default class NFTModel extends Events {
+  private __changed: boolean = false;
+  
   /**
    * construct
    *
@@ -70,10 +73,20 @@ export default class NFTModel extends Events {
    *
    * @param base 
    */
-  static build(base) {
+  static build(actualBase) {
     // set globals
-    logger = base.logger;
-    client = base.client;
+    base = actualBase;
+    pubsub = actualBase.pubsub;
+    logger = actualBase.logger;
+    client = actualBase.client;
+  }
+
+  /**
+   * get pubsub
+   */
+  static get pubsub () {
+    // get pubsub
+    return pubsub;
   }
 
   /**
@@ -114,13 +127,19 @@ export default class NFTModel extends Events {
     const queries = [];
 
     // set create
-    const creating = !!this.__data.id || !!this.__data.createdAt;
+    const creating = !this.__data.id || !this.__data.createdAt;
+
+    // no need to save if nothing has changed
+    if (!creating && !this.__changed) return;
 
     // set id if not exists
-    if (!this.__data.id) {
-      this.__data.id = `${nanoid()}`;
-      this.__data.createdAt = new Date();
-    }
+    if (!this.__data.id) this.__data.id = `${nanoid()}`;
+    if (!this.__data.createdAt) this.__data.createdAt = new Date();
+
+    // check sorts
+    if (!this.__data.sorts) this.__data.sorts = [];
+    if (!this.__data.sorts.includes('createdAt')) this.__data.sorts.push('createdAt');
+    if (!this.__data.sorts.includes('updatedAt')) this.__data.sorts.push('updatedAt');
 
     // check created/updated
     this.__data.updatedAt = new Date();
@@ -152,7 +171,8 @@ export default class NFTModel extends Events {
       }, {}));
       
       // return data
-      if (['refs'].includes(key) && !Array.isArray(this.__data[key])) return [];
+      if (['refs', 'sorts'].includes(key) && !Array.isArray(this.__data[key])) return [];
+      if (['refs', 'sorts'].includes(key)) return Array.from(new Set(this.__data[key]));
 
       // data key
       return this.__data[key];
@@ -169,18 +189,27 @@ export default class NFTModel extends Events {
     const existingRefs = await this.getRefs();
 
     // loop refs
-    ['ref'].forEach((refType) => {
-      // loop refs
-      (this.__data[`${refType}s`] || []).forEach((ref) => {
-        // push actual refs
-        actualRefs.push(`${refType}:${ref}`);
+    (this.__data.refs || []).forEach((ref) => {
+      // loop sorts
+      (this.__data.sorts || []).forEach((sort) => {
+        // get value
+        let value = dotProp.get(this.__data, sort);
 
-        // add ref
-        ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((key) => {
+        // check value
+        if (value instanceof Date && typeof value?.getTime === 'function') value = value.getTime();
+
+        // check value
+        if (typeof value === 'undefined') return;
+
+        // push actual refs
+        actualRefs.push(`${ref}:${sort}:${value}`);
+
+        // add ref1
+        ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((table) => {
           // add queries
           queries.push({
-            query  : `INSERT INTO ${key} (ref, type, model_id) VALUES (?, ?, ?)`,
-            params : [`${refType}:${ref}`, type, this.__data.id],
+            query  : `INSERT INTO ${table} (ref, type, key, value, model_id) VALUES (?, ?, ?, ?, ?)`,
+            params : [`${ref}`, `${type}`, sort, value, this.__data.id],
           });
         });
       });
@@ -189,20 +218,40 @@ export default class NFTModel extends Events {
     // remove old refs
     existingRefs.filter((ref) => {
       // check includes
-      return !actualRefs.includes(ref.ref);
-    }).forEach(({ ref }) => {
+      return !actualRefs.includes(`${ref.ref}:${ref.key}:${ref.value}`);
+    }).forEach(({ ref, key, value }) => {
       // delete from
-      ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((key) => {
+      ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((table) => {
         // add queries
         queries.push({
-          query  : `DELETE FROM ${key} where ref = ? AND type = ? and model_id = ?`,
-          params : [ref, type, this.__data.id],
+          query  : `DELETE FROM ${table} where ref = ? AND type = ? AND key = ? AND value = ? AND model_id = ?`,
+          params : [ref, type, key, value, this.__data.id],
         });
       });
     });
 
     // await actual query
     await NFTModel.batch(queries);
+
+    // reset changed
+    this.__changed = false;
+
+    // filter refs
+    const background = async () => {
+      // to json
+      const json = await this.toJSON();
+
+      // emit
+      pubsub.emit(`${type}:${json.id}`, json);
+
+      // loop refs
+      (this.get('refs') || []).forEach((ref) => {
+        // emit to pubsub
+        pubsub.emit(ref, type, json);
+        pubsub.emit(`${type}+${ref}`, json);
+      });
+    };
+    background();
 
     // chainable
     return this;
@@ -228,13 +277,13 @@ export default class NFTModel extends Events {
     });
 
     // remove old refs
-    refs.forEach(({ ref }) => {
+    refs.forEach(({ ref, key, value }) => {
       // delete from
-      ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((key) => {
+      ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((table) => {
         // add queries
         queries.push({
-          query  : `DELETE FROM ${key} where ref = ? AND type = ? and model_id = ?`,
-          params : [ref, type, this.__data.id],
+          query  : `DELETE FROM ${table} where ref = ? AND type = ? AND key = ? AND value = ? AND model_id = ?`,
+          params : [ref, type, key, value, this.__data.id],
         });
       });
     });
@@ -257,6 +306,44 @@ export default class NFTModel extends Events {
   }
 
   /**
+   * add sort
+   *
+   * @param sort 
+   * @param emitter 
+   * @returns 
+   */
+  addSort(sort: string, emitter = null): Promise<any> {
+    // push subject
+    if (!Array.isArray(this.__data.sorts)) this.__data.sorts = [];
+
+    // push subject
+    this.__changed = true;
+    this.__data.sorts.push(sort);
+
+    // save
+    return this.save(emitter);
+  }
+
+  /**
+   * remove sort
+   *
+   * @param ref 
+   * @param emitter 
+   * @returns 
+   */
+  removeSort(sort: string, emitter = null): Promise<any> {
+    // push subject
+    if (!Array.isArray(this.__data.sorts)) this.__data.sorts = [];
+
+    // push subject
+    this.__changed = true;
+    this.__data.sorts = this.__data.sorts.filter((s) => s !== sort);
+
+    // save
+    return this.save(emitter);
+  }
+
+  /**
    * add reference
    *
    * @param ref 
@@ -268,6 +355,7 @@ export default class NFTModel extends Events {
     if (!Array.isArray(this.__data.refs)) this.__data.refs = [];
 
     // push subject
+    this.__changed = true;
     this.__data.refs.push(ref);
 
     // save
@@ -286,6 +374,7 @@ export default class NFTModel extends Events {
     if (!Array.isArray(this.__data.refs)) this.__data.refs = [];
 
     // push subject
+    this.__changed = true;
     this.__data.refs = this.__data.refs.filter((r) => r !== ref);
 
     // save
@@ -305,10 +394,10 @@ export default class NFTModel extends Events {
     if (!id) return null;
 
     // execute schema create
-    const data = await NFTModel.query('SELECT * FROM models WHERE id = ?', [id]);
+    const data = await NFTModel.query('SELECT * FROM models WHERE id = ? AND type = ?', [id, type]);
 
     // get data
-    return data.rows[0] ? new this(data.rows[0]) : null;
+    return data?.rows && data.rows[0] ? new this(data.rows[0]) : null;
   }
 
   /**
@@ -316,7 +405,7 @@ export default class NFTModel extends Events {
    *
    * @param id
    */
-  static async findByRef(ref: string, limit: number = 25, sort: 'asc' | 'desc' = 'desc', lastId: string | null = null): Promise<Array<any>> {
+  static async findByRef(ref: string, limit: number = 25, sort: string = 'createdAt', direction: 'asc' | 'desc' = 'desc', lastSort: number | null = null): Promise<Array<any>> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this);
     
@@ -324,8 +413,8 @@ export default class NFTModel extends Events {
     if (!ref) return [];
 
     // execute schema create
-    const data = await NFTModel.query(`SELECT * FROM refs_${sort} WHERE ref = ? AND type = ?${lastId ? ` AND model_id ${sort === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
-      lastId ? [`ref:${ref}`, type, lastId] : [`ref:${ref}`, type]
+    const data = await NFTModel.query(`SELECT * FROM refs_${direction} WHERE ref = ? AND type = ? AND key = ?${lastSort ? ` AND sort ${direction === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
+      lastSort ? [`${ref}`, type, sort, lastSort] : [`${ref}`, type, sort]
     );
 
     // get data
@@ -373,13 +462,16 @@ export default class NFTModel extends Events {
     // query
     logger.info(`batch ${queries.map((q) => q.query).join(', ')}`);
 
-    // get result
-    const result = await client.batch(queries, {
-      logged  : false,
-      prepare : true,
-    });
+    // chunks
+    const arrChunks = chunks(queries, 30);
 
-    // return result
-    return result;
+    // promise all
+    return await Promise.all(arrChunks.map((chunk) => {
+      // chunked query
+      return client.batch(chunk, {
+        logged  : false,
+        prepare : true,
+      });
+    }));
   }
 }

@@ -1,8 +1,8 @@
 
 import React from 'react';
-import Ratio from 'react-ratio';
-import { Box as NFTBox, Post, Layout, LayoutItem } from '@nft/ui';
-import { Box, Grid, Typography, Stack, useTheme } from '@mui/material';
+import { useHistory } from 'react-router-dom';
+import { useFeed, useAuth, PostCreate, PostList } from '@nft/ui';
+import { Box, Grid, Container, Stack, CircularProgress } from '@mui/material';
 
 /**
  * home page
@@ -11,149 +11,74 @@ import { Box, Grid, Typography, Stack, useTheme } from '@mui/material';
  */
 const HomePage = (props = {}) => {
   // theme
-  const theme = useTheme();
+  const auth = useAuth();
+  const history = useHistory();
 
-  // youtube embed
-  const YoutubeEmbed = (
-    <Ratio ratio={ 16 / 9 }>
-      <Box
-        sx={ {
-          width        : '100%',
-          border       : 0,
-          height       : '100%',
-          borderRadius : theme.spacing(.5),
-        } }
-        src="https://www.youtube.com/embed/ZYSoE18Ue2k"
-        title="YouTube video player"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        component="iframe"
-        frameborder="0"
-        allowfullscreen
-      />
-    </Ratio>
-  );
+  // create feed
+  const feed = useFeed({
+    feed : 'public',
+  });
 
-  // single image embed
-  const ImagesEmbed = (
-    <Ratio ratio={ 3 / 1 }>
-      <Stack direction="row" spacing={ 1 } sx={ {
-        height   : '100%',
-        overflow : 'hidden',
-      } }>
-        { ['https://images.unsplash.com/photo-1589118949245-7d38baf380d6', 'https://images.unsplash.com/photo-1589118949245-7d38baf380d6', 'https://images.unsplash.com/photo-1589118949245-7d38baf380d6'].map((src, i) => (
-          <Box
-            sx={ {
-              height       : '100%',
-              border       : 0,
-              borderRadius : theme.spacing(.5),
-            } }
-            key={ `img-${i}` }
-            src={ src }
-            loading="lazy"
-            component="img"
-          />
-        ))}
-      </Stack>
-    </Ratio>
-  );
+  // on post
+  const onPost = async (value) => {
+    // check add
+    if (!auth.account) {
+      // login
+      auth.login();
 
-  // single image embed
-  const ImageEmbed = (
-    <Box
-      sx={ {
-        width        : '100%',
-        height       : 'auto',
-        borderRadius : theme.spacing(.5),
-      } }
-      src="https://images.unsplash.com/photo-1589118949245-7d38baf380d6"
-      component="img"
-    />
-  );
+      // login
+      return false;
+    }
 
-  // single image embed
-  const TwoImageEmbed = (
-    <Ratio ratio={ 3 / 1 }>
-      <Stack spacing={ 2 } direction="row" sx={ {
-        height : '100%',
-      } }>
-        <Box flex={ 1 } sx={ {
-          height             : '100%',
-          borderRadius       : theme.spacing(.5),
-          backgroundSize     : 'cover',
-          backgroundImage    : 'url(https://images.unsplash.com/photo-1589118949245-7d38baf380d6)',
-          backgroundPosition : 'center',
-        } } />
-        <Box flex={ 1 } sx={ {
-          height             : '100%',
-          borderRadius       : theme.spacing(.5),
-          backgroundSize     : 'cover',
-          backgroundImage    : 'url(https://images.unsplash.com/photo-1589118949245-7d38baf380d6)',
-          backgroundPosition : 'center',
-        } } />
-      </Stack>
-    </Ratio>
-  );
+    // log
+    await feed.create({
+      ...value,
+    });
 
-  // layout
-  const layout = [
-    { i: "a", x: 0, y: 0, w: 1, h: 2 },
-    { i: "b", x: 1, y: 0, w: 3, h: 2 },
-    { i: "c", x: 4, y: 0, w: 1, h: 2 }
-  ];
+    // return true
+    return true;
+  };
 
   // layout
   return (
-    <Box flex={ 1 } display="flex">
-      <Layout layout={ layout }>
-        <div key="a" data-grid={ { maxW : 3 } }>
-          <LayoutItem>
-            <NFTBox sx={ {
-              flex : 1,
-            } } />
-          </LayoutItem>
-        </div>
-        <div key="b">
-          <LayoutItem isScrollable>
+    <Box flex={ 1 } display="flex" flexDirection="column">
+      <Container maxWidth="xl" sx={ {
+        py   : 2,
+        flex : 1,
+      } }>
+        <Grid container>
+          <Grid item xs={ 7 }>
             <Stack spacing={ 2 }>
-              <Post embed={ YoutubeEmbed } body="Video Embed" />
-              <Post embed={ ImagesEmbed } body="More than 2 Images Embed" />
-              <Post embed={ ImageEmbed } body="Single Image Embed" />
-              <Post embed={ TwoImageEmbed } body="Two Image Embed" />
-              <Post />
-            </Stack>
-          </LayoutItem>
-        </div>
-        <div key="c">
-          <LayoutItem>
-            <NFTBox sx={ {
-              flex : 1,
-            } } />
-          </LayoutItem>
-        </div>
-      </Layout>
-    </Box>
-  );
+              <PostCreate
+                onPost={ onPost }
+              />
 
-  // return jsx
-  return (
-    <Grid container spacing={ 2 }>
-      <Grid item xs={ 3 }>
-        <Box py={ 2 }>
-          <Typography variant="body2">
-            LEFT
-          </Typography>
-        </Box>
-      </Grid>
-      <Grid item flex={ 1 }>
-      </Grid>
-      <Grid item xs={ 3 }>
-        <Box py={ 2 }>
-          <Typography variant="body2">
-            RIGHT
-          </Typography>
-        </Box>
-      </Grid>
-    </Grid>
+              { !feed.posts?.length && (
+                <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
+                  <CircularProgress />
+                </Box>
+              ) }
+
+              { !!feed.posts?.length && (
+                <Box />
+              ) }
+
+              <PostList
+                feed="feed"
+                posts={ feed.posts }
+                loading={ feed.loading }
+                PostProps={ {
+                  history,
+                } }
+              />
+            </Stack>
+          </Grid>
+          <Grid item xs={ 5 }>
+
+          </Grid>
+        </Grid>
+      </Container>
+    </Box>
   );
 };
 

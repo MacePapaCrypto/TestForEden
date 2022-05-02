@@ -4,6 +4,7 @@ import serve from 'rollup-plugin-serve';
 import assets from 'rollup-plugin-copy-assets';
 import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
+import globals from 'rollup-plugin-node-globals';
 import builtIns from 'rollup-plugin-node-builtins';
 import commonjs from '@rollup/plugin-commonjs';
 import livereoload from 'rollup-plugin-livereload';
@@ -33,10 +34,11 @@ export default {
     // consult the documentation for details:
     // https://github.com/rollup/plugins/tree/master/packages/commonjs
     resolve({
-      dedupe  : ['react', 'react-dom', '@mui/material', '@mui/icons-material'],
+      dedupe  : ['react', 'react-dom', '@mui/lab', '@mui/system', '@emotion/react', '@mui/material', '@mui/icons-material', 'react-router-dom'],
       extensions,
     }),
     replace({
+      'process.nextTick'     : 'setImmediate',
       'process.env.NODE_ENV' : JSON.stringify('production'),
     }),
     commonjs({
@@ -45,7 +47,7 @@ export default {
       ],
       exclude : [
         'node_modules/process-es6/**',
-      ],
+      ]
     }),
     assets({
       assets : [
@@ -62,14 +64,6 @@ export default {
         '@babel/preset-react',
       ],
     }),
-
-    // serve
-    !production && serve('dist'),
-    !production && livereoload(),
-
-    // If we're building for production (npm run build
-    // instead of npm run dev), minify
-    production && terser(),
   ],
   watch : {
     clearScreen : false,

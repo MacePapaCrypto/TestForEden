@@ -1,5 +1,6 @@
 
 // regenerator
+import 'setimmediate';
 import regeneratorRuntime from 'regenerator-runtime';
 window.regeneratorRuntime = regeneratorRuntime;
 
@@ -23,14 +24,12 @@ import mainTheme from './themes/main';
 import MainLayout from './layouts/main';
 
 // pages
+import PostPage from './pages/post';
 import HomePage from './pages/home';
-import LoginPage from './pages/login';
+import FeedPage from './pages/feed';
 
 // main page
 const Main = (props = {}) => {
-  // account
-  const [account, setAccount] = useState(true);
-
 	// use effect
 	useEffect(() => {
 		// typeof
@@ -48,22 +47,26 @@ const Main = (props = {}) => {
           <BrowserRouter>
           
             <Switch>
-              { account ? (
-                <>
-                  <Route exact path="/">
-                    <MainLayout>
-                      <HomePage />
-                    </MainLayout>
-                  </Route>
-                </>
-              ) : (
-                <Route exact path="/">
-                  <MainLayout>
-                    <LoginPage />
-                  </MainLayout>
-                </Route>
-              ) }
-              
+              <Route exact path="/">
+                <MainLayout>
+                  <HomePage />
+                </MainLayout>
+              </Route>
+              <Route exact path="/s/:segment">
+                <MainLayout>
+                  <FeedPage />
+                </MainLayout>
+              </Route>
+              <Route exact path="/c/:context">
+                <MainLayout>
+                  <FeedPage />
+                </MainLayout>
+              </Route>
+              <Route exact path="/p/:post">
+                <MainLayout>
+                  <PostPage />
+                </MainLayout>
+              </Route>
             </Switch>
           
           </BrowserRouter>

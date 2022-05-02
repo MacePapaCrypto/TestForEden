@@ -1,9 +1,8 @@
 
 import React from 'react';
-import { Box, Grid, Stack, Container, Typography, useTheme } from '@mui/material';
-
-// main bar
-import MainBar from './main/bar';
+import { Box } from '@mui/material';
+import { useParams } from 'react-router-dom';
+import { SideBar, BrowseProvider } from '@nft/ui';
 
 /**
  * home page
@@ -11,22 +10,19 @@ import MainBar from './main/bar';
  * @param props 
  */
 const MainLayout = (props = {}) => {
-  // theme
-  const theme = useTheme();
-
-  // width
-  const sidebarWidth = '220px';
+  // params
+  const { post, segment, context } = useParams();
 
   // return jsx
   return (
-    <Box height="100vh" display="flex" flexDirection="column">
-      <MainBar />
-      <Container maxWidth="xl" sx={ {
-        flex : 1,
-      } }>
-        { props.children }
-      </Container>
-    </Box>
+    <BrowseProvider post={ post } segment={ segment } context={ context }>
+      <Box flex={ 1 } display="flex" flexDirection="row">
+        <SideBar />
+        <Box flex={ 1 }>
+          { props.children }
+        </Box>
+      </Box>
+    </BrowseProvider>
   );
 };
 

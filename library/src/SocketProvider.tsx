@@ -1,17 +1,17 @@
 
 // socketio client
 import socketio from 'socket.io-client';
-import { customAlphabet } from 'nanoid';
 import React, { useEffect, useState } from 'react';
 
-// create alphabet
-const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 40);
-
 // socket context
+import useId from './useId';
 import SocketContext from './SocketContext';
 
 // socket context
 const SocketProvider = (props = {}) => {
+  // use id
+  const nanoid = useId();
+
   // session id
   const ssid = localStorage?.getItem('ssid') || `${nanoid()}`;
 
@@ -69,9 +69,10 @@ const SocketProvider = (props = {}) => {
 
   // methods
   const fauxSocket = {
-    on : socket.on,
-    emit : socket.emit,
-    once : socket.once,
+    on : socket.on.bind(socket),
+    off : socket.off.bind(socket),
+    emit : socket.emit.bind(socket),
+    once : socket.once.bind(socket),
     socket : socket,
 
     get : (path, data) => socket.call('GET', path, data),
