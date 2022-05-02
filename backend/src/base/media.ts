@@ -526,17 +526,15 @@ enum MessageResponsesTypes {
   RoomCreated = "roomCreated"
 }
 class Media {
-  worker: Worker;
+  io: any;
   workers: Array<Worker>;
-  io:  any;
   nextMediasoupWorkerIdx: number;
   rooms: Rooms;
 
   constructor(io) {
     this.io = io;
-    this.worker = null;
+    this.workers = new Array<Worker>(null);
     this.rooms = new Rooms();
-    this.workers = [];
     this.nextMediasoupWorkerIdx = 0;
     this.init()
     this.io.on('disconnect', () => {
@@ -605,19 +603,6 @@ class Media {
 
   }
 
-  async createWorker() {
-    this.worker = await mediasoup.createWorker({
-      logLevel: config.get('worker.logLevel') as WorkerLogLevel,
-      logTags: config.get('worker.logTags') as Array<WorkerLogTag>,
-      rtcMinPort: config.get('worker.rtcMinPort') as number,
-      rtcMaxPort: config.get('worker.rtcMaxPort') as number,
-    });
-
-    this.worker.on('died', () => {
-      console.error('mediasoup worker died, exiting in 2 seconds... [pid:%d]', this.worker.pid);
-      setTimeout(() => process.exit(1), 2000);
-    });
-  }
   async createWebRtcTransport(roomName ? : string): Promise<TransportResponse> {
     const router = this.rooms.getRoomRouter(roomName);
 

@@ -16,8 +16,6 @@ import NFTPubSub from './utilities/pubsub';
 import controllers from './controllers';
 import  Media from './base/media';
 
-import { createAdapter } from "@socket.io/redis-adapter";
-import { createClient } from "redis";
 // events
 class NFTBackend extends Events {
   // built controllers
@@ -116,15 +114,7 @@ class NFTBackend extends Events {
         origin : '*',
       }
     });
-
-    // const pubClient = createClient({ url: "redis://127.0.0.1:6379" });
-    // const subClient = pubClient.duplicate();
-
-    // Promise.all([pubClient.connect(), subClient.connect()]).then(() => {
-    //   this.io.adapter(createAdapter(pubClient, subClient));
-    // });
-
-
+    
     // on connection
     this.io.on('connection', async (socket) => {
       // on connection
