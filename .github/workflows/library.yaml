@@ -1,0 +1,51 @@
+name: Backend CI  
+
+on:
+  push:
+    branches: [ '*' ]
+  pull_request:
+    branches: ['*']
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./library
+    strategy:
+      matrix:
+        node: ['17']
+    name: Node ${{ matrix.node }} Library 
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Npm Install 
+        run: npm install
+      - name: NPM lint
+        run: npm run lint
+      - name: Npm test 
+        run: npm run test
+      - name: Run Npm
+        run: npm run build
+  deployment:
+    name: Deployment
+    runs-on: ubuntu-latest
+    needs: [build]
+    if: github.ref_name == 'main' || github.ref_name == 'development'
+    steps:
+    - name: Check out code
+      uses: actions/checkout@v2
+    - name: Build
+      run: |
+        npm run build 
+    - name: publish
+      uses: JS-DevTools/npm-publish@v1
+      with:
+        token: ${{ secrets.NPM_TOKEN }}
+
+    - if: steps.publish.outputs.type != 'none'
+      run: |
+        echo "Version changed: ${{ steps.publish.outputs.old-version }} => ${{ steps.publish.outputs.version }}"

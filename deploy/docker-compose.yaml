@@ -1,0 +1,51 @@
+version: "3"
+services:
+  keydb:
+    image: eqalpha/keydb:x86_64_v5.3.3
+    container_name: keydb
+    # command: keydb-server /etc/keydb/redis.conf --server-threads 2 --active-replica yes --replicaof 192.168.1.1 6379
+    # command: keydb-server /etc/keydb/redis.conf --server-threads 2 --active-replica yes --replicaof 192.168.1.2 6379
+    command: keydb-server /etc/keydb/redis.conf --server-threads 2
+    volumes:
+      - data:/data
+    ports:
+      - 6379:6379
+    restart: unless-stopped
+  frontend:
+    build:
+        context: "../frontend"
+    ports:
+      - 8080:80
+  backend:
+    build:
+        context: "../backend"
+    ports:
+      - 9696:9696
+    links:
+      - "keydb"
+      - "coturn"
+      - "cassandra"
+
+  coturn:
+    image: flaviostutz/coturn
+    network_mode: host
+    environment:
+      - TURN_USERNAME=coturn
+      - TURN_PASSWORD=oursecret
+  cassandra:
+    image: docker.io/bitnami/cassandra:4.0
+    ports:
+      - '7000:7000'
+      - '9142:9142'
+    volumes:
+      - 'cassandra_data:/bitnami'
+    environment:
+      - CASSANDRA_CQL_PORT_NUMBER=9142
+      - CASSANDRA_SEEDS=cassandra
+      - CASSANDRA_PASSWORD_SEEDER=yes
+      - CASSANDRA_PASSWORD=cassandra
+volumes:
+  data:
+    driver: local
+  cassandra_data:
+    driver: local
