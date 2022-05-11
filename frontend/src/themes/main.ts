@@ -6,13 +6,31 @@ import { createTheme } from '@mui/material';
 const mainTheme = createTheme({
   palette : {
     mode    : 'dark',
+    text    : {
+      primary : '#c9d1d9',
+    },
+    divider : '#30363d',
     primary : {
       main  : '#fdc07b',
     },
     background : {
-      paper   : 'rgba(255, 255, 255, 0)',
-      default : '#0A1929',
+      paper   : '#0D1116',
+      default : '#01040A',
     }
+  },
+  components : {
+    MuiLink : {
+      defaultProps : {
+        underline : 'none',
+      }
+    },
+    MuiPaper : {
+      styleOverrides : {
+        root : {
+          backgroundImage : 'none',
+        }
+      }
+    },
   }
 });
 

@@ -18,11 +18,12 @@ let base, client, pubsub, logger;
 /**
  * Exports decorator function to set type of model
  */
-export function Type(type: string) {
+export function Type(type: string, preface?: string) {
   // return function
   return (target: any) => {
     // Add namespace and subspace
     Reflect.defineMetadata('model:type', type, target);
+    if (preface) Reflect.defineMetadata('model:preface', preface, target);
   };
 }
 
@@ -82,6 +83,20 @@ export default class NFTModel extends Events {
   }
 
   /**
+   * creates id
+   */
+  get id () {
+    // returns new id
+    if (!this.__data.id) {
+      this.__data.id = nanoid();
+      this.__changed = true;
+    }
+
+    // return id
+    return this.__data.id;
+  }
+
+  /**
    * get pubsub
    */
   static get pubsub () {
@@ -119,9 +134,10 @@ export default class NFTModel extends Events {
   /**
    * Saves the current model
    */
-  public async save(emitter = null): Promise<any> {
+  public async save(noEmission = null): Promise<any> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this.constructor);
+    const preface = Reflect.getMetadata('model:preface', this.constructor);
 
     // create promises array
     const queries = [];
@@ -148,7 +164,7 @@ export default class NFTModel extends Events {
     const keys = ['id', 'type', 'data', 'sorts', 'refs', 'version', 'created_at', 'updated_at'];
 
     // create query
-    const query = `INSERT INTO models (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
+    const query = `INSERT INTO ${preface ? `${preface}_` : ''}models (${keys.join(', ')}) VALUES (${keys.map(() => '?').join(', ')})`;
 
     // fix data
     const data = keys.map((key) => {
@@ -208,7 +224,7 @@ export default class NFTModel extends Events {
         ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((table) => {
           // add queries
           queries.push({
-            query  : `INSERT INTO ${table} (ref, type, key, value, model_id) VALUES (?, ?, ?, ?, ?)`,
+            query  : `INSERT INTO ${preface ? `${preface}_` : ''}${table} (ref, type, key, value, model_id) VALUES (?, ?, ?, ?, ?)`,
             params : [`${ref}`, `${type}`, sort, value, this.__data.id],
           });
         });
@@ -224,7 +240,7 @@ export default class NFTModel extends Events {
       ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((table) => {
         // add queries
         queries.push({
-          query  : `DELETE FROM ${table} where ref = ? AND type = ? AND key = ? AND value = ? AND model_id = ?`,
+          query  : `DELETE FROM ${preface ? `${preface}_` : ''}${table} where ref = ? AND type = ? AND key = ? AND value = ? AND model_id = ?`,
           params : [ref, type, key, value, this.__data.id],
         });
       });
@@ -251,7 +267,7 @@ export default class NFTModel extends Events {
         pubsub.emit(`${type}+${ref}`, json);
       });
     };
-    background();
+    if (!noEmission) background();
 
     // chainable
     return this;
@@ -260,9 +276,10 @@ export default class NFTModel extends Events {
   /**
    * Removes the model
    */
-  async remove(emitter = null) {
+  async remove(noEmission = null) {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this.constructor);
+    const preface = Reflect.getMetadata('model:preface', this.constructor);
 
     // create promises array
     const queries = [];
@@ -282,7 +299,7 @@ export default class NFTModel extends Events {
       ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((table) => {
         // add queries
         queries.push({
-          query  : `DELETE FROM ${table} where ref = ? AND type = ? AND key = ? AND value = ? AND model_id = ?`,
+          query  : `DELETE FROM ${preface ? `${preface}_` : ''}${table} where ref = ? AND type = ? AND key = ? AND value = ? AND model_id = ?`,
           params : [ref, type, key, value, this.__data.id],
         });
       });
@@ -298,8 +315,11 @@ export default class NFTModel extends Events {
    * @returns 
    */
   async getRefs(): Promise<Array<any>> {
+    // get preface
+    const preface = Reflect.getMetadata('model:preface', this.constructor);
+
     // execute schema create
-    const data = await NFTModel.query('SELECT * FROM refs_by_model WHERE model_id = ?', [this.__data.id]);
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}refs_by_model WHERE model_id = ?`, [this.__data.id]);
 
     // get data
     return data.rows;
@@ -389,12 +409,13 @@ export default class NFTModel extends Events {
   static async findById(id: string): Promise<any> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this);
+    const preface = Reflect.getMetadata('model:preface', this);
     
     // check id
     if (!id) return null;
 
     // execute schema create
-    const data = await NFTModel.query('SELECT * FROM models WHERE id = ? AND type = ?', [id, type]);
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE id = ? AND type = ?`, [id, type]);
 
     // get data
     return data?.rows && data.rows[0] ? new this(data.rows[0]) : null;
@@ -408,12 +429,13 @@ export default class NFTModel extends Events {
   static async findByRef(ref: string, limit: number = 25, sort: string = 'createdAt', direction: 'asc' | 'desc' = 'desc', lastSort: number | null = null): Promise<Array<any>> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this);
+    const preface = Reflect.getMetadata('model:preface', this);
     
     // check id
     if (!ref) return [];
 
     // execute schema create
-    const data = await NFTModel.query(`SELECT * FROM refs_${direction} WHERE ref = ? AND type = ? AND key = ?${lastSort ? ` AND sort ${direction === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}refs_${direction} WHERE ref = ? AND type = ? AND key = ?${lastSort ? ` AND sort ${direction === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
       lastSort ? [`${ref}`, type, sort, lastSort] : [`${ref}`, type, sort]
     );
 

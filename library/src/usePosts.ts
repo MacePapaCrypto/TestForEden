@@ -192,6 +192,27 @@ const usePosts = (props = {}) => {
     createOrReplace(post);
   };
 
+  // emit user
+  const emitUser = (emitUser) => {
+    // has update
+    let hasUpdate = false;
+
+    // update post
+    posts.forEach((post) => {
+      // update user
+      if (emitUser.id === post?.account) {
+        // set user
+        post.user = emitUser;
+
+        // has update
+        hasUpdate = true;
+      }
+    });
+
+    // update
+    if (hasUpdate) setUpdated(new Date());
+  };
+
   // create
   const updatePost = async ({ id, content, ...data }, save = true) => {
     // set loading
@@ -322,17 +343,19 @@ const usePosts = (props = {}) => {
     listPosts();
 
     // remove old listener
+    socket.socket.on('user', emitUser);
     socket.socket.on('post', emitPost);
 
     // done
     return () => {
       // off connect
+      socket.socket.removeListener('user', emitUser);
       socket.socket.removeListener('post', emitPost);
     };
   }, [JSON.stringify(props)]);
 
   // return posts
-  return {
+  const actualPosts = {
     get    : getPost,
     list   : listPosts,
     update : updatePost,
@@ -343,6 +366,12 @@ const usePosts = (props = {}) => {
     updated,
     loading,
   };
+
+  // nft feed
+  window.NFTPosts = actualPosts;
+
+  // return feed
+  return actualPosts;
 };
 
 // export default

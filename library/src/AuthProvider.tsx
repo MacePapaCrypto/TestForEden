@@ -40,16 +40,34 @@ const NFTAuthProvider = (props = {}) => {
   // use ethers
   const socket = useSocket();
   const [authed, setAuthed] = useState(false);
+  const [updated, setUpdated] = useState(new Date());
   const [loading, setLoading] = useState(!!initialAccount);
+
+  // emit user
+  const emitUser = (user) => {
+    // check user
+    if (user.id === authed.id) {
+      // update
+      Object.keys(user).forEach((key) => {
+        authed[key] = user[key];
+      });
+
+      // update
+      setUpdated(new Date());
+    }
+  };
 
   // create account context
   const auth = {
+    authed,
     enabled : !!window?.ethereum,
     account : authed && account,
     loading : loading,
 
     login  : activateBrowserWallet,
     logout : deactivate,
+    
+    emitUser,
   };
 
   // sign challenge
@@ -77,19 +95,16 @@ const NFTAuthProvider = (props = {}) => {
     // try/catch
     try {
       // set loading
-      setAuthed(false);
+      setAuthed(null);
       setLoading(true);
 
       // auth backend
-      const {
-        nonce,
-        account : authedAccount,
-      } = await socket.get(`/auth/${account}`);
+      const authReq = await socket.get(`/auth/${account}`);
 
       // check authenticated
-      if (account === authedAccount) {
+      if (`${account}`.toLowerCase() === `${authReq.account}`.toLowerCase()) {
         // set authed
-        setAuthed(true);
+        setAuthed(authReq);
         setLoading(false);
 
         // return
@@ -97,7 +112,7 @@ const NFTAuthProvider = (props = {}) => {
       }
 
       // sign challenge
-      const [message, signature] = await signChallenge(nonce);
+      const [message, signature] = await signChallenge(authReq.nonce);
 
       // auth
       const result = await socket.post(`/auth/${account}`, {
@@ -108,7 +123,7 @@ const NFTAuthProvider = (props = {}) => {
       // set loading
       if (result) {
         // authed
-        setAuthed(true);
+        setAuthed(result);
       
         // set item
         localStorage?.setItem('acid', account);
@@ -142,11 +157,13 @@ const NFTAuthProvider = (props = {}) => {
     if (!account) return;
 
     // auth backend on restart
+    socket.socket.on('user', emitUser);
     socket.socket.on('connect', authBackend);
 
     // return done
     return () => {
       // off
+      socket.socket.removeListener('user', emitUser);
       socket.socket.removeListener('connect', authBackend);
     };
   }, [authed]);

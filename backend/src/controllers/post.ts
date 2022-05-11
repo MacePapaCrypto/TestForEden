@@ -17,9 +17,68 @@ export default class PostController extends NFTController {
    * @param socket 
    * @param post 
    */
-  postListener(socket, post) {
+  singlePostListener(socket, post) {
     // send post to socket
     socket.emit('post', post);
+  }
+
+  /**
+   * listen for post
+   *
+   * @param socket 
+   * @param post 
+   */
+  typingListener(socket, thread, user) {
+    // send post to socket
+    socket.emit('typing', thread, user);
+  }
+
+  /**
+   * listen for post
+   *
+   * @param socket 
+   * @param post 
+   */
+  async postListener(socket, post) {
+    // get post
+    const actualPost = await PostModel.findById(post.id);
+
+    // send post to socket
+    socket.emit('post', await actualPost.toJSON({}, 5));
+  }
+
+  /**
+   * 
+   * @param req 
+   * @param param1 
+   * @param next 
+   */
+  @Route('POST', '/typing/:thread')
+  async typingAction(req, { data, params }, next) {
+    // only thread for now
+    const thread = params.thread;
+    const typing = typeof data.typing === 'undefined' ? true : data.typing === 'true';
+
+    // check thread
+    if (!thread) return {
+      success : false,
+      message : 'No thread specified',
+    };
+
+    // listen string
+    const listenStr = `${thread.includes('thread:') ? thread : `thread:${thread}`}`;
+
+    // emit to thread
+    this.base.pubsub.emit(`typing+${listenStr}`, listenStr, {
+      typing  : typing ? new Date() : false,
+      account : req.account,
+    });
+
+    // success
+    return {
+      result  : !!typing,
+      success : true,
+    };
   }
 
   /**
@@ -30,6 +89,7 @@ export default class PostController extends NFTController {
   @Route('GET', '/post')
   async listAction(req, { data, params }, next) {
     // check segment
+    const feed = (data.f || data.feed) ? (data.f || data.feed).toLowerCase() : null;
     const thread = (data.t || data.thread) ? (data.t || data.thread).toLowerCase() : null;
     const context = (data.c || data.context) ? (data.c || data.context).toLowerCase() : null;
     const segment = (data.s || data.segment) ? (data.s || data.segment).toLowerCase() : null;
@@ -81,14 +141,20 @@ export default class PostController extends NFTController {
       listenStr = `segment:${segment}`;
       actualPosts = await PostModel.findBySegment(segment, ...args);
     } else if (account) {
-      listenStr = `account:${account}`;
-      actualPosts = await PostModel.findByAccount(account, ...args);
+      listenStr = `account:public:${account}`;
+      actualPosts = await PostModel.findByAccountPublic(account, ...args);
     }
 
     // if listen string
     if (req.subscribe && listenStr) {
       // subscribe
-      req.subscribe(`post+${listenStr}`, this.postListener);
+      req.subscribe(`post+${listenStr}`, feed === 'feed' ? this.postListener : this.singlePostListener);
+
+      // check feed
+      if (thread) {
+        // subscribe to typing
+        req.subscribe(`typing+${listenStr}`, this.typingListener);
+      }
     }
 
     // load cache
@@ -96,7 +162,7 @@ export default class PostController extends NFTController {
 
     // return
     return {
-      result  : await Promise.all(actualPosts.map((context) => context.toJSON(loadCache))),
+      result  : await Promise.all(actualPosts.map((context) => context.toJSON(loadCache, feed === 'feed' ? 5 : 0))),
       success : true,
     };
   }
@@ -112,7 +178,10 @@ export default class PostController extends NFTController {
     const post = await PostModel.findById(params.id);
 
     // subscribe
-    if (post) req.subscribe(`post:${post.get('id')}`, this.postListener);
+    if (post) {
+      // subscriptions
+      req.subscribe(`post:${post.get('id')}`, this.singlePostListener);
+    }
 
     // return post
     return {
@@ -162,7 +231,10 @@ export default class PostController extends NFTController {
     if (actualSegment) refs.push(`segment:${actualSegment.get('id')}`);
 
     // @todo temp make everything public
-    if (!actualThread) refs.push('public');
+    if (!actualThread && data.feed !== 'chat') {
+      refs.push('public');
+      refs.push(`account:public:${lowerAccount}`);
+    }
     
     // create default segment
     const createdPost = new PostModel({

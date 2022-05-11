@@ -1,5 +1,6 @@
 
 // import local
+import PostModel from '../models/post';
 import FeedModel from '../models/feed';
 import NFTController, { Route } from '../base/controller';
 
@@ -14,9 +15,23 @@ export default class FeedController extends NFTController {
    * @param socket 
    * @param post 
    */
-  postListener(socket, post) {
+  async postListener(socket, post) {
+    // get post
+    const actualPost = await PostModel.findById(post.id);
+
     // send post to socket
-    socket.emit('post', post);
+    socket.emit('post', await actualPost.toJSON({}, 5));
+  }
+
+  /**
+   * listen for post
+   *
+   * @param socket 
+   * @param post 
+   */
+  typingListener(socket, thread, user) {
+    // send post to socket
+    socket.emit('typing', thread, user);
   }
 
   /**
@@ -51,7 +66,7 @@ export default class FeedController extends NFTController {
     // create args
     const args = last ? [limit, sort, direction, last] : [limit, sort, direction];
 
-    // contexts
+    // posts
     const actualPosts = await actualFeed.findPosts(...args);
 
     // if listen string
@@ -60,6 +75,7 @@ export default class FeedController extends NFTController {
       actualPosts.forEach((post) => {
         // subscribe
         req.subscribe(`post:${post.get('id')}`, this.postListener);
+        req.subscribe(`typing+thread:${post.get('id')}`, this.typingListener);
       });
     }
 
@@ -68,7 +84,7 @@ export default class FeedController extends NFTController {
 
     // return
     return {
-      result  : await Promise.all(actualPosts.map((context) => context.toJSON(loadCache))),
+      result  : await Promise.all(actualPosts.map((post) => post.toJSON(loadCache, 5))),
       success : true,
     };
   }

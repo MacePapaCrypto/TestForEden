@@ -4,20 +4,21 @@ import More from '@mui/icons-material/MoreVert';
 import React from 'react';
 import Search from '@mui/icons-material/Search';
 import { useHistory } from 'react-router-dom';
-import { useBrowse, usePosts, useAuth, PostCreate, PostList } from '@nft/ui';
-import { Box, Grid, Toolbar, AppBar, Typography, IconButton, Container, Divider, Stack, useTheme, CircularProgress } from '@mui/material';
+import { useBrowse, usePosts, useAuth, PostCreate, PostList, ProfileCard } from '@nft/ui';
+import { Box, Grid, Toolbar, AppBar, Typography, IconButton, Container, Stack, useTheme, CircularProgress } from '@mui/material';
+
 
 /**
  * home page
  *
  * @param props 
  */
-const HomePage = (props = {}) => {
+const FeedPage = (props = {}) => {
   // theme
   const auth = useAuth();
   const theme = useTheme();
   const history = useHistory();
-  const { context, loadingContext, segment, loadingSegment, loading } = useBrowse();
+  const { context, loadingContext, segment, loadingSegment, account, loadingAccount } = useBrowse();
 
   // get type
   const contextFeed = context && ['feed', 'channel', 'gallery', 'shop'].includes(context.feed || 'feed') ? (context.feed || 'feed') : null;
@@ -25,6 +26,7 @@ const HomePage = (props = {}) => {
   // create feed
   const feed = usePosts({
     feed    : contextFeed,
+    account : account?.id,
     context : context?.id,
     segment : segment?.id,
   });
@@ -42,8 +44,10 @@ const HomePage = (props = {}) => {
 
     // log
     await feed.create({
+      account : account?.id,
       context : context?.id,
       segment : segment?.id,
+
       ...value,
     });
 
@@ -54,16 +58,19 @@ const HomePage = (props = {}) => {
   // layout
   return (
     <Box flex={ 1 } display="flex" flexDirection="column">
-      <Container maxWidth="xl" sx={ {
+      <Container sx={ {
         flex : 1,
       } }>
         { !!(loadingContext || context || loadingSegment || segment) && (
           <AppBar sx={ {
             bgcolor                 : theme.palette.background.paper,
+            borderTop               : 'none',
             marginBottom            : theme.spacing(3),
+            borderTopLeftRadius     : 0,
+            borderTopRightRadius    : 0,
             borderBottomLeftRadius  : theme.spacing(1.5),
             borderBottomRightRadius : theme.spacing(1.5),
-          } } position="static" elevation={ 1 }>
+          } } position="static" elevation={ 0 }>
             <Toolbar>
               <Box mr={ 1 } display="flex">
                 { !context && !segment ? (
@@ -94,8 +101,9 @@ const HomePage = (props = {}) => {
             </Toolbar>
           </AppBar>
         ) }
-        <Grid container>
-          <Grid item xs={ 7 }>
+
+        <Grid container spacing={ 3 }>
+          <Grid item xs={ 8 }>
             <Stack spacing={ 2 }>
               { !!(contextFeed === 'feed' || (!context && segment)) && (
                 <PostCreate
@@ -104,7 +112,7 @@ const HomePage = (props = {}) => {
                 />
               ) }
 
-              { !feed.posts?.length && (
+              { !feed.posts?.length && feed.loading && (
                 <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
                   <CircularProgress />
                 </Box>
@@ -119,12 +127,17 @@ const HomePage = (props = {}) => {
                 loading={ feed.loading }
                 PostProps={ {
                   history,
+                  withReplies : true,
                 } }
               />
             </Stack>
           </Grid>
-          <Grid item xs={ 5 }>
-
+          <Grid item xs={ 4 }>
+            <Box my={ 2 }>
+              { !!account?.id && (
+                <ProfileCard item={ account } />
+              ) }
+            </Box>
           </Grid>
         </Grid>
       </Container>
@@ -133,4 +146,4 @@ const HomePage = (props = {}) => {
 };
 
 // export default
-export default HomePage;
+export default FeedPage;

@@ -1,6 +1,8 @@
 
 // import local
 import NFTController, { Route } from '../base/controller';
+import MemberModel from '../models/member';
+import RoleModel from '../models/role';
 import SegmentModel from '../models/segment';
 
 /**
@@ -19,35 +21,20 @@ export default class SegmentController extends NFTController {
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
     // load segments
-    const sessionSegments = await SegmentModel.findBySession(req.ssid);
-    const accountSegments = lowerAccount ? await SegmentModel.findByAccount(lowerAccount) : [];
+    const members = await MemberModel.findByAccount(lowerAccount);
 
-    // actual segments
-    const actualSegments = [...accountSegments, ...sessionSegments].reduce((accum, segment) => {
-      // check exists
-      if (accum.find((s) => `${s.get('id')}` === `${segment.get('id')}`)) return accum;
-      if (accum.find((s) => s.get('source') === 'default')) return accum;
-
-      // push segment
-      accum.push(segment);
-
-      // return
-      return accum;
-    }, []);
-
-    // update all
-    actualSegments.forEach((segment) => {
-      // update to mine only
-      if (!segment.get('account') && lowerAccount) {
-        segment.set('refs', Array.from(new Set([...segment.get('refs'), `account:${lowerAccount}`])));
-        segment.set('account', lowerAccount);
-        segment.save();
-      }
-    });
+    // segment cache
+    const segmentCache = {};
 
     // return
     return {
-      result  : await Promise.all(actualSegments.map((segment) => segment.toJSON())),
+      result : (await Promise.all(members.map(async (member) => {
+        // get segment
+        const memberSegment = await member.getSegment();
+
+        // sanitise
+        return memberSegment ? await memberSegment.toJSON(segmentCache, member) : null;
+      }))).filter((s) => s),
       success : true,
     };
   }
@@ -59,12 +46,15 @@ export default class SegmentController extends NFTController {
    */
   @Route('GET', '/segment/:id')
   async getAction(req, { data, params }, next) {
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
     // get segment
     const segment = await SegmentModel.findById(params.id);
 
     // return segment
     return {
-      result  : segment ? await segment.toJSON() : null,
+      result  : segment ? await segment.toJSON({}, lowerAccount) : null,
       success : !!segment,
     };
   }
@@ -96,21 +86,39 @@ export default class SegmentController extends NFTController {
     
     // create default segment
     const createdSegment = new SegmentModel({
-      name  : data.name,
-      type  : data.type || 'segment',
-      refs  : [`session:${req.ssid}`, `account:${lowerAccount}`],
-      order : data.order || 0,
+      name : data.name,
+      refs : [`session:${req.ssid}`, `account:${lowerAccount}`],
 
       ssid    : req.ssid,
       source  : 'create',
+      privacy : 'public',
       account : lowerAccount,
+    });
+    const createdRole = new RoleModel({
+      name : 'Owner',
+      acls : ['*'],
+
+      refs    : [`segment:${createdSegment.id}`],
+      color   : '#fdc07b',
+      account : lowerAccount,
+      segment : createdSegment.id,
+    });
+    const createdMember = new MemberModel({
+      refs    : [`account:${lowerAccount}`, `account:${lowerAccount}:${createdSegment.id}`, `segment:${createdSegment.id}`, `role:${createdRole.id}`],
+      roles   : [createdRole.id],
+      account : lowerAccount,
+      segment : createdSegment.id,
     });
 
     // save
-    await createdSegment.save();
+    await Promise.all([
+      createdRole.save(),
+      createdMember.save(),
+      createdSegment.save(),
+    ]);
 
     // sanitised
-    const sanitisedSegment = await createdSegment.toJSON();
+    const sanitisedSegment = await createdSegment.toJSON({}, createdMember);
 
     // push segment
     result.push(sanitisedSegment);
@@ -170,9 +178,6 @@ export default class SegmentController extends NFTController {
 
     // set
     if (typeof data.name !== 'undefined') updatingSegment.set('name', data.name);
-    if (typeof data.open !== 'undefined') updatingSegment.set('open', data.open);
-    if (typeof data.order !== 'undefined') updatingSegment.set('order', data.order);
-    if (typeof data.parent !== 'undefined') updatingSegment.set('parent', data.parent);
 
     // save
     await updatingSegment.save();
@@ -201,7 +206,7 @@ export default class SegmentController extends NFTController {
    * 
    * @returns
    */
-  @Route('POST', '/segment/updates')
+  @Route('POST', '/segment/sidebar')
   async updatesAction(req, { data, params }, next) {
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
@@ -212,7 +217,7 @@ export default class SegmentController extends NFTController {
       success : false,
     };
 
-    // get segments
+    // get result
     let { success, message, result } = await this.listAction(req, { data : {}, params : {} }, next);
 
     // failed
@@ -221,31 +226,33 @@ export default class SegmentController extends NFTController {
       message,
     };
 
+    // get segments
+    const members = await MemberModel.findByAccount(lowerAccount);
+
+    // cache
+    const sanitiseCache = {};
+
     // loop segments
     await Promise.all(data.segments.map(async (subData) => {
       // find segment
-      const segment = result.find((s) => s.id === subData.id);
+      const memberSegment = members.find((m) => m.get('segment') === subData.id);
 
       // check segment
-      if (!segment) return;
-
-      // load actual segment
-      const updatingSegment = await SegmentModel.findById(subData.id);
-
-      // check account
-      if (updatingSegment.get('account') !== lowerAccount) return;
+      if (!memberSegment) return;
 
       // set
-      if (typeof subData.name !== 'undefined') updatingSegment.set('name', subData.name);
-      if (typeof subData.open !== 'undefined') updatingSegment.set('open', subData.open);
-      if (typeof subData.order !== 'undefined') updatingSegment.set('order', subData.order);
-      if (typeof subData.parent !== 'undefined') updatingSegment.set('parent', subData.parent);
+      if (typeof subData.open !== 'undefined') memberSegment.set('value.open', subData.open);
+      if (typeof subData.order !== 'undefined') memberSegment.set('value.order', subData.order);
+      if (typeof subData.parent !== 'undefined') memberSegment.set('value.parent', subData.parent);
 
       // save
-      await updatingSegment.save();
+      await memberSegment.save();
+
+      // get real segment
+      const realSegment = await memberSegment.getSegment();
 
       // sanitised
-      const sanitisedSegment = await updatingSegment.toJSON();
+      const sanitisedSegment = await realSegment.toJSON(sanitiseCache, memberSegment);
 
       // replace
       result = result.filter((s) => s.id !== sanitisedSegment.id);

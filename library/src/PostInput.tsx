@@ -140,6 +140,9 @@ const NFTPostInput = (props = {}) => {
 
   // on key down
   const onKeyDown = (e) => {
+    // on key up
+    if (props.onKeyDown) props.onKeyDown(e);
+
     // check key code
     if (e.keyCode !== 13) return true;
 

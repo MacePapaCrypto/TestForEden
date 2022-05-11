@@ -1,6 +1,8 @@
 
 import decay from 'decay';
 import Model, { Type } from '../base/model';
+import UserModel from './user';
+import MemberModel from './member';
 import FeedUtility from '../utilities/feed';
 import ContextModel from './context';
 import SegmentModel from './segment';
@@ -21,6 +23,16 @@ export default class PostModel extends Model {
     
     // embeds
     if (!Array.isArray(this.__data.embeds)) this.__data.embeds = [];
+  }
+
+  /**
+   * get segment
+   * 
+   * @returns 
+   */
+  getUser() {
+    // get segment
+    return this.get('account') && UserModel.findById(this.get('account'));
   }
 
   /**
@@ -85,6 +97,16 @@ export default class PostModel extends Model {
   }
   
   /**
+   * find posts by account
+   *
+   * @param account 
+   */
+  static findByAccountPublic(account, ...args) {
+    // find by ref
+    return PostModel.findByRef(`account:public:${account}`, ...args);
+  }
+  
+  /**
    * find posts by segment
    *
    * @param segment 
@@ -107,22 +129,66 @@ export default class PostModel extends Model {
   /**
    * to json
    */
-  async toJSON(loadCache = {}) {
+  async toJSON(loadCache = {}, children = 0) {
     // get parent
     const parentJSON = await super.toJSON();
 
     // fix context
     if (this.get('context')) {
       // create new promise
-      // @todo memory leak, move to timed release
-      if (!loadCache[this.get('context')]) loadCache[this.get('context')] = new Promise(async (resolve) => {
+      if (!loadCache[this.get('context')]) loadCache[this.get('context')] = (async () => {
         // load
         const actualContext = await this.getContext();
-        resolve(await actualContext.toJSON());
-      });
+
+        // return
+        return actualContext ? await actualContext.toJSON(loadCache) : null;
+      })();
 
       // await
       parentJSON.context = await loadCache[this.get('context')];
+    }
+
+    // fix account
+    if (this.get('account')) {
+      // create new promise
+      if (!loadCache[this.get('account').toLowerCase()]) loadCache[this.get('account').toLowerCase()] = (async () => {
+        // load
+        const actualUser = await this.getUser();
+
+        // check user
+        return actualUser ? await actualUser.toJSON(loadCache) : null;
+      })();
+
+      // await
+      parentJSON.user = await loadCache[this.get('account')];
+    }
+
+    // check segment
+    if (this.get('segment')) {
+      // get segment roles/member of poster
+      if (!loadCache[`${this.get('segment')}:${this.get('account')}`]) loadCache[`${this.get('segment')}:${this.get('account')}`] = (async () => {
+        // load
+        const actualMember = await MemberModel.findByAccountSegment(this.get('account'), this.get('segment'));
+
+        // set member
+        return actualMember ? await actualMember.toJSON() : null;
+      })();
+
+      // await
+      parentJSON.member = await loadCache[`${this.get('segment')}:${this.get('account')}`];
+    }
+
+    // check count
+    if (this.get('count.replies') && children) {
+      // create new promise
+      // @todo memory leak, move to timed release
+      if (!loadCache[`${this.get('id')}.children`]) loadCache[`${this.get('id')}.children`] = (async () => {
+        // load
+        return await Promise.all((await PostModel.findByThread(this.get('id'), children)).map((child) => child.toJSON(loadCache)));
+      })();
+
+      // parent json
+      parentJSON.children = await loadCache[`${this.get('id')}.children`];
     }
 
     // return parent
@@ -132,7 +198,7 @@ export default class PostModel extends Model {
   /**
    * Saves the current model
    */
-  public async save(emitter = null): Promise<any> {
+  public async save(noEmission = null): Promise<any> {
     // set sort
     if (!Array.isArray(this.__data.sorts)) this.__data.sorts = [];
 
@@ -192,7 +258,7 @@ export default class PostModel extends Model {
     });
 
     // return super
-    const saving = await super.save(emitter);
+    const saving = await super.save(noEmission);
 
     // run helper shit
     FeedUtility.post(this);

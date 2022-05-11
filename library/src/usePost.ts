@@ -33,6 +33,18 @@ const usePost = (propsPost) => {
     return backendPost;
   };
 
+  // emit user
+  const emitUser = (emitUser) => {
+    // update post
+    if (emitUser.id === post?.account) {
+      // set user
+      post.user = emitUser;
+
+      // update
+      setUpdated(new Date());
+    }
+  };
+
   // emit
   const emitPost = (emitPost) => {
     // update post
@@ -126,20 +138,26 @@ const usePost = (propsPost) => {
   // use effect
   useEffect(() => {
     // update
-    if (propsPost?.id || propsPost) loadPost();
+    if (propsPost?.id || propsPost) {
+      loadPost();
+    } else {
+      setPost(null);
+    }
 
     // add listener
+    socket.socket.on('user', emitUser);
     socket.socket.on('post', emitPost);
 
     // done
     return () => {
       // off
+      socket.socket.removeListener('user', emitUser);
       socket.socket.removeListener('post', emitPost);
     };
   }, [propsPost?.id || propsPost]);
 
   // return posts
-  return {
+  const actualPost = {
     load   : loadPost,
     update : updatePost,
     delete : deletePost,
@@ -147,6 +165,12 @@ const usePost = (propsPost) => {
     post,
     loading,
   };
+
+  // window
+  window.NFTPost = actualPost;
+
+  // return post
+  return actualPost;
 };
 
 // export default

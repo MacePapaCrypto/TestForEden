@@ -11,6 +11,7 @@ import { Server } from 'socket.io';
 
 // local dependencies
 import config from './config';
+import daemons from './daemons';
 import NFTModel from './base/model';
 import NFTPubSub from './utilities/pubsub';
 import controllers from './controllers';
@@ -20,6 +21,8 @@ class NFTBackend extends Events {
   // built controllers
   private __router = new Trouter();
   private __builtRoutes = [];
+  private __builtActions = [];
+  private __builtDaemons = {};
   private __builtControllers = {};
 
   /**
@@ -40,9 +43,16 @@ class NFTBackend extends Events {
     // await database
     await this.__logger();
     await this.__pubsub();
-    await this.__server();
     await this.__database();
-    await this.__controllers();
+
+    // daemons
+    if (process.env.DAEMON) {
+      await this.__daemons();
+    }
+    if (process.env.SERVER) {
+      await this.__server();
+      await this.__controllers();
+    }
   }
 
   /**
@@ -218,11 +228,14 @@ class NFTBackend extends Events {
               success : true,
             };
           } catch (e) {
+            // error
+            console.error(e);
+
             // failed
             result = {
               success : false,
               message : `${e}`,
-            }
+            };
           }
 
           // check nexted
@@ -357,6 +370,81 @@ class NFTBackend extends Events {
 
     // info
     this.logger.info('controllers created');
+  }
+
+  /**
+   * builds controllers
+   */
+  async __daemons() {
+    // info
+    this.logger.info('daemons creating');
+
+    // all routes
+    let allActions = [];
+
+    // loop controllers
+    await Promise.all(Object.keys(daemons).map(async (key) => {
+      // build controller
+      this.__builtDaemons[key] = new daemons[key](this);
+
+      // await building
+      await this.__builtDaemons[key].building;
+
+      // get routes
+      allActions.push(...(this.__builtDaemons[key].routes || []));
+    }));
+
+    // sort all routes
+    allActions = allActions.sort((a, b) => {
+      // priority
+      const aP = a.priority || 100;
+      const bP = b.priority || 100;
+
+      // sort
+      if (aP > bP) return 1;
+      if (aP < bP) return -1;
+      return 0;
+    });
+
+    // actions
+    let actions = process.env.DAEMON.split(',');
+
+    // check
+    if (`${process.env.DAEMON}` === 'true') {
+      // all actions
+      actions = allActions.map((action) => action.path);
+    }
+
+    // loop actions
+    for (const action of actions) {
+      // find actual action
+      const actualRoute = allActions.find((a) => a.path === action);
+
+      // check route
+      if (!actualRoute) continue;
+
+      // create actual function
+      const actualFn = () => {
+        // info
+        this.logger.info(`running daemon ${actualRoute.path}`);
+        
+        // run function
+        actualRoute.ctrl[actualRoute.property]();
+      };
+
+      // check type
+      if (actualRoute.type === 'poll') {
+        // set interval
+        actualFn();
+        setInterval(actualFn, actualRoute.timer);
+      } else {
+        // drive
+        actualFn();
+      }
+    }
+
+    // info
+    this.logger.info('daemons created');
   }
 }
 

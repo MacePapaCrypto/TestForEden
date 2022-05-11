@@ -1,6 +1,7 @@
 
 // socketio client
 import usePost from './usePost';
+import useSocket from './useSocket';
 import useSegments from './useSegments';
 import useContexts from './useContexts';
 import BrowseContext from './BrowseContext';
@@ -11,43 +12,61 @@ import React, { useEffect, useState } from 'react';
 const BrowseProvider = (props = {}) => {
   // segment
   const post = usePost(props.post);
+  const socket = useSocket();
   const segments = useSegments();
   const contexts = useContexts();
 
   // state
-  const [segment, setActualSegment] = useState(typeof props.segment === 'object' ? props.segment : null);
-  const [context, setActualContext] = useState(typeof props.context === 'object' ? props.context : null);
+  const [segment, setActualSegment] = useState(typeof props.segment !== 'string' ? props.segment : null);
+  const [context, setActualContext] = useState(typeof props.context !== 'string' ? props.context : null);
+  const [account, setActualAccount] = useState(typeof props.account !== 'string' ? props.account : null);
   const [loadingSegment, setLoadingSegment] = useState(false);
   const [loadingContext, setLoadingContext] = useState(false);
+  const [loadingAccount, setLoadingAccount] = useState(false);
 
   // load middlewares
-  const setSegment = (segment) => {
+  const setSegment = (newSegment) => {
     // set segment
-    setActualSegment(segment);
+    setActualSegment(typeof newSegment !== 'string' ? newSegment : null);
 
     // check segment
-    if (segment && context && context.segment !== segment.id) {
+    if (newSegment && context && context.segment !== newSegment.id) {
       // load segment
       loadContext();
     }
   };
 
   // load middlewares
-  const setContext = (context) => {
+  const setContext = (newContext) => {
     // set segment
-    setActualContext(context);
+    setActualContext(typeof newContext !== 'string' ? newContext : null);
 
     // check segment
-    if (context?.segment && segment?.id !== context.segment) {
+    if (newContext?.segment && segment?.id !== newContext.segment) {
       // load segment
-      loadSegment(context.segment);
+      loadSegment(newContext.segment);
+    }
+
+    // check segment
+    if (newContext?.account && account?.id !== newContext.account) {
+      // load segment
+      loadSegment(newContext.account);
     }
   };
 
+  // load middlewares
+  const setAccount = (newAccount) => {
+    // set segment
+    setActualAccount(typeof newAccount !== 'string' ? newAccount : null);
+  };
+
   // load segment
-  const loadSegment = async (id = props.segment) => {
+  const loadSegment = async (id = null) => {
+    // check id
+    if (!id) id = props.segment || context?.segment || post.post?.segment;
+
     // check segment already set correctly
-    if ((typeof id === 'string' && id === segment?.id) || (id?.id && id.id === segment?.id)) return;
+    if ((typeof id === 'string' && (id === segment?.id)) || (id?.id && (id.id === segment?.id))) return;
 
     // check missing
     if (!id && (props.context || props.post)) return;
@@ -62,7 +81,7 @@ const BrowseProvider = (props = {}) => {
 
       // get segment
       foundSegment = await segments.get(id);
-    } else if (typeof id === 'object') {
+    } else if (typeof id !== 'string') {
       foundSegment = id;
     }
 
@@ -72,9 +91,12 @@ const BrowseProvider = (props = {}) => {
   };
 
   // load context
-  const loadContext = async (id = props.context) => {
+  const loadContext = async (id = null) => {
+    // check id
+    if (!id) id = props.context || post.post?.context;
+    
     // check context already set correctly
-    if ((typeof id === 'string' && id === context?.id) || (id?.id && id.id === context?.id)) return;
+    if ((typeof id === 'string' && (id === context?.id)) || (id?.id && (id.id === context?.id))) return;
 
     // check missing
     if (!id && props.post) return;
@@ -98,49 +120,73 @@ const BrowseProvider = (props = {}) => {
     setContext(foundContext);
   };
 
+  // load context
+  const loadAccount = async (id = null) => {
+    // check id
+    if (!id) id = props.account;
+    
+    // check context already set correctly
+    if ((typeof id === 'string' && (id === account?.id)) || (id?.id && (id.id === account?.id))) return;
+
+    // found context
+    let foundAccount;
+    
+    // check context
+    if (typeof id === 'string') {
+      // set loading
+      setLoadingAccount(true);
+
+      // load
+      foundAccount = await socket.get(`/account/${id}`);
+    } else if (typeof id === 'object') {
+      foundAccount = id;
+    }
+
+    // set context
+    setLoadingAccount(false);
+    setAccount(foundAccount);
+  };
+
   // use effect
   useEffect(() => {
     // load segment
     loadSegment();
-  }, [props.segment]);
+  }, [props.segment, post.post?.segment]);
 
   // use effect
   useEffect(() => {
     // load segment
     loadContext();
-  }, [props.context]);
+  }, [props.context, post.post?.context]);
 
   // use effect
   useEffect(() => {
     // load segment
-    if (!post.post?.id) return;
-
-    // set info
-    if (post.post.context) {
-      loadContext(post.post.context);
-    } else if (post.post.segment) {
-      loadSegment(post.post.segment);
-    }
-  }, [post.post?.id]);
+    loadAccount();
+  }, [props.account]);
   
   // return placement
   const fauxBrowse = {
     post,
     segment,
     context,
+    account,
 
-    loading : loadingContext ? 'context' : (loadingSegment ? 'segment' : false),
+    loading : loadingContext ? 'context' : (loadingSegment ? 'segment' : (loadingAccount ? 'account' : false)),
     loadingContext,
     loadingSegment,
+    loadingAccount,
 
     providedSegment : props.segment,
     providedContext : props.context,
+    providedAccount : props.account,
 
     setSegment,
     setContext,
 
     loadContext,
     loadSegment,
+    loadAccount,
   };
 
   // to window

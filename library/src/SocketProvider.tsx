@@ -7,6 +7,9 @@ import React, { useEffect, useState } from 'react';
 import useId from './useId';
 import SocketContext from './SocketContext';
 
+// calling
+const callCache = {};
+
 // socket context
 const SocketProvider = (props = {}) => {
   // use id
@@ -43,7 +46,16 @@ const SocketProvider = (props = {}) => {
   }, [url]);
 
   // add call function
-  socket.call = (method, path, data = {}) => {
+  socket.call = (method, path, data = {}, cache = true) => {
+    // check cache
+    if (cache && callCache[`${method}${path}${JSON.stringify(data)}`]) {
+      // return await
+      return callCache[`${method}${path}${JSON.stringify(data)}`];
+    } else {
+      // delete cache
+      delete callCache[`${method}${path}${JSON.stringify(data)}`];
+    }
+
     // get id
     const id = nanoid(5);
     console.log('DOING CALL', method, path, data, id);
@@ -59,6 +71,27 @@ const SocketProvider = (props = {}) => {
         reject(message);
       });
     });
+
+    // check cache
+    if (cache) {
+      // add to call cache
+      callCache[`${method}${path}${JSON.stringify(data)}`] = result;
+
+      // remove after timeout
+      callCache[`${method}${path}${JSON.stringify(data)}`].then(() => {
+        // check if timed cache
+        if (typeof cache === 'number') {
+          // remove after timeout
+          setTimeout(() => {
+            // delete
+            delete callCache[`${method}${path}${JSON.stringify(data)}`];
+          }, cache);
+        } else {
+          // delete
+          delete callCache[`${method}${path}${JSON.stringify(data)}`];
+        }
+      });
+    }
 
     // emit
     socket.emit('call', id, method, path, data);

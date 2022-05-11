@@ -12,6 +12,20 @@ CREATE TABLE IF NOT EXISTS nftsocial.models (
 
 ---
 
+CREATE TABLE IF NOT EXISTS nftsocial.nft_models (
+  id         text,
+  type       text,
+  data       text,
+  refs       set<text>,
+  sorts      set<text>,
+  version    text,
+  updated_at timestamp,
+  created_at timestamp,
+  PRIMARY KEY((id), type)
+);
+
+---
+
 CREATE TABLE IF NOT EXISTS nftsocial.feeds (
   id         text,
   refs       set<text>,
@@ -93,6 +107,39 @@ CREATE TABLE IF NOT EXISTS nftsocial.refs_desc (
 ---
 
 CREATE TABLE IF NOT EXISTS nftsocial.refs_by_model (
+  ref      text,
+  key      text,
+  type     text,
+  value    double,
+  model_id text,
+  PRIMARY KEY(model_id, ref, type, key, value)
+);
+
+---
+
+CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_asc (
+  ref      text,
+  key      text,
+  type     text,
+  value    double,
+  model_id text,
+  PRIMARY KEY((ref, type, key), value, model_id)
+) WITH CLUSTERING ORDER BY (value ASC);
+
+---
+
+CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_desc (
+  ref      text,
+  key      text,
+  type     text,
+  value    double,
+  model_id text,
+  PRIMARY KEY((ref, type, key), value, model_id)
+) WITH CLUSTERING ORDER BY (value DESC);
+
+---
+
+CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_by_model (
   ref      text,
   key      text,
   type     text,

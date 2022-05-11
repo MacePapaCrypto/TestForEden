@@ -16,6 +16,17 @@ import SessionModel from '../models/session';
 export default class AuthController extends NFTController {
 
   /**
+   * listen for user
+   *
+   * @param socket 
+   * @param post 
+   */
+  myUserListener(socket, user) {
+    // send post to socket
+    socket.emit('user', user);
+  }
+
+  /**
    * login route
    */
   @Route('GET', '/auth/:address')
@@ -40,11 +51,18 @@ export default class AuthController extends NFTController {
       // set to socket
       req.account = alreadyAuthenticated.get('account');
 
+      // create user
+      const user = await UserModel.findById(req.account.toLowerCase()) || new UserModel({
+        id      : req.account.toLowerCase(),
+        account : req.account,
+      });
+
+      // subscribe
+      req.subscribe(`user:${address}`.toLowerCase(), this.myUserListener);
+
       // already authed
       return {
-        result : {
-          account : alreadyAuthenticated.get('account'),
-        },
+        result  : await user.toJSON(),
         success : true,
       };
     }
@@ -114,18 +132,19 @@ export default class AuthController extends NFTController {
     found.remove();
 
     // create user
-    const user = await UserModel.findById(fields.address) || new UserModel({
-      id : fields.address,
+    const user = await UserModel.findById(fields.address.toLowerCase()) || new UserModel({
+      id      : fields.address.toLowerCase(),
+      account : fields.address,
     });
 
     // save
     user.save();
 
     // create feed
-    FeedUitlity.account(fields.address);
+    FeedUitlity.account(fields.address.toLowerCase());
 
     // set to socket
-    req.account = fields.address;
+    req.account = fields.address.toLowerCase();
     
     // set to cache
     const session = new SessionModel({
@@ -137,9 +156,12 @@ export default class AuthController extends NFTController {
     // save
     await session.save();
 
+    // subscribe
+    req.subscribe(`user:${address}`.toLowerCase(), this.myUserListener);
+
     // success
     return {
-      result  : true,
+      result  : await user.toJSON(),
       success : true,
     };
   }

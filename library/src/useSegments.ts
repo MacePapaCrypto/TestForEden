@@ -5,7 +5,7 @@ import useSocket from './useSocket';
 import React, { useEffect, useState } from 'react';
 
 // use auth hook
-const useSegments = () => {
+const useSegments = (cacheTimeout = (60 * 1000)) => {
   // socket
   const auth = useAuth();
   const socket = useSocket();
@@ -48,7 +48,9 @@ const useSegments = () => {
         name,
         type,
         order,
-      });
+
+        account : auth?.account,
+      }, cacheTimeout);
 
       // set segments
       setSegments(loadedSegments.segments);

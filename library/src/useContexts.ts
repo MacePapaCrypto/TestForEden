@@ -86,7 +86,7 @@ const useContexts = (props = {}) => {
       // load
       loadedContexts = await socket.post(`/context/updates`, {
         contexts,
-      });
+      }, props.cacheTimeout || (60 * 1000));
 
       // set contexts
       setContexts(loadedContexts);

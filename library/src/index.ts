@@ -3,13 +3,16 @@
 import Box from './Box';
 import Link from './Link';
 import Post from './Post';
-import Layout from './Layout';
 import SideBar from './SideBar';
 import PostList from './PostList';
 import ScrollBar from './ScrollBar';
+import NFTPicker from './NFTPicker';
 import PostCreate from './PostCreate';
-import LayoutItem from './LayoutItem';
+import PostTyping from './PostTyping';
 import SideBarSegment from './SideBarSegment';
+
+// profile
+import ProfileCard from './ProfileCard';
 
 // auth
 import AuthContext from './AuthContext';
@@ -30,6 +33,7 @@ import usePost from './usePost';
 import useAuth from './useAuth';
 import usePosts from './usePosts';
 import useBrowse from './useBrowse';
+import useTyping from './useTyping';
 import useSocket from './useSocket';
 import useContexts from './useContexts';
 import useSegments from './useSegments';
@@ -38,15 +42,16 @@ import useSegments from './useSegments';
 export {
   Box,
   Link,
-  Layout,
   SideBar,
   ScrollBar,
-  LayoutItem,
+  NFTPicker,
   SideBarSegment,
 
   Post,
   PostList,
   PostCreate,
+  PostTyping,
+  ProfileCard,
 
   AuthContext,
   AuthProvider,
@@ -63,6 +68,7 @@ export {
   usePost,
   useAuth,
   usePosts,
+  useTyping,
   useSocket,
   useBrowse,
   useContexts,

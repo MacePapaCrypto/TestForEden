@@ -2,12 +2,13 @@
 // import props
 import Tag from '@mui/icons-material/Tag';
 import Image from '@mui/icons-material/Image';
+import useAuth from './useAuth';
 import ShortText from '@mui/icons-material/ShortText';
 import PostInput from './PostInput';
 import VideoLibrary from '@mui/icons-material/VideoLibrary';
 import LoadingButton from '@mui/lab/LoadingButton';
 import React, { useState } from 'react';
-import { Box, Chip, Stack, Button, Avatar, Paper, AppBar, Tabs, Tab, useTheme, IconButton, Typography } from '@mui/material';
+import { Box, Chip, Stack, Avatar, Paper, AppBar, Tabs, Tab, Tooltip, useTheme, IconButton, Typography } from '@mui/material';
 
 /**
  * create content
@@ -16,6 +17,7 @@ import { Box, Chip, Stack, Button, Avatar, Paper, AppBar, Tabs, Tab, useTheme, I
  */
 const NFTPostCreate = (props = {}) => {
   // post type
+  const auth = useAuth();
   const theme = useTheme();
   const types = ['text', 'image', 'video'];
   
@@ -48,6 +50,9 @@ const NFTPostCreate = (props = {}) => {
     setPosting(false);
   };
 
+  // avatar width
+  const avatarWidth = props.size === 'small' ? 40 : 50;
+
   // return jsx
   return (
     <Box sx={ {
@@ -56,15 +61,17 @@ const NFTPostCreate = (props = {}) => {
       <Stack spacing={ 2 } direction="row">
         { /* POST USER `*/ }
         <Box>
-          <Avatar alt="User 1" src={ null } sx={ {
-            width  : props.size === 'small' ? 40 : 50,
-            height : props.size === 'small' ? 40 : 50,
-          } } />
+          <Tooltip title={ auth.authed?.avatar?.value?.name || auth.account || 'Anonymous' }>
+            <Avatar alt={ auth.authed?.avatar?.value?.name || auth.account || 'Anonymous' } sx={ {
+              width  : avatarWidth,
+              height : avatarWidth,
+            } } src={ auth.authed?.avatar?.image?.url ? `https://media.dashup.com/?width=${avatarWidth}&height=${avatarWidth}&src=${auth.authed.avatar.image.url}` : null } />
+          </Tooltip>
         </Box>
         { /* / POST USER */ }
 
         <Paper sx={ {
-          flex : 1,
+          flex   : 1,
 
           '& .MuiTab-root' : {
             minHeight : theme.spacing(6),
@@ -168,6 +175,7 @@ const NFTPostCreate = (props = {}) => {
                       onFocus={ () => setFocus(true) }
                       onEnter={ onPost }
                       onChange={ (v) => setValue(v) }
+                      onKeyDown={ props.onKeyDown }
                     />
                   ) : (
                     <Typography>

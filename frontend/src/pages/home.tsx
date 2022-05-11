@@ -42,7 +42,7 @@ const HomePage = (props = {}) => {
   // layout
   return (
     <Box flex={ 1 } display="flex" flexDirection="column">
-      <Container maxWidth="xl" sx={ {
+      <Container sx={ {
         py   : 2,
         flex : 1,
       } }>
@@ -53,7 +53,7 @@ const HomePage = (props = {}) => {
                 onPost={ onPost }
               />
 
-              { !feed.posts?.length && (
+              { !feed.posts?.length && feed.loading && (
                 <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
                   <CircularProgress />
                 </Box>
@@ -69,6 +69,7 @@ const HomePage = (props = {}) => {
                 loading={ feed.loading }
                 PostProps={ {
                   history,
+                  withReplies : true,
                 } }
               />
             </Stack>

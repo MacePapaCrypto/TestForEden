@@ -34,7 +34,20 @@ export default {
     // consult the documentation for details:
     // https://github.com/rollup/plugins/tree/master/packages/commonjs
     resolve({
-      dedupe  : ['react', 'react-dom', '@mui/lab', '@mui/system', '@emotion/react', '@mui/material', '@mui/icons-material', 'react-router-dom'],
+      dedupe  : [
+        'react',
+        'react-dom',
+        'react-router-dom',
+
+        '@mui/lab',
+        '@mui/system',
+        '@emotion/react',
+        '@mui/material',
+        '@mui/icons-material',
+
+        '@fortawesome/react-fontawesome',
+        '@fortawesome/pro-regular-svg-icons',
+      ],
       extensions,
     }),
     replace({

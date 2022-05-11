@@ -1,7 +1,6 @@
 
 // import react
 import Add from '@mui/icons-material/Add';
-import More from '@mui/icons-material/MoreVert';
 import Logo from './assets/logo.png';
 import Link from './Link';
 import useAuth from './useAuth';
@@ -12,11 +11,12 @@ import LoadingButton from '@mui/lab/LoadingButton';
 import { DndProvider } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import React, { useState } from 'react';
+import { Box, Stack, Avatar, Tooltip, Divider, useTheme, CircularProgress, Button, TextField } from '@mui/material';
 import { Dialog, DialogTitle, DialogContent, DialogActions, MenuList, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import { Box, Stack, Avatar, Tooltip, Divider, useTheme, IconButton, CircularProgress, Typography, Button, TextField } from '@mui/material';
 
 // sidebar item
 import ScrollBar from './ScrollBar';
+import SideBarTop from './SideBarTop';
 import SideBarContext from './SideBarContext';
 import SideBarSegment from './SideBarSegment';
 
@@ -221,16 +221,19 @@ const NFTSideBar = (props = {}) => {
     }).filter((s) => !s.parent);
   };
 
+  // width
+  const sectionWidth = theme.spacing(6).replace('px', '');
+
   // return jsx
   return (
     <>
       <Box sx={ {
         top           : 0,
-        width         : browse.segment ? theme.spacing(40) : theme.spacing(10),
+        width         : (browse.segment || browse.account) ? theme.spacing(40) : theme.spacing(10),
         height        : '100vh',
         display       : 'flex',
         position      : 'sticky',
-        background    : `rgba(0,0,0,0.2)`,
+        background    : theme.palette.background.paper,
         transition    : 'all 0.2s ease',
         flexDirection : 'row',
 
@@ -241,7 +244,7 @@ const NFTSideBar = (props = {}) => {
             <Stack spacing={ 1 } sx={ {
               px        : theme.spacing(2),
               py        : theme.spacing(2),
-              minHeight : `100%`,
+              minHeight : `100vh`,
             } }>
               <Box sx={ {
                 cursor : 'pointer',
@@ -249,14 +252,12 @@ const NFTSideBar = (props = {}) => {
                 <Tooltip title="Home" placement="right">
                   <Link to="/">
                     <Avatar sx={ {
-                      width  : theme.spacing(6),
-                      height : theme.spacing(6),
+                      width  : `${sectionWidth}px`,
+                      height : `${sectionWidth}px`,
                     } } src={ Logo } />
                   </Link>
                 </Tooltip>
               </Box>
-
-              <Divider />
 
               { !!browse.segment && !segment.segments.find((s) => s.id === browse.segment.id) && (
                 <>
@@ -270,8 +271,6 @@ const NFTSideBar = (props = {}) => {
                     isActive
 
                   />
-
-                  <Divider />
                 </>
               ) }
               
@@ -305,17 +304,13 @@ const NFTSideBar = (props = {}) => {
                 }) }
               </DndProvider>
 
-              { !!segment.segments?.length && (
-                <Divider />
-              ) }
-
               <Box sx={ {
                 cursor : 'pointer',
               } } onClick={ () => loading || auth.loading || segment.loading ? undefined : onCreate() }>
                 <Tooltip title="Add Segment" placement="right">
                   <Avatar sx={ {
-                    width      : theme.spacing(6),
-                    height     : theme.spacing(6),
+                    width      : `${sectionWidth}px`,
+                    height     : `${sectionWidth}px`,
                     bgcolor    : `rgba(255,255,255,0.1)`,
                     transition : `all 0.2s ease`,
 
@@ -334,12 +329,32 @@ const NFTSideBar = (props = {}) => {
                   </Avatar>
                 </Tooltip>
               </Box>
+
+              <Box sx={ {
+                mt     : 'auto!important',
+                cursor : 'pointer',
+              } } to={ `/a/${auth.account}` } component={ Link } onClick={ (e) => {
+                // check auth
+                if (!auth.account) {
+                  e.preventDefault();
+                  auth.login();
+                }
+              } }>
+                <Tooltip title="Profile" placement="right">
+                  <Avatar sx={ {
+                    width      : `${sectionWidth}px`,
+                    height     : `${sectionWidth}px`,
+                    bgcolor    : `rgba(255,255,255,0.1)`,
+                    transition : `all 0.2s ease`,
+                  } } src={ auth.authed?.avatar?.image?.url ? `https://media.dashup.com/?width=${sectionWidth}&height=${sectionWidth}&src=${auth.authed.avatar.image.url}` : null } />
+                </Tooltip>
+              </Box>
             </Stack>
           </ScrollBar>
         </Box>
         <Box sx={ {
-          width      : browse.segment ? theme.spacing(30) : '0px',
-          opacity    : browse.segment ? 1 : 0,
+          width      : (browse.segment || browse.account) ? theme.spacing(30) : '0px',
+          opacity    : (browse.segment || browse.account) ? 1 : 0,
           overflow   : 'hidden',
           transition : 'all 0.2s ease',
         } }>
@@ -349,27 +364,8 @@ const NFTSideBar = (props = {}) => {
             width  : theme.spacing(30),
             height : '100vh',
           } }>
-            <Stack spacing={ 1 }>
-              <Box height={ theme.spacing(6) } display="flex" alignItems="center" flexDirection="row">
-                <Link to={ `/s/${browse.segment?.id}` } sx={ {
-                  color  : theme.palette.text.primary,
-                  cursor : 'pointer',
-                } }>
-                  <Typography variant="subtitle1" fontWeight="bold">
-                    { browse.segment?.name }
-                  </Typography>
-                </Link>
-                <IconButton
-                  sx={ {
-                    marginLeft : 'auto',
-                  } }
-                  color="inherit"
-                >
-                  <More />
-                </IconButton>
-              </Box>
-
-              <Divider />
+            <Stack>
+              <SideBarTop segment={ browse.segment } account={ browse.account } />
 
               { context.loading === true ? (
                 <Box py={ 3 } display="flex" flexDirection="row" alignItems="center" justifyContent="center">
@@ -404,10 +400,6 @@ const NFTSideBar = (props = {}) => {
                       />
                     );
                   }) }
-                  
-                  { !!context.contexts?.length && (
-                    <Box my={ 1 } component={ Divider } />
-                  ) }
 
                   <MenuItem onClick={ () => setCreating('context') }>
                     <ListItemIcon>

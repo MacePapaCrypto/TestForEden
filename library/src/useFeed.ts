@@ -119,7 +119,7 @@ const useFeed = (props = {}) => {
   }, [JSON.stringify(props)]);
 
   // return posts
-  return {
+  const actualFeed = {
     ...post,
     create : createPost,
 
@@ -127,6 +127,12 @@ const useFeed = (props = {}) => {
     updated,
     loading,
   };
+
+  // nft feed
+  window.NFTFeed = actualFeed;
+
+  // return feed
+  return actualFeed;
 };
 
 // export default

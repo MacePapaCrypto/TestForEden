@@ -11,11 +11,11 @@ import { SideBar, BrowseProvider } from '@nft/ui';
  */
 const MainLayout = (props = {}) => {
   // params
-  const { post, segment, context } = useParams();
+  const { post, segment, context, account } = useParams();
 
   // return jsx
   return (
-    <BrowseProvider post={ post } segment={ segment } context={ context }>
+    <BrowseProvider post={ post } segment={ segment } context={ context } account={ account }>
       <Box flex={ 1 } display="flex" flexDirection="row">
         <SideBar />
         <Box flex={ 1 }>
