@@ -3,9 +3,10 @@ import NftController from './nft';
 import PostController from './post';
 import AuthController from './auth';
 import FeedController from './feed';
+import SpaceController from './space';
+import FollowController from './follow';
+import MemberController from './member';
 import AccountController from './account';
-import ContextController from './context';
-import SegmentController from './segment';
 
 // export default
 export default {
@@ -13,7 +14,8 @@ export default {
   PostController,
   AuthController,
   FeedController,
+  SpaceController,
+  FollowController,
+  MemberController,
   AccountController,
-  ContextController,
-  SegmentController,
 };

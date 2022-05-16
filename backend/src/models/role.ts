@@ -4,7 +4,7 @@ import Model, { Type } from '../base/model';
 /**
  * export model
  */
-@Type('role')
+@Type('role', 'space')
 export default class RoleModel extends Model {
 
   /**
@@ -15,8 +15,8 @@ export default class RoleModel extends Model {
    *
    * @returns 
    */
-  static findBySegment(segment, ...args) {
+  static findBySpace(id, ...args) {
     // find by ref
-    return RoleModel.findByRef(`segment:${segment}`, ...args);
+    return RoleModel.findByRef(`space:${id}`, ...args);
   }
 }

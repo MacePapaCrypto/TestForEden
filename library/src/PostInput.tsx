@@ -1,14 +1,19 @@
 
 // import dependencies
-import useId from './useId';
+import Prism from 'prismjs';
+import SoftBreak from 'slate-soft-break';
 import stringify from 'remark-stringify';
 import { unified } from 'unified';
 import PasteLinkify from 'slate-paste-linkify';
+import { withHistory } from 'slate-history';
 import { slateToRemark } from 'remark-slate-transformer';
 import { Box, useTheme } from '@mui/material';
+import { Slate, Editable, withReact } from 'slate-react';
+import { Text, Editor, Transforms, createEditor } from 'slate';
 import React, { useMemo, useState, useCallback, useEffect } from 'react';
-import { Slate, Editable, withReact, ReactEditor } from 'slate-react';
-import { Text, Editor, Transforms, Range, createEditor } from 'slate';
+
+// eslint-disable-next-line
+;Prism.languages.markdown=Prism.languages.extend("markup",{}),Prism.languages.insertBefore("markdown","prolog",{blockquote:{pattern:/^>(?:[\t ]*>)*/m,alias:"punctuation"},code:[{pattern:/^(?: {4}|\t).+/m,alias:"keyword"},{pattern:/``.+?``|`[^`\n]+`/,alias:"keyword"}],title:[{pattern:/\w+.*(?:\r?\n|\r)(?:==+|--+)/,alias:"important",inside:{punctuation:/==+$|--+$/}},{pattern:/(^\s*)#+.+/m,lookbehind:!0,alias:"important",inside:{punctuation:/^#+|#+$/}}],hr:{pattern:/(^\s*)([*-])([\t ]*\2){2,}(?=\s*$)/m,lookbehind:!0,alias:"punctuation"},list:{pattern:/(^\s*)(?:[*+-]|\d+\.)(?=[\t ].)/m,lookbehind:!0,alias:"punctuation"},"url-reference":{pattern:/!?\[[^\]]+\]:[\t ]+(?:\S+|<(?:\\.|[^>\\])+>)(?:[\t ]+(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\)))?/,inside:{variable:{pattern:/^(!?\[)[^\]]+/,lookbehind:!0},string:/(?:"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|\((?:\\.|[^)\\])*\))$/,punctuation:/^[\[\]!:]|[<>]/},alias:"url"},bold:{pattern:/(^|[^\\])(\*\*|__)(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^\*\*|^__|\*\*$|__$/}},italic:{pattern:/(^|[^\\])([*_])(?:(?:\r?\n|\r)(?!\r?\n|\r)|.)+?\2/,lookbehind:!0,inside:{punctuation:/^[*_]|[*_]$/}},url:{pattern:/!?\[[^\]]+\](?:\([^\s)]+(?:[\t ]+"(?:\\.|[^"\\])*")?\)| ?\[[^\]\n]*\])/,inside:{variable:{pattern:/(!?\[)[^\]]+(?=\]$)/,lookbehind:!0},string:{pattern:/"(?:\\.|[^"\\])*"(?=\)$)/}}}}),Prism.languages.markdown.bold.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.italic.inside.url=Prism.util.clone(Prism.languages.markdown.url),Prism.languages.markdown.bold.inside.italic=Prism.util.clone(Prism.languages.markdown.italic),Prism.languages.markdown.italic.inside.bold=Prism.util.clone(Prism.languages.markdown.bold); // prettier-ignore
 
 // create withmentions hook
 const withMentions = (editor) => {
@@ -31,6 +36,8 @@ const withMentions = (editor) => {
 
 // leaf
 const SlateLeaf = ({ attributes, children, leaf }) => {
+  // theme
+  const theme = useTheme();
 
   // return leaf child
   return (
@@ -39,11 +46,17 @@ const SlateLeaf = ({ attributes, children, leaf }) => {
 
       sx={ {
         fontStyle      : leaf.italic ? 'italic' : null,
-        fontWeight     : leaf.bold ? 'bold' : null,
+        fontWeight     : leaf.bold ? theme.typography.fontWeightMedium : null,
         textDecoration : leaf.underlined ? 'underline' : '',
+
+        ...(leaf.code ? {
+          color      : theme.palette.primary.main,
+          padding    : theme.spacing(.25),
+          fontFamily : 'monospace',
+        } : {})
       } }
       component="span"
-      className={ leaf.code ? 'pre' : null }>
+    >
       { children }
     </Box>
   );
@@ -54,7 +67,7 @@ const SlateElement = (props = {}) => {
 
   // return element
   return (
-    <p { ...props.attributes }>{ props.children }</p>
+    <Box { ...props.attributes }>{ props.children }</Box>
   );
 };
 
@@ -64,16 +77,12 @@ const SlateElement = (props = {}) => {
  * @param props 
  */
 const NFTPostInput = (props = {}) => {
-  // theme
-  const uuid = useId();
-  const theme = useTheme();
-
   // editor
-  const editor = useMemo(() => withMentions(withReact(createEditor())), []);
+  const editor = useMemo(() => withMentions(withHistory(withReact(createEditor()))), []);
 
   // empty state
   const emptyState = [{
-    type     : 'paragraph',
+    type     : 'root',
     children : [{ text : '' }]
   }];
 
@@ -83,6 +92,9 @@ const NFTPostInput = (props = {}) => {
 
   // plugins
   const plugins = [
+    SoftBreak({
+      shift : true,
+    }),
     PasteLinkify(),
   ];
 
@@ -96,7 +108,7 @@ const NFTPostInput = (props = {}) => {
   useEffect(() => {
     // reset
     setValue([{
-      type     : 'paragraph',
+      type     : 'root',
       children : [{ text : '' }]
     }]);
     setMarkdown('');
@@ -126,17 +138,72 @@ const NFTPostInput = (props = {}) => {
     const processor = unified().use(slateToRemark).use(stringify);
 
     // run processor
-    const ast = processor.runSync({
-      type     : 'root',
-      children : val,
+    const lines = val.map((item) => {
+      // return
+      return processor.stringify(processor.runSync(item));
     });
 
     // stringify
-    const text = processor.stringify(ast);
+    const text = lines.join('');
 
     // check props
     setMarkdown(text);
   };
+
+  // decorate
+  const decorate = useCallback(([node, path]) => {
+    // ragnes
+    const ranges = [];
+
+    // check is text
+    if (!Text.isText(node)) {
+      return ranges;
+    }
+
+    // get length
+    const getLength = token => {
+      if (typeof token === 'string') {
+        return token.length;
+      } else if (typeof token.content === 'string') {
+        return token.content.length;
+      } else {
+        return token.content.reduce((l, t) => l + getLength(t), 0);
+      }
+    }
+
+    // expound tokens
+    const tokens = Prism.tokenize(node.text, Prism.languages.markdown);
+    let start = 0;
+
+    // loop tokens
+    for (const token of tokens) {
+      // get length
+      const length = getLength(token);
+      const end = start + length;
+
+      // add range
+      if (typeof token !== 'string') {
+        // push range
+        ranges.push({
+          focus  : {
+            path,
+            offset : end,
+          },
+          anchor : {
+            path,
+            offset : start,
+          },
+          [token.type] : true,
+        });
+      }
+
+      // set start
+      start = end;
+    }
+
+    // return ranges
+    return ranges;
+  }, []);
 
   // on key down
   const onKeyDown = (e) => {
@@ -147,8 +214,12 @@ const NFTPostInput = (props = {}) => {
     if (e.keyCode !== 13) return true;
 
     // check shift key
-    if (e.shiftKey && props.onShiftEnter) props.onShiftEnter(e);
-    if (!e.shiftKey && props.onEnter) props.onEnter(e);
+    if (e.shiftKey && props.onShiftEnter) {
+      return props.onShiftEnter(e);
+    }
+    if (!e.shiftKey && props.onEnter) {
+      return props.onEnter(e);
+    }
   };
 
   // return jsx
@@ -165,6 +236,7 @@ const NFTPostInput = (props = {}) => {
         onBlur={ () => props.onBlur() }
         plugins={ plugins }
         onFocus={ () => props.onFocus() }
+        decorate={ decorate }
         onKeyDown={ (e) => onKeyDown(e) }
         renderLeaf={ renderLeaf }
         renderElement={ renderElement }

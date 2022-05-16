@@ -13,7 +13,7 @@ class FtmScanUtility {
    *
    * @param contract 
    */
-  async getABI (contract) {
+  async getABI(contract) {
     // get abi
     const res = await fetch(`https://api.ftmscan.com/api?module=contract&action=getabi&address=${contract}&apikey=${config.get('ftmscan.api')}`);
     
@@ -34,7 +34,7 @@ class FtmScanUtility {
    * @param address 
    * @param param2 
    */
-  async getNFTTransactions (address, opts = {}) {
+  async getNFTTransactions(address, opts = {}) {
     // expound
     const { page = 1, offset = 100, sort = 'asc', startBlock = 0, endBlock = 99999999 } = opts;
 

@@ -1,12 +1,12 @@
 
 import Model, { Type } from '../base/model';
 import RoleModel from './role';
-import SegmentModel from './segment';
+import SpaceModel from './space';
 
 /**
  * export model
  */
-@Type('member')
+@Type('member', 'space')
 export default class MemberModel extends Model {
 
   /**
@@ -27,9 +27,22 @@ export default class MemberModel extends Model {
    *
    * @returns 
    */
-  getSegment() {
+  getSpace() {
     // return segment
-    return SegmentModel.findById(this.get('segment'));
+    return SpaceModel.findById(this.get('space'));
+  }
+
+  /**
+   * find by segment
+   *
+   * @param segment
+   * @param args
+   *
+   * @returns 
+   */
+  static findBySpace(space, ...args) {
+    // find by ref
+    return MemberModel.findByRef(`space:${space}`, ...args);
   }
   
   /**
@@ -47,9 +60,9 @@ export default class MemberModel extends Model {
    *
    * @param account 
    */
-  static async findByAccountSegment(account, segment, ...args) {
+  static async findByAccountSpace(account, space, ...args) {
     // find by ref
-    return (await MemberModel.findByRef(`account:${account}:${segment}`, ...args))[0];
+    return (await MemberModel.findByRef(`account:${account}:${space}`.toLowerCase(), ...args))[0];
   }
 
   /**
@@ -66,15 +79,117 @@ export default class MemberModel extends Model {
   }
 
   /**
-   * find by segment
+   * add member
    *
-   * @param segment
-   * @param args
-   *
+   * @param lowerAccount 
+   * @param lowerSubject 
    * @returns 
    */
-  static findBySegment(segment, ...args) {
-    // find by ref
-    return MemberModel.findByRef(`segment:${segment}`, ...args);
+  static async addMember(lowerAccount, lowerSubject) {
+    // lowercase
+    lowerAccount = lowerAccount.toLowerCase();
+    lowerSubject = lowerSubject.toLowerCase();
+
+    // actual space
+    const spaceModel = lowerSubject && await SpaceModel.findById(lowerSubject);
+
+    // check to model
+    if (!spaceModel) return [];
+
+    // lock
+    const spaceLock = await MemberModel.pubsub.lock(lowerSubject);
+    const memberLock = await MemberModel.pubsub.lock(`member.${lowerAccount}`);
+
+    // load space
+    const actualSpace = await SpaceModel.findById(lowerSubject);
+
+    // new count
+    let newCount = (actualSpace.get('count.members') || 0);
+    newCount = newCount < 0 ? 0 : newCount;
+    let newMember = null;
+
+    // try/catch
+    try {
+      // load existing member
+      newMember = await MemberModel.findByAccountSpace(lowerAccount, actualSpace.id);
+
+      // if existing member
+      if (!newMember) {
+        // create new member
+        newMember = new MemberModel({
+          refs    : [
+            `space:${actualSpace.id}`,
+            `account:${lowerAccount}`,
+            `account:${lowerAccount}:${actualSpace.id}`,
+          ],
+          roles   : [],
+          space   : actualSpace.id,
+          account : lowerAccount,
+        });
+
+        // save member
+        await newMember.save();
+
+        // add to member count
+        newCount = newCount + 1;
+
+        // update count
+        actualSpace.set('count.members', newCount);
+        await actualSpace.save();
+      }
+    } catch (e) {}
+
+    // unlock
+    spaceLock();
+    memberLock();
+
+    // return
+    return [newMember, newCount];
+  }
+
+  /**
+   * removes follower
+   */
+  async remove() {
+    // super
+    const removing = super.remove();
+
+    // actual space
+    const spaceModel = this.get('space') && await SpaceModel.findById(this.get('space'));
+
+    // check to model
+    if (!spaceModel) return [];
+
+    // get count
+    let newCount = (spaceModel.get('count.members') || 0) - 1;
+    newCount = newCount < 0 ? 0 : newCount;
+
+    // from background
+    const bgFollow = Promise.all([
+      (async () => {
+        // lock
+        const spaceLock = await SpaceModel.pubsub.lock(this.get('space').toLowerCase());
+  
+        // try/catch
+        try {
+          // load accounts
+          const actualSpace = await SpaceModel.findById(this.get('space'));
+
+          // get count
+          let changeCount = (actualSpace.get('count.members') || 0) - 1;
+          changeCount = changeCount < 0 ? 0 : changeCount;
+              
+          // add account
+          actualSpace.set('count.members', changeCount);
+          await actualSpace.save();
+        } catch (e) {}
+  
+        // unlock
+        spaceLock();
+      })(),
+    ]);
+
+    // remove
+    return [removing, newCount];
   }
 }

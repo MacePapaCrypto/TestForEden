@@ -10,12 +10,12 @@ import cassandra from 'cassandra-driver';
 import { Server } from 'socket.io';
 
 // local dependencies
+// import Media from './base/media';
 import config from './config';
 import daemons from './daemons';
 import NFTModel from './base/model';
 import NFTPubSub from './utilities/pubsub';
 import controllers from './controllers';
-import  Media from './base/media';
 
 // events
 class NFTBackend extends Events {
@@ -136,8 +136,9 @@ class NFTBackend extends Events {
       // set initial acls
       socket.acl = ['nouser'];
       
+      // add media to socket
+      // const media = new Media.Media(socket);
 
-      let media = new Media.Media(socket)
       // subscriptions
       socket.subscriptions = new Map();
 
@@ -186,8 +187,8 @@ class NFTBackend extends Events {
 
       // on disconnect
       socket.on('disconnect', () => this.emit('disconnection', socket));
+      /*
       socket.on('message', async (event, callback) => {
-        console.log(event);
         switch (event.type) {
           case Media.MessageNames.GetRouterRtpCapabilities:
             media.onGetRouterRtpCapabilities(event, callback);
@@ -224,6 +225,7 @@ class NFTBackend extends Events {
             break;
         }
       });
+      */
 
       // add router listener
       socket.on('call', (id, method, path, data) => {

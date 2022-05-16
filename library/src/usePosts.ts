@@ -13,7 +13,7 @@ const usePosts = (props = {}) => {
   const auth = useAuth();
   const socket = useSocket();
   const [updated, setUpdated] = useState(new Date());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
   
   // let posts
   let [posts, setPosts] = useState([]);
@@ -42,13 +42,12 @@ const usePosts = (props = {}) => {
     const filter = { ...props };
 
     // check post in context
+    const filterSpace = filter.space;
     const filterThread = filter.thread;
     const filterAccount = filter.account;
-    const filterContext = filter.context;
-    const filterSegment = filter.segment;
 
     // filter
-    if (!filterThread && !filterAccount && !filterContext && !filterSegment) return;
+    if (!filterThread && !filterAccount && !filterSpace) return;
     
     // found post
     const foundPost = posts.find((p) => p.id === post.id || p.temp === post.temp || p.temp === post.id);
@@ -56,22 +55,18 @@ const usePosts = (props = {}) => {
     // create or replace post
     if (!foundPost) {
       // post elements
+      const postSpace = post.space?.id || post.space;
       const postThread = post.thread?.id || post.thread;
       const postAccount = post.account?.id || post.account;
-      const postContext = post.context?.id || post.context;
-      const postSegment = post.segment?.id || post.segment;
 
       // check
+      if (filterSpace && (!postSpace || (postSpace !== filterSpace))) {
+        return;
+      }
       if (filterThread && (!postThread || (postThread !== filterThread))) {
         return;
       }
       if (filterAccount && (!postAccount || (postAccount !== filterAccount))) {
-        return;
-      }
-      if (filterContext && (!postContext || (postContext !== filterContext))) {
-        return;
-      }
-      if (filterSegment && (!postSegment || (postSegment !== filterSegment))) {
         return;
       }
 
@@ -129,15 +124,14 @@ const usePosts = (props = {}) => {
 
   // create
   const createPost = async ({
+    space = null,
     thread = null,
-    context = null,
-    segment = null,
     content = '',
 
     withTemp = props.feed === 'chat',
   }) => {
     // set loading
-    setLoading(true);
+    setLoading('create');
 
     // temp id
     const tempId = uuid();
@@ -148,10 +142,9 @@ const usePosts = (props = {}) => {
       status  : 'posting',
       account : auth.account ? auth.account.toLowerCase() : null,
       
+      space,
       thread,
       content,
-      context,
-      segment,
     };
 
     // check with temp
@@ -165,22 +158,21 @@ const usePosts = (props = {}) => {
       // load
       loadedPost = await socket.post('/post', {
         temp : tempId,
+        space,
         thread,
-        segment,
         content,
-        context,
       });
 
       // create or replace
       createOrReplace(loadedPost);
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // done loading
-    setLoading(false);
+    setLoading(null);
 
     // return posts
     return loadedPost;
@@ -256,12 +248,12 @@ const usePosts = (props = {}) => {
       createOrReplace(loadedPost);
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // done loading
-    setLoading(false);
+    setLoading(null);
 
     // return posts
     return loadedPost;
@@ -282,12 +274,12 @@ const usePosts = (props = {}) => {
       setPosts(posts);
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // done loading
-    setLoading(false);
+    setLoading(null);
 
     // return posts
     return true;
@@ -299,17 +291,20 @@ const usePosts = (props = {}) => {
     const filter = { ...props };
 
     // check filter
-    if (!filter.context && !filter.account && !filter.segment && !filter.thread) return;
+    if (!filter.space && !filter.account && !filter.thread) return;
 
     // set loading
     posts = [];
-    setLoading(true);
+    setLoading('list');
     setPosts([]);
 
     // check filter
-    if (props.feed === 'chat') {
+    if (props.feed === 'new') {
       filter.dir = filter.dir || 'desc';
       filter.sort = filter.sort || 'createdAt';
+    } else if (props.feed === 'hot') {
+      filter.dir = filter.dir || 'desc';
+      filter.sort = filter.sort || 'rank.score';
     }
 
     // loaded
@@ -326,12 +321,12 @@ const usePosts = (props = {}) => {
       setUpdated(new Date());
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // set loading
-    setLoading(false);
+    setLoading(null);
 
     // return posts
     return loadedPosts;

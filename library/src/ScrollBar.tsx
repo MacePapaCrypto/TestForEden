@@ -72,7 +72,8 @@ const NFTScrollBar = (props = {}) => {
 
     // remove
     return () => {
-      scrollRef.current.removeEventListener('scroll', onScroll);
+      // remove event listener
+      scrollRef.current?.removeEventListener('scroll', onScroll);
     };
   }, [scrollRef.current]);
 

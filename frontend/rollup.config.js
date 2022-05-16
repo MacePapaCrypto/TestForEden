@@ -11,7 +11,7 @@ import livereoload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 
 // rollup
-const production = !process.env.ROLLUP_WATCH;
+const production = false && !process.env.ROLLUP_WATCH;
 
 // extensions
 const extensions = ['.js', '.jsx', '.ts', '.tsx'];
@@ -52,7 +52,7 @@ export default {
     }),
     replace({
       'process.nextTick'     : 'setImmediate',
-      'process.env.NODE_ENV' : JSON.stringify('production'),
+      'process.env.NODE_ENV' : JSON.stringify(production ? 'production' : 'development'),
     }),
     commonjs({
       include : [
@@ -60,7 +60,7 @@ export default {
       ],
       exclude : [
         'node_modules/process-es6/**',
-      ]
+      ],
     }),
     assets({
       assets : [

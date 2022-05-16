@@ -1,8 +1,8 @@
 
 // importe dependencies
 import FeedModel from '../models/feed';
+import SpaceModel from '../models/space';
 import FollowModel from '../models/follow';
-import SegmentModel from '../models/segment';
 
 // embed utility
 class FeedUtility {
@@ -60,17 +60,17 @@ class FeedUtility {
 
     // add refs
     const [
-      segments,
+      spaces,
       following,
     ] = await Promise.all([
-      SegmentModel.findByAccount(account),
+      SpaceModel.findByAccount(account),
       FollowModel.findFollowing(account),
     ]);
 
     // loop segments
-    segments.map((segment) => {
+    spaces.map((space) => {
       // add to feed
-      refs.add(`segment:${segment.get('id')}`);
+      refs.add(`space:${space.get('id')}`);
     });
     following.map((follow) => {
       // add to feed

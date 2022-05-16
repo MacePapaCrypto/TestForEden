@@ -1,15 +1,13 @@
 
-import Config from '@mui/icons-material/MoreHoriz';
 import moment from 'moment';
 import dotProp from 'dot-prop';
-import ReactMarkdown from 'react-markdown';
 import { useIntersectionObserver } from 'usehooks-ts';
 import React, { useRef, useEffect } from 'react';
 import { Box, Stack, Avatar, useTheme, Tooltip, IconButton } from '@mui/material';
 
 // icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTag, faEllipsis, faHeart, faComment, faShareNodes } from '@fortawesome/pro-regular-svg-icons';
+import { faEllipsis, faHeart, faComment, faShareNodes } from '@fortawesome/pro-regular-svg-icons';
 
 // local hooks
 import useTyping from './useTyping';
@@ -24,6 +22,7 @@ import Link from './Link';
 import PostList from './PostList';
 import ScrollBar from './ScrollBar';
 import PostTyping from './PostTyping';
+import PostMarkdown from './PostMarkdown';
 
 // nft post
 const NFTPost = (props = {}) => {
@@ -79,38 +78,21 @@ const NFTPost = (props = {}) => {
     // links
     let links = (item.links || []);
 
-    // check context
-    if (item.segment?.id && !links.find((l) => l.ref === `context:${item.segment.id}`)) {
+    // check space
+    if (item.space?.id && !links.find((l) => l.ref === `space:${item.space.id}`)) {
       // add to start
       links.unshift({
-        to   : `/s/${item.segment.id}`,
-        ref  : `segment:${item.segment.id}`,
-        type : 'segment',
-        name : item.segment.name,
-      });
-    }
-
-    // check context
-    if (item.context?.id && !links.find((l) => l.ref === `context:${item.context.id}`)) {
-      // add to start
-      links.unshift({
-        to   : `/c/${item.context.id}`,
-        ref  : `context:${item.context.id}`,
-        type : 'context',
-        name : item.context.name,
+        to   : `/s/${item.space.id}`,
+        ref  : `space:${item.space.id}`,
+        type : 'space',
+        name : item.space.name,
       });
     }
 
     // remove if in segment
-    if (browse.segment?.id) {
+    if (browse.space?.id) {
       // remove segment
-      links = links.filter((l) => l.ref !== `segment:${browse.segment.id}`);
-    }
-
-    // remove if in segment
-    if (browse.context?.id) {
-      // remove segment
-      links = links.filter((l) => l.ref !== `context:${browse.context.id}`);
+      links = links.filter((l) => l.ref !== `space:${browse.space.id}`);
     }
 
     // return links
@@ -147,25 +129,40 @@ const NFTPost = (props = {}) => {
             maxWidth : avatarWidth,
           } }>
             { (!props.inThread || props.feed !== 'chat') && (
-              <Tooltip title={ item.user?.avatar?.value?.name || item.account }>
-                <Avatar alt={ item.user?.avatar?.value?.name || item.account } sx={ {
-                  width  : avatarWidth,
-                  height : avatarWidth,
-      
-                  ...(props.feed === 'chat' ? {
-                    top      : 0,
-                    left     : 0,
-                    position : 'absolute',
-                  } : {})
-                } } src={ item.user?.avatar?.image?.url ?  `https://media.dashup.com/?width=${avatarWidth}&height=${avatarWidth}&src=${item.user.avatar.image.url}` : null } />
-              </Tooltip>
+              <Link to={ `/a/${item.account}` }>
+                <Tooltip title={ item.user?.avatar?.value?.name || item.account }>
+                  <Avatar alt={ item.user?.avatar?.value?.name || item.account } sx={ {
+                    width  : avatarWidth,
+                    height : avatarWidth,
+        
+                    ...(props.feed === 'chat' ? {
+                      top      : 0,
+                      left     : 0,
+                      position : 'absolute',
+                    } : {})
+                  } } src={ item.user?.avatar?.image?.url ?  `https://media.dashup.com/?width=${avatarWidth}&height=${avatarWidth}&src=${item.user.avatar.image.url}` : null } />
+                </Tooltip>
+              </Link>
+            ) }
+
+            { !!(props.feed !== 'chat' && !!props.withReplies) && (
+              <Box 
+                sx={ {
+                  top        : `calc(${avatarWidth}px + ${theme.spacing(2)})`,
+                  left       : `calc(50% - .5px)`,
+                  width      : '1px',
+                  bottom     : 0,
+                  position   : 'absolute',
+                  background : theme.palette.divider,
+                } }
+              />
             ) }
           </Box>
         ) }
         { /* / POST AVATAR */ }
 
         { /* POST BODY */ }
-        <Stack flex={ 1 }>
+        <Stack flex={ 1 } spacing={ .5 }>
 
           { /* POST USER `*/ }
           { (!props.inThread || props.feed !== 'chat') && (
@@ -174,16 +171,18 @@ const NFTPost = (props = {}) => {
               <Stack spacing={ 1 } direction="row" alignItems="center" sx={ {
                 flex : 1,
               } }>
-                <Tooltip title={ getRoles() ? getRoles()[0].name : 'Visitor' }>
-                  <Box component={ Link } to={ `/a/${item.account}` } sx={ {
-                    ...(props.feed === 'chat' ? theme.typography.body2 : theme.typography.body1),
+                <Link to={ `/a/${item.account}` }>
+                  <Tooltip title={ getRoles() ? getRoles()[0].name : 'Visitor' }>
+                    <Box component="span" sx={ {
+                      ...(props.feed === 'chat' ? theme.typography.body2 : theme.typography.body1),
 
-                    color      : getRoles() ? getRoles()[0].color : theme.palette.text.primary,
-                    fontWeight : theme.typography.fontWeightBold,
-                  } }>
-                    { item.account === '0x9d4150274f0a67985a53513767ebf5988cef45a4' ? 'eden' : 'not eden' }
-                  </Box>
-                </Tooltip>
+                      color      : getRoles() ? getRoles()[0].color : theme.palette.text.primary,
+                      fontWeight : theme.typography.fontWeightMedium,
+                    } }>
+                      { item.account === '0x9d4150274f0a67985a53513767ebf5988cef45a4' ? 'eden' : 'not eden' }
+                    </Box>
+                  </Tooltip>
+                </Link>
                 <Tooltip title={ item.account }>
                   <Box component="a" target="_BLANK" href={ `https://ftmscan.com/address/${item.account}` } color="rgba(255, 255, 255, 0.4)" sx={ {
                     ...theme.typography.body2,
@@ -193,47 +192,32 @@ const NFTPost = (props = {}) => {
                     { `${item.account.substring(0, 8)}` }
                   </Box>
                 </Tooltip>
-                <Box component="span" color="rgba(255, 255, 255, 0.4)" sx={ {
-                  ...theme.typography.body2,
-                } }>
-                  { moment(item.createdAt).fromNow() }
-                </Box>
+                <Tooltip title={ moment(item.createdAt).format() }>
+                  <Box component="span" color="rgba(255, 255, 255, 0.4)" sx={ {
+                    ...theme.typography.body2,
+                  } }>
+                    { moment(item.createdAt).fromNow() }
+                  </Box>
+                </Tooltip>
               </Stack>
               { /* / USERNAME */ }
-
-              { props.feed !== 'chat' && (
-                <Box flex={ 0 }>
-                  <IconButton>
-                    <FontAwesomeIcon icon={ faEllipsis } size="xs" />
-                  </IconButton>
-                </Box>
-              ) }
             </Stack>
           ) }
           { /* / POST USER */ }
           
           { /* POST CONTENT */ }
           { !!item.content && (
-            <Box
-              sx={ {
-                '& > p' : {
-                  ...( props.feed === 'chat' ? theme.typography.body2 : theme.typography.body1),
+            <Box display="block">
+              <Box
+                sx={ {
+                  ...(theme.typography.body1),
                   
-                  my : 0,
-                },
-              } }
-
-              onClick={ (e) => {
-                // check target
-                if (e.target?.tagName === 'a') return;
-
-                // send
-                props.history.push(`/p/${item.id}`);
-              } }
-            >
-              <ReactMarkdown>
-                { item.content }
-              </ReactMarkdown>
+                  wordBreak  : 'break-word',
+                  whiteSpace : 'pre',
+                } }
+              >
+                <PostMarkdown content={ item.content } />
+              </Box>
             </Box>
           ) }
           { /* / POST CONTENT */ }
@@ -242,23 +226,23 @@ const NFTPost = (props = {}) => {
           { props.feed !== 'chat' && !!getLinks().length && (
             <Stack spacing={ .5 } direction="row" sx={ {
               ...theme.typography.body2,
-
-              mt : .5,
             } }>
               { getLinks().map((l) => {
                 // return link
                 return (
-                  <Tooltip key={ l.ref } title={ `${l.type}: ${l.name}` }>
-                    <Link to={ l.to } sx={ {
-                      color        : theme.palette.primary.main,
-                      maxWidth     : theme.spacing(15),
-                      overflow     : 'hidden',
-                      whiteSpace   : 'nowrap',
-                      textOverflow : 'ellipsis'
-                    } }>
-                      { l.name }
-                    </Link>
-                  </Tooltip>
+                  <Link to={ l.to } key={ l.ref }>
+                    <Tooltip title={ `${l.type}: ${l.name}` }>
+                      <Box component="span" sx={ {
+                        color        : theme.palette.primary.main,
+                        maxWidth     : theme.spacing(15),
+                        overflow     : 'hidden',
+                        whiteSpace   : 'nowrap',
+                        textOverflow : 'ellipsis'
+                      } }>
+                        { l.name }
+                      </Box>
+                    </Tooltip>
+                  </Link>
                 );
               }) }
             </Stack>
@@ -267,7 +251,7 @@ const NFTPost = (props = {}) => {
 
           { /* EMBED */ }
           { !!getEmbeds().length && (
-            <Box mt={ 1 }>
+            <Box>
               <ScrollBar>
                 <Stack direction={ props.feed === 'chat' ? 'column' : 'row' } spacing={ 1 }>
                   { getEmbeds().map((embed, i) => {
@@ -306,22 +290,30 @@ const NFTPost = (props = {}) => {
 
           { /* POST SHARE LINE */ }
           { !!(props.feed !== 'chat') && (
-            <Stack direction="row" spacing={ 1 } mt={ 1 }>
-              <IconButton>
-                <FontAwesomeIcon icon={ faHeart } size="xs" />
-              </IconButton>
-              <IconButton>
-                <FontAwesomeIcon icon={ faComment } size="xs" />
-              </IconButton>
-              <IconButton>
-                <FontAwesomeIcon icon={ faShareNodes } size="xs" />
-              </IconButton>
+            <Stack direction="row" spacing={ 1 }>
+              <Tooltip title="Like Post">
+                <IconButton>
+                  <FontAwesomeIcon icon={ faHeart } size="xs" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Reply">
+                <IconButton>
+                  <FontAwesomeIcon icon={ faComment } size="xs" />
+                </IconButton>
+              </Tooltip>
+              <Tooltip title="Share">
+                <IconButton>
+                  <FontAwesomeIcon icon={ faShareNodes } size="xs" />
+                </IconButton>
+              </Tooltip>
               
-              <IconButton sx={ {
-                ml : 'auto!important',
-              } }>
-                <FontAwesomeIcon icon={ faTag } size="xs" />
-              </IconButton>
+              <Tooltip title="Options">
+                <IconButton sx={ {
+                  ml : 'auto!important',
+                } }>
+                  <FontAwesomeIcon icon={ faEllipsis } size="xs" />
+                </IconButton>
+              </Tooltip>
             </Stack>
           ) }
           { /* / POST SHARE LINE */ }
@@ -338,7 +330,6 @@ const NFTPost = (props = {}) => {
                 } }
               />
               <PostTyping
-                mt={ 1 }
                 typing={ typing.typing }
               />
             </Box>

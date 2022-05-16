@@ -44,7 +44,7 @@ export default class AuthController extends NFTController {
     const alreadyAuthenticated = await SessionModel.findById(req.ssid);
 
     // check authenticated
-    if (alreadyAuthenticated) {
+    if (alreadyAuthenticated && alreadyAuthenticated.get('account')) {
       // create feed
       FeedUitlity.account(alreadyAuthenticated.get('account'));
 
@@ -147,11 +147,13 @@ export default class AuthController extends NFTController {
     req.account = fields.address.toLowerCase();
     
     // set to cache
-    const session = new SessionModel({
-      id      : req.ssid,
-      refs    : [`account:${address.toLowerCase()}`],
-      account : req.account,
+    const session = await SessionModel.findById(req.ssid) || new SessionModel({
+      id : req.ssid,
     });
+
+    // set
+    session.set('refs', [`account:${address.toLowerCase()}`]);
+    session.set('account', req.account);
     
     // save
     await session.save();

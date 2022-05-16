@@ -31,12 +31,12 @@ export default class NFTModel extends Model {
    *
    * @param transactions 
    */
-  async toJSON(cache = {}, transactions = [], count = null) {
+  async toJSON(cache = {}) {
     // run super
     const parsed = await super.toJSON();
 
     // load contract
-    if (this.get('contract') && !cache[`contract:${this.get('contract')}`.toLowerCase()]) cache[`contract:${this.get('contract')}`.toLowerCase()] = (async () => {
+    if (this.get('contract') && !cache[`${this.get('contract')}`.toLowerCase()]) cache[`${this.get('contract')}`.toLowerCase()] = (async () => {
       // get contract
       const actualContract = await this.getContract();
 
@@ -45,14 +45,10 @@ export default class NFTModel extends Model {
     })();
 
     // load contract
-    const contract = await cache[`contract:${this.get('contract')}`.toLowerCase()];
+    const contract = await cache[`${this.get('contract')}`.toLowerCase()];
 
     // check contract
     if (contract) parsed.contract = contract;
-
-    // set transactions
-    parsed.amount = count ? count : undefined;
-    parsed.transactions = transactions || [];
 
     // return
     return parsed;

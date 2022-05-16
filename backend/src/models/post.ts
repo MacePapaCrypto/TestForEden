@@ -2,15 +2,14 @@
 import decay from 'decay';
 import Model, { Type } from '../base/model';
 import UserModel from './user';
+import SpaceModel from './space';
 import MemberModel from './member';
 import FeedUtility from '../utilities/feed';
-import ContextModel from './context';
-import SegmentModel from './segment';
 
 /**
  * export model
  */
-@Type('post')
+@Type('post', 'post')
 export default class PostModel extends Model {
   /**
    * construct
@@ -40,19 +39,9 @@ export default class PostModel extends Model {
    * 
    * @returns 
    */
-  getContext() {
+  getSpace() {
     // get segment
-    return this.get('context') && ContextModel.findById(this.get('context'));
-  }
-
-  /**
-   * get segment
-   * 
-   * @returns 
-   */
-  getSegment() {
-    // get segment
-    return this.get('segment') && SegmentModel.findById(this.get('segment'));
+    return this.get('space') && SpaceModel.findById(this.get('space'));
   }
 
   /**
@@ -109,43 +98,33 @@ export default class PostModel extends Model {
   /**
    * find posts by segment
    *
-   * @param segment 
+   * @param space 
    */
-   static findBySegment(segment, ...args) {
+   static findBySpace(space, ...args) {
     // find by ref
-    return PostModel.findByRef(`segment:${segment}`, ...args);
-  }
-  
-  /**
-   * find posts by context
-   *
-   * @param context 
-   */
-   static findByContext(context, ...args) {
-    // find by ref
-    return PostModel.findByRef(`context:${context}`, ...args);
+    return PostModel.findByRef(`space:${space}`, ...args);
   }
 
   /**
    * to json
    */
-  async toJSON(loadCache = {}, children = 0) {
+  async toJSON(loadCache = {}, account = null, replies = 0) {
     // get parent
     const parentJSON = await super.toJSON();
 
     // fix context
-    if (this.get('context')) {
+    if (this.get('space')) {
       // create new promise
-      if (!loadCache[this.get('context')]) loadCache[this.get('context')] = (async () => {
+      if (!loadCache[this.get('space')]) loadCache[this.get('space')] = (async () => {
         // load
-        const actualContext = await this.getContext();
+        const actualSpace = await this.getSpace();
 
         // return
-        return actualContext ? await actualContext.toJSON(loadCache) : null;
+        return actualSpace ? await actualSpace.toJSON(loadCache, account, true) : null;
       })();
 
       // await
-      parentJSON.context = await loadCache[this.get('context')];
+      parentJSON.space = await loadCache[this.get('space')];
     }
 
     // fix account
@@ -156,39 +135,23 @@ export default class PostModel extends Model {
         const actualUser = await this.getUser();
 
         // check user
-        return actualUser ? await actualUser.toJSON(loadCache) : null;
+        return actualUser ? await actualUser.toJSON(loadCache, !account) : null;
       })();
 
       // await
       parentJSON.user = await loadCache[this.get('account')];
     }
 
-    // check segment
-    if (this.get('segment')) {
-      // get segment roles/member of poster
-      if (!loadCache[`${this.get('segment')}:${this.get('account')}`]) loadCache[`${this.get('segment')}:${this.get('account')}`] = (async () => {
-        // load
-        const actualMember = await MemberModel.findByAccountSegment(this.get('account'), this.get('segment'));
-
-        // set member
-        return actualMember ? await actualMember.toJSON() : null;
-      })();
-
-      // await
-      parentJSON.member = await loadCache[`${this.get('segment')}:${this.get('account')}`];
-    }
-
     // check count
-    if (this.get('count.replies') && children) {
+    if (this.get('count.replies') && replies) {
       // create new promise
-      // @todo memory leak, move to timed release
       if (!loadCache[`${this.get('id')}.children`]) loadCache[`${this.get('id')}.children`] = (async () => {
         // load
-        return await Promise.all((await PostModel.findByThread(this.get('id'), children)).map((child) => child.toJSON(loadCache)));
+        return await Promise.all((await PostModel.findByThread(this.get('id'), replies)).map((child) => child.toJSON(loadCache)));
       })();
 
       // parent json
-      parentJSON.children = await loadCache[`${this.get('id')}.children`];
+      parentJSON.replies = await loadCache[`${this.get('id')}.children`];
     }
 
     // return parent

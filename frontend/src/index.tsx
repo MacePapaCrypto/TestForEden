@@ -5,10 +5,10 @@ import regeneratorRuntime from 'regenerator-runtime';
 window.regeneratorRuntime = regeneratorRuntime;
 
 // import react
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 
 // import react
-import ReactDOM from 'react-dom';
+import { createRoot } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
 import { AuthProvider, SocketProvider } from '@nft/ui';
 import {
@@ -54,12 +54,12 @@ const Main = (props = {}) => {
                 </MainLayout>
               </Route>
 
-              <Route exact path="/s/:segment">
+              <Route exact path="/s/:space">
                 <MainLayout>
                   <FeedPage />
                 </MainLayout>
               </Route>
-              <Route exact path="/c/:context">
+              <Route exact path="/s/:space/:feed">
                 <MainLayout>
                   <FeedPage />
                 </MainLayout>
@@ -69,6 +69,7 @@ const Main = (props = {}) => {
                   <FeedPage />
                 </MainLayout>
               </Route>
+
               <Route exact path="/n/:account">
                 <MainLayout>
                   <NftPage />
@@ -91,4 +92,5 @@ const Main = (props = {}) => {
 };
 
 // render
-window.app = ReactDOM.render(<Main />, document.getElementById('app'));
+window.app = createRoot(document.getElementById('app'));
+window.app.render(<Main />);

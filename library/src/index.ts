@@ -5,11 +5,11 @@ import Link from './Link';
 import Post from './Post';
 import SideBar from './SideBar';
 import PostList from './PostList';
+import SpaceCard from './SpaceCard';
 import ScrollBar from './ScrollBar';
 import NFTPicker from './NFTPicker';
 import PostCreate from './PostCreate';
 import PostTyping from './PostTyping';
-import SideBarSegment from './SideBarSegment';
 
 // profile
 import ProfileCard from './ProfileCard';
@@ -35,8 +35,9 @@ import usePosts from './usePosts';
 import useBrowse from './useBrowse';
 import useTyping from './useTyping';
 import useSocket from './useSocket';
-import useContexts from './useContexts';
-import useSegments from './useSegments';
+import useSpaces from './useSpaces';
+import useFollow from './useFollow';
+import useMember from './useMember';
 
 // export default
 export {
@@ -45,10 +46,10 @@ export {
   SideBar,
   ScrollBar,
   NFTPicker,
-  SideBarSegment,
 
   Post,
   PostList,
+  SpaceCard,
   PostCreate,
   PostTyping,
   ProfileCard,
@@ -71,6 +72,6 @@ export {
   useTyping,
   useSocket,
   useBrowse,
-  useContexts,
-  useSegments,
+  useSpaces,
+  useFollow,
 }

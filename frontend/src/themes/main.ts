@@ -18,6 +18,9 @@ const mainTheme = createTheme({
       default : '#01040A',
     }
   },
+  typography : {
+    fontFamily : `'Roboto', sans-serif`,
+  },
   components : {
     MuiLink : {
       defaultProps : {

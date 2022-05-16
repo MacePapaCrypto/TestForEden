@@ -8,7 +8,14 @@ import NFTModel from './nft';
 @Type('user')
 export default class UserModel extends Model {
 
-  async toJSON(cache = {}) {
+  /**
+   * to json
+   *
+   * @param cache 
+   * @param small 
+   * @returns 
+   */
+  async toJSON(cache = {}, small = false) {
     // load super
     const sanitised = await super.toJSON();
 

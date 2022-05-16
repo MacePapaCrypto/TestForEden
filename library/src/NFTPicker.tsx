@@ -3,7 +3,7 @@
 import useSocket from './useSocket';
 import ScrollBar from './ScrollBar';
 import React, { useEffect, useState } from 'react';
-import { Stack, Popover, Box, useTheme, CircularProgress, Tooltip, Typography, ImageList, ImageListItem, InputAdornment, IconButton, FormControl, InputLabel, OutlinedInput } from '@mui/material';
+import { Stack, Popper, Paper, Grow, Box, useTheme, CircularProgress, ClickAwayListener, Tooltip, Typography, Grid, InputAdornment, IconButton, FormControl, InputLabel, OutlinedInput } from '@mui/material';
 
 // icons
 import { faSearch } from '@fortawesome/pro-regular-svg-icons';
@@ -23,6 +23,9 @@ const NFTPicker = (props = {}) => {
 
   // load images
   const loadImages = async () => {
+    // loading
+    setLoading(true);
+
     // images
     const loadedImages = await socket.get('/nft/list');
 
@@ -40,7 +43,7 @@ const NFTPicker = (props = {}) => {
     const tags = search.split(' ').map((t) => t.length ? t.toLowerCase() : null).filter((t) => t);
 
     // filter by tags
-    return images.filter((image) => {
+    return [...images].filter((image) => {
       // find in images
       return !tags.find((t) => {
         // doesn't include a tag
@@ -73,93 +76,123 @@ const NFTPicker = (props = {}) => {
   // use effect
   useEffect(() => {
     // load images
-    loadImages();
-  }, [props.account]);
+    if (props.open) loadImages();
+  }, [props.account, props.open]);
   
   // return jsx
   return (
-    <Popover
-      { ...props }
+    <Popper
+      style={ {
+        zIndex : 5000,
+      } }
+      open={ props.open }
+      anchorEl={ props.anchorEl }
+      placement={ props.placement }
+      transition
     >
-      <Box width={ theme.spacing(40) } height={ theme.spacing(50) } display="flex">
-        { loading ? (
-          <Box flex={ 1 } display="flex" alignItems="center" justifyContent="center">
-            <CircularProgress />
-          </Box>
-        ) : (
-          <Box component={ ScrollBar } isFlex>
-            <Box p={ 2 }>
-              <Stack spacing={ 2 }>
+      { ({ TransitionProps }) => (
+        <Grow
+          { ...TransitionProps }
+          style={ {
+            transformOrigin : props.placement === 'right-end' ? 'left bottom' : 'right bottom',
+          } }
+        >
+          <Paper elevation={ 2 }>
+            <ClickAwayListener onClickAway={ props.onClose }>
+              <Box width={ theme.spacing(40) } height={ theme.spacing(50) } display="flex">
+                { loading ? (
+                  <Box flex={ 1 } display="flex" alignItems="center" justifyContent="center">
+                    <CircularProgress />
+                  </Box>
+                ) : (
+                  <Box component={ ScrollBar } isFlex>
+                    <Box p={ 2 }>
+                      <Stack spacing={ 2 }>
 
-                <FormControl sx={ {
-                  width : '100%'
-                } } variant="outlined">
-                  <InputLabel htmlFor="nft-picker-search">
-                    Search
-                  </InputLabel>
-                  <OutlinedInput
-                    id="nft-picker-search"
-                    type="search"
-                    value={ search }
-                    onChange={ (e) => setSearch(e.target.value) }
-                    endAdornment={
-                      <InputAdornment position="end">
-                        <IconButton
-                          aria-label="search"
-                        >
-                          <FontAwesomeIcon icon={ faSearch } size="xs" />
-                        </IconButton>
-                      </InputAdornment>
-                    }
-                    label="Search"
-                  />
-                </FormControl>
+                        <FormControl sx={ {
+                          width : '100%'
+                        } } variant="outlined">
+                          <InputLabel htmlFor="nft-picker-search">
+                            Search
+                          </InputLabel>
+                          <OutlinedInput
+                            id="nft-picker-search"
+                            type="search"
+                            value={ search }
+                            onChange={ (e) => setSearch(e.target.value) }
+                            endAdornment={
+                              <InputAdornment position="end">
+                                <IconButton
+                                  aria-label="search"
+                                >
+                                  <FontAwesomeIcon icon={ faSearch } size="xs" />
+                                </IconButton>
+                              </InputAdornment>
+                            }
+                            label="Search"
+                          />
+                        </FormControl>
 
-                { getContracts().map((contract) => {
-                  // return jsx
-                  return (
-                    <Box key={ contract.id } sx={ {
-
-                      '& .MuiImageList-root' : {
-                        overflowY : 'initial',
-                      },
-                      '& .MuiImageListItem-root > img' : {
-                        cursor       : 'pointer',
-                        borderRadius : `${theme.shape.borderRadius}px`,
-                      }
-                    } }>
-                      <Box>
-                        <Typography>
-                          { contract.name }
-                        </Typography>
-                      </Box>
-                      <ImageList cols={ 3 } rowHeight={ NFTWidth }>
-                        { getImages(contract.id).map((image) => {
-                          // return image
+                        { getContracts().map((contract) => {
+                          // return jsx
                           return (
-                            <ImageListItem key={ image.id }>
-                              <Tooltip title={ image.value?.name }>
-                                <Box
-                                  src={ `https://media.dashup.com/?width=${NFTWidth}&height=${NFTWidth}&src=${image.image?.url}` }
-                                  alt={ image.value?.name }
-                                  onClick={ () => props.onPick(image) }
-                                  loading="lazy"
-                                  component="img"
-                                />
-                              </Tooltip>
-                            </ImageListItem>
+                            <Box key={ contract.id } sx={ {
+
+                              '& .MuiImageList-root' : {
+                                overflowY : 'initial',
+                              },
+                              '& .MuiImageListItem-root > img' : {
+                                cursor       : 'pointer',
+                                borderRadius : `${theme.shape.borderRadius}px`,
+                              }
+                            } }>
+                              <Box mb={ 1 }>
+                                <Typography>
+                                  { contract.name }
+                                </Typography>
+                              </Box>
+                              <Grid container spacing={ 1 }>
+                                { getImages(contract.id).map((image) => {
+                                  // return image
+                                  return (
+                                    <Grid item xs={ 3 } key={ image.id }>
+                                      <Tooltip
+                                        title={ image.value?.name }
+                                        style={ {
+                                          zIndex : 5002,
+                                        } }
+                                      >
+                                        <Box
+                                          src={ `https://media.dashup.com/?width=${NFTWidth}&height=${NFTWidth}&src=${image.image?.url}` }
+                                          alt={ image.value?.name }
+                                          loading="lazy"
+                                          onClick={ () => props.onPick(image) }
+                                          component="img"
+
+                                          sx={ {
+                                            cursor       : 'pointer',
+                                            maxWidth     : '100%',
+                                            borderRadius : `${theme.shape.borderRadius}px`,
+                                          } }
+                                        />
+                                      </Tooltip>
+                                    </Grid>
+                                  );
+                                }) }
+                              </Grid>
+                            </Box>
                           );
                         }) }
-                      </ImageList>
+                      </Stack>
                     </Box>
-                  );
-                }) }
-              </Stack>
-            </Box>
-          </Box>
-        ) }
-      </Box>
-    </Popover>
+                  </Box>
+                ) }
+              </Box>
+            </ClickAwayListener>
+          </Paper>
+        </Grow>
+      ) }
+    </Popper>
   )
 };
 

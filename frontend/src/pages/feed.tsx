@@ -1,11 +1,8 @@
 
-import Tag from '@mui/icons-material/Tag';
-import More from '@mui/icons-material/MoreVert';
 import React from 'react';
-import Search from '@mui/icons-material/Search';
 import { useHistory } from 'react-router-dom';
-import { useBrowse, usePosts, useAuth, PostCreate, PostList, ProfileCard } from '@nft/ui';
-import { Box, Grid, Toolbar, AppBar, Typography, IconButton, Container, Stack, useTheme, CircularProgress } from '@mui/material';
+import { Box, Grid, Container, Stack, useTheme, CircularProgress } from '@mui/material';
+import { useBrowse, usePosts, useAuth, PostCreate, PostList, ProfileCard, SpaceCard } from '@nft/ui';
 
 
 /**
@@ -18,17 +15,13 @@ const FeedPage = (props = {}) => {
   const auth = useAuth();
   const theme = useTheme();
   const history = useHistory();
-  const { context, loadingContext, segment, loadingSegment, account, loadingAccount } = useBrowse();
-
-  // get type
-  const contextFeed = context && ['feed', 'channel', 'gallery', 'shop'].includes(context.feed || 'feed') ? (context.feed || 'feed') : null;
+  const { feed : feedType, space, loadingSpace, account, loadingAccount, subSpace } = useBrowse();
 
   // create feed
   const feed = usePosts({
-    feed    : contextFeed,
+    feed    : feedType,
+    space   : space?.id,
     account : account?.id,
-    context : context?.id,
-    segment : segment?.id,
   });
 
   // on post
@@ -44,9 +37,8 @@ const FeedPage = (props = {}) => {
 
     // log
     await feed.create({
+      space   : space?.id,
       account : account?.id,
-      context : context?.id,
-      segment : segment?.id,
 
       ...value,
     });
@@ -61,54 +53,15 @@ const FeedPage = (props = {}) => {
       <Container sx={ {
         flex : 1,
       } }>
-        { !!(loadingContext || context || loadingSegment || segment) && (
-          <AppBar sx={ {
-            bgcolor                 : theme.palette.background.paper,
-            borderTop               : 'none',
-            marginBottom            : theme.spacing(3),
-            borderTopLeftRadius     : 0,
-            borderTopRightRadius    : 0,
-            borderBottomLeftRadius  : theme.spacing(1.5),
-            borderBottomRightRadius : theme.spacing(1.5),
-          } } position="static" elevation={ 0 }>
-            <Toolbar>
-              <Box mr={ 1 } display="flex">
-                { !context && !segment ? (
-                  <CircularProgress size={ 20 } />
-                ) : (
-                  <Tag />
-                ) }
-              </Box>
-
-              <Typography variant="h6" color="inherit" component="div">
-                { !context && !segment ? 'Loading...' : (context?.name || segment?.name) }
-              </Typography>
-              <IconButton
-                sx={ {
-                  ml : 'auto',
-                } }
-                size="large"
-                color="inherit"
-              >
-                <Search />
-              </IconButton>
-              <IconButton
-                size="large"
-                color="inherit"
-              >
-                <More />
-              </IconButton>
-            </Toolbar>
-          </AppBar>
-        ) }
-
         <Grid container spacing={ 3 }>
           <Grid item xs={ 8 }>
-            <Stack spacing={ 2 }>
-              { !!(contextFeed === 'feed' || (!context && segment)) && (
+            <Stack spacing={ 2 } sx={ {
+              mt : 3,
+            } }>
+              { !!(feedType !== 'chat') && (
                 <PostCreate
+                  space={ space }
                   onPost={ onPost }
-                  context={ context }
                 />
               ) }
 
@@ -124,7 +77,7 @@ const FeedPage = (props = {}) => {
 
               <PostList
                 posts={ feed.posts }
-                loading={ feed.loading }
+                loading={ feed.loading === 'list' }
                 PostProps={ {
                   history,
                   withReplies : true,
@@ -133,9 +86,15 @@ const FeedPage = (props = {}) => {
             </Stack>
           </Grid>
           <Grid item xs={ 4 }>
-            <Box my={ 2 }>
+            <Box mt={ 3 }>
               { !!account?.id && (
                 <ProfileCard item={ account } />
+              ) }
+              { !subSpace?.id && !!space?.id && (
+                <SpaceCard item={ space } />
+              ) }
+              { !!subSpace?.id && (
+                <SpaceCard item={ subSpace } parent={ space } />
               ) }
             </Box>
           </Grid>

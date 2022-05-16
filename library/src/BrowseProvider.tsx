@@ -2,8 +2,7 @@
 // socketio client
 import usePost from './usePost';
 import useSocket from './useSocket';
-import useSegments from './useSegments';
-import useContexts from './useContexts';
+import useSpaces from './useSpaces';
 import BrowseContext from './BrowseContext';
 import React, { useEffect, useState } from 'react';
 
@@ -13,45 +12,31 @@ const BrowseProvider = (props = {}) => {
   // segment
   const post = usePost(props.post);
   const socket = useSocket();
-  const segments = useSegments();
-  const contexts = useContexts();
+  const spaces = useSpaces();
 
-  // state
-  const [segment, setActualSegment] = useState(typeof props.segment !== 'string' ? props.segment : null);
-  const [context, setActualContext] = useState(typeof props.context !== 'string' ? props.context : null);
+  // in space context
+  const [space, setActualSpace] = useState(typeof props.space !== 'string' ? props.space : null);
+
+  // in account context
   const [account, setActualAccount] = useState(typeof props.account !== 'string' ? props.account : null);
-  const [loadingSegment, setLoadingSegment] = useState(false);
-  const [loadingContext, setLoadingContext] = useState(false);
+
+  // loading context
+  const [loadingSpace, setLoadingSpace] = useState(false);
   const [loadingAccount, setLoadingAccount] = useState(false);
 
   // load middlewares
-  const setSegment = (newSegment) => {
+  const setSpace = (newSpace) => {
     // set segment
-    setActualSegment(typeof newSegment !== 'string' ? newSegment : null);
-
-    // check segment
-    if (newSegment && context && context.segment !== newSegment.id) {
-      // load segment
-      loadContext();
-    }
+    setActualSpace(typeof newSpace !== 'string' ? newSpace : null);
   };
 
-  // load middlewares
-  const setContext = (newContext) => {
-    // set segment
-    setActualContext(typeof newContext !== 'string' ? newContext : null);
-
-    // check segment
-    if (newContext?.segment && segment?.id !== newContext.segment) {
-      // load segment
-      loadSegment(newContext.segment);
-    }
-
-    // check segment
-    if (newContext?.account && account?.id !== newContext.account) {
-      // load segment
-      loadSegment(newContext.account);
-    }
+  // set space feed
+  const setSpaceFeed = (type = 'hot') => {
+    // set space
+    setActualSpace({
+      ...space,
+      activeFeed : type,
+    });
   };
 
   // load middlewares
@@ -61,63 +46,33 @@ const BrowseProvider = (props = {}) => {
   };
 
   // load segment
-  const loadSegment = async (id = null) => {
+  const loadSpace = async (id = null) => {
     // check id
-    if (!id) id = props.segment || context?.segment || post.post?.segment;
+    if (!id) id = props.space;
 
     // check segment already set correctly
-    if ((typeof id === 'string' && (id === segment?.id)) || (id?.id && (id.id === segment?.id))) return;
+    if ((typeof id === 'string' && (id === space?.id)) || (id?.id && (id.id === space?.id))) return;
 
     // check missing
-    if (!id && (props.context || props.post)) return;
+    if (!id && props.post) return;
   
     // found segment
-    let foundSegment;
+    let foundSpace;
     
     // check segment
     if (typeof id === 'string') {
       // set loading
-      setLoadingSegment(true);
+      setLoadingSpace(true);
 
       // get segment
-      foundSegment = await segments.get(id);
+      foundSpace = await spaces.get(id);
     } else if (typeof id !== 'string') {
-      foundSegment = id;
+      foundSpace = id;
     }
 
     // set segment
-    setLoadingSegment(false);
-    setSegment(foundSegment);
-  };
-
-  // load context
-  const loadContext = async (id = null) => {
-    // check id
-    if (!id) id = props.context || post.post?.context;
-    
-    // check context already set correctly
-    if ((typeof id === 'string' && (id === context?.id)) || (id?.id && (id.id === context?.id))) return;
-
-    // check missing
-    if (!id && props.post) return;
-
-    // found context
-    let foundContext;
-    
-    // check context
-    if (typeof id === 'string') {
-      // set loading
-      setLoadingContext(true);
-
-      // get context
-      foundContext = await contexts.get(id);
-    } else if (typeof id === 'object') {
-      foundContext = id;
-    }
-
-    // set context
-    setLoadingContext(false);
-    setContext(foundContext);
+    setLoadingSpace(false);
+    setSpace(foundSpace);
   };
 
   // load context
@@ -150,14 +105,8 @@ const BrowseProvider = (props = {}) => {
   // use effect
   useEffect(() => {
     // load segment
-    loadSegment();
-  }, [props.segment, post.post?.segment]);
-
-  // use effect
-  useEffect(() => {
-    // load segment
-    loadContext();
-  }, [props.context, post.post?.context]);
+    loadSpace();
+  }, [props.space]);
 
   // use effect
   useEffect(() => {
@@ -168,24 +117,22 @@ const BrowseProvider = (props = {}) => {
   // return placement
   const fauxBrowse = {
     post,
-    segment,
-    context,
+    space,
     account,
-
-    loading : loadingContext ? 'context' : (loadingSegment ? 'segment' : (loadingAccount ? 'account' : false)),
-    loadingContext,
-    loadingSegment,
+    
+    feed    : space?.activeFeed || props.feed || 'hot',
+    loading : loadingAccount ? 'account' : (loadingSpace ? 'space' : false),
+    loadingSpace,
     loadingAccount,
 
-    providedSegment : props.segment,
-    providedContext : props.context,
+    providedOrder : props.order,
+    providedSpace : props.space,
     providedAccount : props.account,
 
-    setSegment,
-    setContext,
+    setSpace,
+    setFeed : setSpaceFeed,
 
-    loadContext,
-    loadSegment,
+    loadSpace,
     loadAccount,
   };
 

@@ -81,17 +81,19 @@ const NFTPostCreate = (props = {}) => {
             <>
               <Box px={ 2 }>
                 <Stack>
-                  <PostInput
-                    reset={ reset }
+                  <Box py={ 2 }>
+                    <PostInput
+                      reset={ reset }
 
-                    onBlur={ () => setFocus(false) }
-                    onFocus={ () => setFocus(true) }
-                    onChange={ (v) => setValue(v) }
-                    onShiftEnter={ onPost }
-                  />
-                  { !!props.context && (
+                      onBlur={ () => setFocus(false) }
+                      onFocus={ () => setFocus(true) }
+                      onEnter={ onPost }
+                      onChange={ (v) => setValue(v) }
+                    />
+                  </Box>
+                  { !!props.space && (
                     <Box mb={ 1 }>
-                      <Chip icon={ <Tag /> } size="small" label={ props.context.name } />
+                      <Chip icon={ <Tag /> } size="small" label={ props.space.name } />
                     </Box>
                   ) }
                 </Stack>
@@ -101,10 +103,8 @@ const NFTPostCreate = (props = {}) => {
                   value={ types.indexOf(type) }
                   onChange={ (e, value) => setType(types[value]) }
                   variant="scrollable"
-                  textColor="inherit"
                   indicatorColor="primary"
                   scrollButtons
-                  disableGutters
                   allowScrollButtonsMobile
                 >
                   <Tab
@@ -134,10 +134,10 @@ const NFTPostCreate = (props = {}) => {
                     size="small"
                     onClick={ onPost }
                     variant="contained"
-                    loading={ !!posting }
+                    loading={ posting ? 'Posting' : undefined }
                     disabled={ !(value || '').trim().length }
                   >
-                    { focus ? 'Shift + Enter' : 'Post' }
+                    { focus ? 'Enter' : 'Post' }
                   </LoadingButton>
                 </Tabs>
               </AppBar>

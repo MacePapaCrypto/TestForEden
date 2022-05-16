@@ -1,8 +1,7 @@
 
 // import local
 import PostModel from '../models/post';
-import ContextModel from '../models/context';
-import SegmentModel from '../models/segment';
+import SpaceModel from '../models/space';
 import embedUtility from '../utilities/embed';
 import NFTController, { Route } from '../base/controller';
 
@@ -90,9 +89,8 @@ export default class PostController extends NFTController {
   async listAction(req, { data, params }, next) {
     // check segment
     const feed = (data.f || data.feed) ? (data.f || data.feed).toLowerCase() : null;
+    const space = (data.c || data.space) ? (data.c || data.space).toLowerCase() : null;
     const thread = (data.t || data.thread) ? (data.t || data.thread).toLowerCase() : null;
-    const context = (data.c || data.context) ? (data.c || data.context).toLowerCase() : null;
-    const segment = (data.s || data.segment) ? (data.s || data.segment).toLowerCase() : null;
     const account = (data.a || data.account) ? (data.a || data.account).toLowerCase() : null;
 
     // normals
@@ -134,12 +132,9 @@ export default class PostController extends NFTController {
     if (thread) {
       listenStr = `thread:${thread}`;
       actualPosts = await PostModel.findByThread(thread, ...args);
-    } else if (context) {
-      listenStr = `context:${context}`;
-      actualPosts = await PostModel.findByContext(context, ...args);
-    } else if (segment) {
-      listenStr = `segment:${segment}`;
-      actualPosts = await PostModel.findBySegment(segment, ...args);
+    } else if (space) {
+      listenStr = `space:${space}`;
+      actualPosts = await PostModel.findBySpace(space, ...args);
     } else if (account) {
       listenStr = `account:public:${account}`;
       actualPosts = await PostModel.findByAccountPublic(account, ...args);
@@ -148,7 +143,7 @@ export default class PostController extends NFTController {
     // if listen string
     if (req.subscribe && listenStr) {
       // subscribe
-      req.subscribe(`post+${listenStr}`, feed === 'feed' ? this.postListener : this.singlePostListener);
+      req.subscribe(`post+${listenStr}`, ['hot', 'new'].includes(feed) ? this.postListener : this.singlePostListener);
 
       // check feed
       if (thread) {
@@ -162,7 +157,7 @@ export default class PostController extends NFTController {
 
     // return
     return {
-      result  : await Promise.all(actualPosts.map((context) => context.toJSON(loadCache, feed === 'feed' ? 5 : 0))),
+      result  : await Promise.all(actualPosts.map((context) => context.toJSON(loadCache, ['hot', 'new'].includes(feed) ? 5 : 0))),
       success : true,
     };
   }
@@ -217,39 +212,31 @@ export default class PostController extends NFTController {
     if (actualThread) refs.push(`thread:${actualThread.get('id')}`);
 
     // source
-    const context = data.context ? data.context.toLowerCase() : null;
-    const actualContext = context && await ContextModel.findById(context);
+    const space = data.space ? data.space.toLowerCase() : null;
+    const actualSpace = space && await SpaceModel.findById(space);
 
     // check context
-    if (actualContext) refs.push(`context:${actualContext.get('id')}`);
-
-    // segment
-    const segment = actualContext ? await actualContext.get('segment') : (data.segment ? data.segment.toLowerCase() : null);
-    const actualSegment = segment && await SegmentModel.findById(segment);
-
-    // check segment
-    if (actualSegment) refs.push(`segment:${actualSegment.get('id')}`);
+    if (actualSpace) refs.push(`space:${actualSpace.get('id')}`);
 
     // @todo temp make everything public
     if (!actualThread && data.feed !== 'chat') {
       refs.push('public');
-      refs.push(`account:public:${lowerAccount}`);
+      refs.push(`public:${lowerAccount}`);
     }
     
     // create default segment
-    const createdPost = new PostModel({
+    const newPost = new PostModel({
       refs    : refs,
       temp    : data.temp || data.tempId,
       content : data.content,
       account : lowerAccount,
 
-      thread  : actualThread ? actualThread.get('id') : null,
-      segment : actualSegment ? actualSegment.get('id') : null,
-      context : actualContext ? actualContext.get('id') : null,
+      space  : actualSpace ? actualSpace.get('id') : null,
+      thread : actualThread ? actualThread.get('id') : null,
     });
 
     // save
-    await createdPost.save();
+    await newPost.save();
 
     // actual post
     if (actualThread) {
@@ -262,11 +249,11 @@ export default class PostController extends NFTController {
     }
 
     // do embeds in background
-    embedUtility.post(createdPost);
+    embedUtility.post(newPost);
 
     // return
     return {
-      result  : await createdPost.toJSON(),
+      result  : await newPost.toJSON(),
       success : true,
     };
   }

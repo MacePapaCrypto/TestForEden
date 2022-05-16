@@ -40,14 +40,13 @@
     "@rollup/plugin-alias": "^3.1.9",
     "@types/socket.io": "^3.0.2",
     "mediasoup-client": "^3.6.51",
-    "react": "^17.0.2",
-    "react-dom": "^17.0.2",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0",
     "react-ratio": "^0.1.5",
     "react-router-dom": "^5.3.0",
     "rollup-plugin-serve": "^1.1.0",
     "setimmediate": "^1.0.5",
     "siwe": "^1.1.6",
     "uuid": "^8.3.2"
-
   }
 }

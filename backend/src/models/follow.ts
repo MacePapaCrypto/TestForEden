@@ -1,5 +1,6 @@
 
 import Model, { Type } from '../base/model';
+import SpaceModel from './space';
 import UserModel from './user';
 
 /**
@@ -14,116 +15,177 @@ export default class FollowModel extends Model {
    * @param from 
    * @param to 
    */
-  static async create(from, to) {
+  static async addFollower(from, to, modelType = 'user') {
+    // lower the case
+    to = to.toLowerCase();
+    from = from.toLowerCase();
+
+    // load accounts
+    const toModel = (
+      (modelType === 'user' && await UserModel.findById(to)) ||
+      (modelType === 'space' && await SpaceModel.findById(to))
+    );
+
+    // check to model
+    if (!toModel) return;
+
     // is following
     const alreadyFollowing = await FollowModel.isFollwoing(from, to);
 
     // if not following
-    if (alreadyFollowing) return alreadyFollowing;
+    if (alreadyFollowing) return [alreadyFollowing, (toModel.get('count.followers') || 0)];
+
+    // count
+    const newCount = (toModel.get('count.followers') || 0) + 1;
 
     // create follower
     const actualFollower = new FollowModel({
-      from,
+      id : `${from}:${to}`.toLowerCase(),
+
       to,
+      from,
+      modelType,
+
       refs : [
-        `follow:${from}:${to}`,
-        `follower:account:${to}`,
-        `following:account:${from}`,
-      ]
+        `follow:${[from, to].sort().join(':')}`,
+        `follower:${to}`,
+        `following:${from}`,
+      ].map((ref) => ref.toLowerCase())
     });
 
     // save follower
-    await actualFollower.save();
+    await actualFollower.save(null, true);
 
     // from background
-    const fromBackground = async () => {
-      // lock
-      const fromLock = await FollowModel.pubsub.lock(from);
+    const bgFollow = Promise.all([
+      (async () => {
+        // lock
+        const fromLock = await FollowModel.pubsub.lock(from);
+  
+        // try/catch
+        try {
+          // load accounts
+          const fromAccount = await UserModel.findById(from) || new UserModel({
+            id : from,
+          });
+          
+          // add account
+          fromAccount.set('count.following', (fromAccount.get('count.following') || 0) + 1);
+          await fromAccount.save();
+        } catch (e) {}
+  
+        // unlock
+        fromLock();
+      })(),
+      (async () => {
+        // lock
+        const toLock = await FollowModel.pubsub.lock(to);
 
-      // load accounts
-      const fromAccount = await UserModel.findById(from) || new UserModel({
-        id : from,
-      });
-      
-      // add account
-      fromAccount.set('count.following', (fromAccount.get('count.following') || 0) + 1);
-      fromAccount.save();
+        // load accounts
+        const lockedToModel = (
+          (modelType === 'user' && await UserModel.findById(to)) ||
+          (modelType === 'space' && await SpaceModel.findById(to))
+        );
+  
+        // try/catch
+        try {
 
-      // unlock
-      fromLock();
-    };
-    fromBackground();
-
-    // to background
-    const toBackground = async () => {
-      // lock
-      const toLock = await FollowModel.pubsub.lock(to);
-
-      // load accounts
-      const toAccount = await UserModel.findById(to) || new UserModel({
-        id : to,
-      });
-      
-      // add account
-      toAccount.set('count.followers', (toAccount.get('count.followers') || 0) + 1);
-      toAccount.save();
-
-      // unlock
-      toLock();
-    };
-    toBackground();
+          // check to
+          if (lockedToModel) {
+            lockedToModel.set('count.followers', (lockedToModel.get('count.followers') || 0) + 1);
+            await lockedToModel.save();
+          }
+        } catch (e) {}
+  
+        // unlock
+        toLock();
+      })()
+    ]);
 
     // return follower
-    return actualFollower;
+    return [actualFollower, newCount];
   }
 
   /**
    * removes follower
    */
-  remove() {
+  async remove() {
     // super
     const removing = super.remove();
 
+    // to
+    const to = this.__data.to.toLowerCase();
+    const from = this.__data.from.toLowerCase();
+    const modelType = this.__data.modelType;
+
+    // load accounts
+    const toModel = (
+      (modelType === 'user' && await UserModel.findById(to)) ||
+      (modelType === 'space' && await SpaceModel.findById(to))
+    );
+
+    // check to model
+    if (!toModel) return;
+
+    // get count
+    let newCount = (toModel.get('count.followers') || 0) - 1;
+    newCount = newCount < 0 ? 0 : newCount;
+
     // from background
-    const fromBackground = async () => {
-      // lock
-      const fromLock = await FollowModel.pubsub.lock(this.__data.from);
+    const bgFollow = Promise.all([
+      (async () => {
+        // lock
+        const fromLock = await FollowModel.pubsub.lock(from);
+  
+        // try/catch
+        try {
+          // load accounts
+          const fromAccount = await UserModel.findById(from) || new UserModel({
+            id : from,
+          });
 
-      // load accounts
-      const fromAccount = await UserModel.findById(this.__data.from) || new UserModel({
-        id : this.__data.from,
-      });
-      
-      // add account
-      fromAccount.set('count.following', (fromAccount.get('count.following') || 0) + 1);
-      fromAccount.save();
+          // get count
+          let updateCount = (fromAccount.get('count.following') || 0) - 1;
+          updateCount = updateCount < 0 ? 0 : updateCount;
+          
+          // add account
+          fromAccount.set('count.following', updateCount);
+          await fromAccount.save();
+        } catch (e) {}
+  
+        // unlock
+        fromLock();
+      })(),
+      (async () => {
+        // lock
+        const toLock = await FollowModel.pubsub.lock(to);
 
-      // unlock
-      fromLock();
-    };
-    fromBackground();
+        // load accounts
+        const lockedToModel = (
+          (modelType === 'user' && await UserModel.findById(to)) ||
+          (modelType === 'space' && await SpaceModel.findById(to))
+        );
 
-    // to background
-    const toBackground = async () => {
-      // lock
-      const toLock = await FollowModel.pubsub.lock(this.__data.to);
-
-      // load accounts
-      const toAccount = await UserModel.findById(this.__data.to) || new UserModel({
-        id : this.__data.to,
-      });
-      
-      // add account
-      toAccount.set('count.followers', (toAccount.get('count.followers') || 0) + 1);
-      toAccount.save();
-
-      // unlock
-      toLock();
-    };
-    toBackground();
+        // get count
+        let updateCount = (lockedToModel.get('count.followers') || 0) - 1;
+        updateCount = updateCount < 0 ? 0 : updateCount;
+  
+        // try/catch
+        try {
+          // check to
+          if (lockedToModel) {
+            lockedToModel.set('count.followers', updateCount);
+            await lockedToModel.save();
+          }
+        } catch (e) {}
+  
+        // unlock
+        toLock();
+      })()
+    ]);
 
     // remove
-    return removing;
+    return [removing, newCount];
   }
 
   /**
@@ -132,28 +194,41 @@ export default class FollowModel extends Model {
    * @param from 
    * @param to 
    */
-  static async isFollwoing(from, to) {
+  static isFollwoing(from, to) {
     // find by ref
-    return (await FollowModel.findByRef(`follow:${from}:${to}`) || [])[0];
+    return FollowModel.findById(`${from}:${to}`.toLowerCase());
   }
   
   /**
    * find contexts by account
    *
-   * @param account 
+   * @param from 
    */
-  static findFollowers(account, ...args) {
+  static async findFollow(to, from, ...args) {
+    // key
+    const key = `follow:${[from.toLowerCase(), to.toLowerCase()].sort().join(':')}`;
+
     // find by ref
-    return FollowModel.findByRef(`follower:account:${account}`, ...args);
+    return (await FollowModel.findByRef(`follow:${key}`, ...args))[0];
   }
   
   /**
    * find contexts by account
    *
-   * @param account 
+   * @param from 
    */
-  static findFollowing(account, ...args) {
+  static findFollowers(from, ...args) {
     // find by ref
-    return FollowModel.findByRef(`following:account:${account}`, ...args);
+    return FollowModel.findByRef(`follower:${from}`, ...args);
+  }
+  
+  /**
+   * find contexts by account
+   *
+   * @param to 
+   */
+  static findFollowing(to, ...args) {
+    // find by ref
+    return FollowModel.findByRef(`following:${to}`, ...args);
   }
 }

@@ -67,7 +67,6 @@ const NFTPostList = (props = {}) => {
   return (
     <Stack
       spacing={ props.feed === 'chat' ? 0 : 2 }
-      { ...props }
     >
 
       { sortedPosts.map((post, i) => {

@@ -3,7 +3,7 @@
 import fetch from 'node-fetch';
 import getUrls from 'get-urls';
 import UserModel from '../models/user';
-import TransferModel from '../models/transfer';
+import TransferModel from '../models/owned';
 import CollectionModel from '../models/collection';
 
 // embed utility

@@ -134,7 +134,7 @@ export default class NFTModel extends Events {
   /**
    * Saves the current model
    */
-  public async save(noEmission = null): Promise<any> {
+  public async save(noEmission = null, force = false): Promise<any> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this.constructor);
     const preface = Reflect.getMetadata('model:preface', this.constructor);
@@ -146,7 +146,7 @@ export default class NFTModel extends Events {
     const creating = !this.__data.id || !this.__data.createdAt;
 
     // no need to save if nothing has changed
-    if (!creating && !this.__changed) return;
+    if (!force && !creating && !this.__changed) return;
 
     // set id if not exists
     if (!this.__data.id) this.__data.id = `${nanoid()}`;
