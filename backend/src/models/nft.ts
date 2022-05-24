@@ -1,5 +1,5 @@
 
-import CollectionModel from './collection';
+import ContractModel from './contract';
 import Model, { Type } from '../base/model';
 
 /**
@@ -23,7 +23,7 @@ export default class NFTModel extends Model {
   // find by address
   getContract() {
     // find by ref
-    return CollectionModel.findById(`${this.get('contract')}`.toLowerCase());
+    return ContractModel.findById(`${this.get('chain')}:${this.get('contract')}`.toLowerCase());
   }
 
   /**
@@ -31,17 +31,17 @@ export default class NFTModel extends Model {
    *
    * @param transactions 
    */
-  async toJSON(cache = {}) {
+  async toJSON(cache = {}, withContract = false) {
     // run super
     const parsed = await super.toJSON();
 
     // load contract
-    if (this.get('contract') && !cache[`${this.get('contract')}`.toLowerCase()]) cache[`${this.get('contract')}`.toLowerCase()] = (async () => {
+    if (withContract && this.get('contract') && !cache[`${this.get('contract')}`.toLowerCase()]) cache[`${this.get('contract')}`.toLowerCase()] = (async () => {
       // get contract
       const actualContract = await this.getContract();
 
       // return contract
-      return await actualContract.toJSON(cache, true);
+      return actualContract ? await actualContract.toJSON(cache, true) : null;
     })();
 
     // load contract
@@ -49,6 +49,9 @@ export default class NFTModel extends Model {
 
     // check contract
     if (contract) parsed.contract = contract;
+
+    // set image url
+    if (parsed.image) parsed.image.url = `https://media.dashup.com/${this.get('chain')}-${this.get('contract')}-${this.get('tokenId')}`;
 
     // return
     return parsed;

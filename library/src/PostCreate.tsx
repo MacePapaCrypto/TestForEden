@@ -1,14 +1,18 @@
 
 // import props
-import Tag from '@mui/icons-material/Tag';
 import Image from '@mui/icons-material/Image';
 import useAuth from './useAuth';
+import NFTAvatar from './NFTAvatar';
 import ShortText from '@mui/icons-material/ShortText';
 import PostInput from './PostInput';
 import VideoLibrary from '@mui/icons-material/VideoLibrary';
 import LoadingButton from '@mui/lab/LoadingButton';
 import React, { useState } from 'react';
 import { Box, Chip, Stack, Avatar, Paper, AppBar, Tabs, Tab, Tooltip, useTheme, IconButton, Typography } from '@mui/material';
+
+// import reply
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faHashtag, faMoon, faFeed, faGalleryThumbnails } from '@fortawesome/pro-regular-svg-icons';
 
 /**
  * create content
@@ -22,7 +26,7 @@ const NFTPostCreate = (props = {}) => {
   const types = ['text', 'image', 'video'];
   
   // open post
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(!!props.isOpen);
   const [type, setType] = useState('text');
   const [value, setValue] = useState('');
   const [focus, setFocus] = useState(false);
@@ -53,6 +57,13 @@ const NFTPostCreate = (props = {}) => {
   // avatar width
   const avatarWidth = props.size === 'small' ? 40 : 50;
 
+  // icon
+  const subSpaceIcon = {
+    chat    : faHashtag,
+    feed    : faFeed,
+    gallery : faGalleryThumbnails,
+  };
+
   // return jsx
   return (
     <Box sx={ {
@@ -60,14 +71,11 @@ const NFTPostCreate = (props = {}) => {
     } }>
       <Stack spacing={ 2 } direction="row">
         { /* POST USER `*/ }
-        <Box>
-          <Tooltip title={ auth.authed?.avatar?.value?.name || auth.account || 'Anonymous' }>
-            <Avatar alt={ auth.authed?.avatar?.value?.name || auth.account || 'Anonymous' } sx={ {
-              width  : avatarWidth,
-              height : avatarWidth,
-            } } src={ auth.authed?.avatar?.image?.url ? `https://media.dashup.com/?width=${avatarWidth}&height=${avatarWidth}&src=${auth.authed.avatar.image.url}` : null } />
-          </Tooltip>
-        </Box>
+        { !props.noAvatar && (
+          <Box>
+            <NFTAvatar width={ avatarWidth } height={ avatarWidth } user={ auth.authed } />
+          </Box>
+        ) }
         { /* / POST USER */ }
 
         <Paper sx={ {
@@ -81,6 +89,22 @@ const NFTPostCreate = (props = {}) => {
             <>
               <Box px={ 2 }>
                 <Stack>
+                  { !!props.replyTo && (
+                    <Box mt={ 1 }>
+                      <Chip icon={ (
+                        <FontAwesomeIcon icon={ faComment } />
+                      ) } size="small" label={ (
+                        <Stack spacing={ 0.5 } direction="row">
+                          <Box component="span" color={ theme.palette.primary.main }>
+                            Responding to:
+                          </Box>
+                          <Box component="span" color="#fff">
+                            { props.replyTo.content }
+                          </Box>
+                        </Stack>
+                      ) } />
+                    </Box>
+                  ) }
                   <Box py={ 2 }>
                     <PostInput
                       reset={ reset }
@@ -91,20 +115,36 @@ const NFTPostCreate = (props = {}) => {
                       onChange={ (v) => setValue(v) }
                     />
                   </Box>
-                  { !!props.space && (
-                    <Box mb={ 1 }>
-                      <Chip icon={ <Tag /> } size="small" label={ props.space.name } />
-                    </Box>
+                  { !!(props.space || props.subSpace) && (
+                    <Stack spacing={ 1 } direction="row" mb={ 1 }>
+                      { !!props.space && (
+                        <Chip
+                          icon={ props.space?.image?.image?.url ? undefined : <FontAwesomeIcon icon={ faMoon } size="xs" /> }
+                          size="small"
+                          label={ props.space.name }
+                          avatar={ props.space?.image?.image?.url ? <Avatar alt={ props.space.image.value.name } src={ `${props.space.image.image.url}?w=${24}&h=${24}` } /> : undefined }
+                        />
+                      ) }
+                      { !!props.subSpace && (
+                        <Chip
+                          icon={ props.subSpace?.image?.image?.url ? undefined : <FontAwesomeIcon icon={ subSpaceIcon[props.subSpace.feed] } size="xs" /> }
+                          size="small"
+                          label={ props.subSpace.name }
+                          avatar={ props.subSpace?.image?.image?.url ? <Avatar alt={ props.subSpace.image.value.name } src={ `${props.subSpace.image.image.url}?w=${24}&h=${24}` } /> : undefined }
+                        />
+                      ) }
+                    </Stack>
                   ) }
                 </Stack>
               </Box>
-              <AppBar position="static">
+              <AppBar position="static" sx={ {
+                px : 2
+              } }>
                 <Tabs
                   value={ types.indexOf(type) }
                   onChange={ (e, value) => setType(types[value]) }
                   variant="scrollable"
                   indicatorColor="primary"
-                  scrollButtons
                   allowScrollButtonsMobile
                 >
                   <Tab

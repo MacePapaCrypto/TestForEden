@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.nft_models (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.own_models (
+CREATE TABLE IF NOT EXISTS nftsocial.balance_models (
   id         text,
   type       text,
   data       text,
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_by_model (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.own_refs_asc (
+CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_asc (
   ref      text,
   key      text,
   type     text,
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.own_refs_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.own_refs_desc (
+CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_desc (
   ref      text,
   key      text,
   type     text,
@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.own_refs_desc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.own_refs_by_model (
+CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_by_model (
   ref      text,
   key      text,
   type     text,

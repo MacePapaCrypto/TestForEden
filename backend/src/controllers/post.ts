@@ -1,6 +1,7 @@
 
 // import local
 import PostModel from '../models/post';
+import LikeModel from '../models/like';
 import SpaceModel from '../models/space';
 import embedUtility from '../utilities/embed';
 import NFTController, { Route } from '../base/controller';
@@ -43,7 +44,7 @@ export default class PostController extends NFTController {
     const actualPost = await PostModel.findById(post.id);
 
     // send post to socket
-    socket.emit('post', await actualPost.toJSON({}, 5));
+    socket.emit('post', await actualPost.toJSON({}, socket.account, 5));
   }
 
   /**
@@ -52,7 +53,7 @@ export default class PostController extends NFTController {
    * @param param1 
    * @param next 
    */
-  @Route('POST', '/typing/:thread')
+  @Route('POST', '/api/v1/typing/:thread')
   async typingAction(req, { data, params }, next) {
     // only thread for now
     const thread = params.thread;
@@ -85,7 +86,7 @@ export default class PostController extends NFTController {
    * 
    * @returns
    */
-  @Route('GET', '/post')
+  @Route('GET', '/api/v1/post')
   async listAction(req, { data, params }, next) {
     // check segment
     const feed = (data.f || data.feed) ? (data.f || data.feed).toLowerCase() : null;
@@ -157,7 +158,7 @@ export default class PostController extends NFTController {
 
     // return
     return {
-      result  : await Promise.all(actualPosts.map((context) => context.toJSON(loadCache, ['hot', 'new'].includes(feed) ? 5 : 0))),
+      result  : await Promise.all(actualPosts.map((post) => post.toJSON(loadCache, req.account, ['hot', 'new'].includes(feed) ? 5 : 0))),
       success : true,
     };
   }
@@ -167,7 +168,7 @@ export default class PostController extends NFTController {
    * 
    * @returns
    */
-  @Route('GET', '/post/:id')
+  @Route('GET', '/api/v1/post/:id')
   async getAction(req, { data, params }, next) {
     // get post
     const post = await PostModel.findById(params.id);
@@ -175,12 +176,53 @@ export default class PostController extends NFTController {
     // subscribe
     if (post) {
       // subscriptions
-      req.subscribe(`post:${post.get('id')}`, this.singlePostListener);
+      req.subscribe(`post:${post.id}`, this.singlePostListener);
     }
 
     // return post
     return {
-      result  : post ? await post.toJSON() : null,
+      result  : post ? await post.toJSON({}, req.account) : null,
+      success : !!post,
+    };
+  }
+
+  /**
+   * post like endpoint
+   * 
+   * @returns
+   */
+  @Route('POST', '/api/v1/like/:id')
+  async likeAction(req, { data, params }, next) {
+    // get post
+    const post = await PostModel.findById(params.id);
+
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // let done/count
+    let like, count;
+
+    // subscribe
+    if (post) {
+      // subscriptions
+      const actualLike = await LikeModel.isLiked(lowerAccount, post.id);
+
+      // check like
+      if (actualLike) {
+        // remove
+        [like, count] = await actualLike.remove();
+      } else {
+        // remove
+        [like, count] = await LikeModel.addLike(lowerAccount, post.id, 'post');
+      }
+    }
+
+    // return post
+    return {
+      result : {
+        like,
+        count,
+      },
       success : !!post,
     };
   }
@@ -190,7 +232,7 @@ export default class PostController extends NFTController {
    *
    * @returns 
    */
-  @Route('POST', '/post')
+  @Route('POST', '/api/v1/post')
   async createAction(req, { data, params }, next) {
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
@@ -209,19 +251,35 @@ export default class PostController extends NFTController {
     const actualThread = thread && await PostModel.findById(thread);
 
     // check thread
-    if (actualThread) refs.push(`thread:${actualThread.get('id')}`);
+    if (actualThread) {
+      refs.push(`thread:${actualThread.id}`);
+      refs.push(`thread:${actualThread.id}:${lowerAccount}`);
+    }
 
     // source
-    const space = data.space ? data.space.toLowerCase() : null;
+    const space = data.subSpace ? data.subSpace.toLowerCase() : (data.space ? data.space.toLowerCase() : null);
     const actualSpace = space && await SpaceModel.findById(space);
 
-    // check context
-    if (actualSpace) refs.push(`space:${actualSpace.get('id')}`);
+    // get space
+    if (actualSpace) {
+      // in subspace
+      refs.push(`space:${actualSpace.id}`);
+    }
+    if (actualSpace.get('space') && actualSpace.get('feed') !== 'chat') {
+      // check feed
+      refs.push(`space:${actualSpace.get('space')}`);
+    }
 
     // @todo temp make everything public
-    if (!actualThread && data.feed !== 'chat') {
-      refs.push('public');
+    if (data.feed !== 'chat' && (!actualSpace || actualSpace.get('feed') !== 'chat')) {
+      // push user public
       refs.push(`public:${lowerAccount}`);
+
+      // only op
+      if (!actualThread) refs.push('public');
+    }
+    if (actualThread && data.feed === 'response') {
+      refs.push(`reply:${actualThread.id}`);
     }
     
     // create default segment
@@ -231,8 +289,9 @@ export default class PostController extends NFTController {
       content : data.content,
       account : lowerAccount,
 
-      space  : actualSpace ? actualSpace.get('id') : null,
-      thread : actualThread ? actualThread.get('id') : null,
+      space  : actualSpace ? actualSpace.id : null,
+      reply  : actualThread && data.feed === 'response' ? actualThread.id : null,
+      thread : actualThread ? actualThread.id : null,
     });
 
     // save
@@ -253,7 +312,7 @@ export default class PostController extends NFTController {
 
     // return
     return {
-      result  : await newPost.toJSON(),
+      result  : await newPost.toJSON({}, req.account),
       success : true,
     };
   }
@@ -263,7 +322,7 @@ export default class PostController extends NFTController {
    *
    * @returns 
    */
-  @Route('DELETE', '/post/:id')
+  @Route('DELETE', '/api/v1/post/:id')
   async deleteAction(req, { data, params }, next) {
     // get message/signature
     const { id } = params;
@@ -280,7 +339,7 @@ export default class PostController extends NFTController {
    *
    * @returns 
    */
-  @Route('POST', '/post/:id/react')
+  @Route('POST', '/api/v1/post/:id/react')
   async reactAction(req, { data, params }, next) {
     // get message/signature
     const { emoji } = data;
@@ -298,7 +357,7 @@ export default class PostController extends NFTController {
    *
    * @returns 
    */
-  @Route('POST', '/post/:id/reply')
+  @Route('POST', '/api/v1/post/:id/reply')
   async replyAction(req, { data, params }, next) {
     // get message/signature
     const { id } = params;
@@ -315,7 +374,7 @@ export default class PostController extends NFTController {
    *
    * @returns 
    */
-  @Route('DELETE', '/post/:id/reply/:reply')
+  @Route('DELETE', '/api/v1/post/:id/reply/:reply')
   async deleteReplyAction(req, { data, params }, next) {
     // get message/signature
     const { id, reply } = params;

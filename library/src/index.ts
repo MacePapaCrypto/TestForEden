@@ -1,15 +1,18 @@
 
 // import local
+import NFT from './NFT';
 import Box from './Box';
 import Link from './Link';
 import Post from './Post';
 import SideBar from './SideBar';
 import PostList from './PostList';
+import NFTAvatar from './NFTAvatar';
 import SpaceCard from './SpaceCard';
 import ScrollBar from './ScrollBar';
 import NFTPicker from './NFTPicker';
 import PostCreate from './PostCreate';
 import PostTyping from './PostTyping';
+import SubSpaceCard from './SubSpaceCard';
 
 // profile
 import ProfileCard from './ProfileCard';
@@ -47,12 +50,15 @@ export {
   ScrollBar,
   NFTPicker,
 
+  NFT,
   Post,
   PostList,
+  NFTAvatar,
   SpaceCard,
   PostCreate,
   PostTyping,
   ProfileCard,
+  SubSpaceCard,
 
   AuthContext,
   AuthProvider,
@@ -74,4 +80,5 @@ export {
   useBrowse,
   useSpaces,
   useFollow,
+  useMember,
 }

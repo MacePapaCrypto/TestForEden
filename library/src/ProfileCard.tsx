@@ -70,7 +70,7 @@ const NFTProfileCard = (props = {}) => {
                   width  : `${avatarWidth}px`,
                   height : `${avatarWidth}px`,
                   cursor : 'pointer',
-                } } onClick={ onAvatar } src={ item.avatar?.image?.url ? `https://media.dashup.com/?width=${avatarWidth}&height=${avatarWidth}&src=${item.avatar.image.url}` : null } />
+                } } onClick={ onAvatar } src={ item.avatar?.image?.url ? `${item.avatar.image.url}?w=${avatarWidth}&h=${avatarWidth}` : null } />
               </Tooltip>
             </Box>
 

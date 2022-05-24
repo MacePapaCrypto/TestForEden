@@ -1,14 +1,18 @@
 
 // import react
 import React from 'react';
-import Folder from '@mui/icons-material/Folder';
 import toColor from 'string-to-color';
 import initials from 'initials';
 import { useDrag, useDrop } from 'react-dnd';
 import { Box, Badge, Stack, Avatar, AvatarGroup, Tooltip, useTheme, CircularProgress } from '@mui/material';
 
+// icon
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faFolder } from '@fortawesome/pro-regular-svg-icons';
+
 // local
 import Link from './Link';
+import NFTAvatar from './NFTAvatar';
 
 // side bar item
 const NFTSideBarSpace = (props = {}) => {
@@ -21,7 +25,7 @@ const NFTSideBarSpace = (props = {}) => {
   // use drag
   const [collected, drag, dragPreview] = props.isDraggable ? useDrag(() => ({
     item,
-    type : item.type || 'segment',
+    type : item.type,
     end  : (item, monitor) => {
       // save
       props.savePlace();
@@ -42,13 +46,13 @@ const NFTSideBarSpace = (props = {}) => {
 
   // create drop targets
   const [topProps, top] = props.isDraggable ? useDrop(() => ({
-    accept  : ['segment', 'group'],
+    accept  : ['space', 'spaceGroup'],
     collect : (monitor) => {
       // on top
       if (!monitor.isOver()) return {};
 
       // set order
-      props.setPlace(item.id, item.type === 'group' ? null : item.parent, item.order - .5);
+      props.setPlace(item.id, item.type === 'spaceGroup' ? null : item.parent, item.order - .5);
       
       // return collect
       return {
@@ -58,7 +62,7 @@ const NFTSideBarSpace = (props = {}) => {
     }
   })) : [];
   const [middleProps, middle] = props.isDraggable ? useDrop(() => ({
-    accept  : item.type === 'group' ? ['segment'] : ['segment', 'group'],
+    accept  : item.type === 'spaceGroup' ? ['space'] : ['space', 'spaceGroup'],
     collect : (monitor) => {
       // on top
       if (!monitor.isOver()) return {};
@@ -74,13 +78,13 @@ const NFTSideBarSpace = (props = {}) => {
     }
   })) : [];
   const [bottomProps, bottom] = props.isDraggable ? useDrop(() => ({
-    accept  : ['segment', 'group'],
+    accept  : ['space', 'spaceGroup'],
     collect : (monitor) => {
       // on top
       if (!monitor.isOver()) return {};
 
       // set order
-      props.setPlace(item.id, item.type === 'group' ? null : item.parent, item.order + .5);
+      props.setPlace(item.id, item.type === 'spaceGroup' ? null : item.parent, item.order + .5);
       
       // return collect
       return {
@@ -91,19 +95,22 @@ const NFTSideBarSpace = (props = {}) => {
   })) : [];
 
   // is group
-  const isGroup    = props.item.type === 'group' || props.isGrouping;
+  const isGroup    = props.item.type === 'spaceGroup' || props.isGrouping;
   const children   = (props.spaces || []).filter((s) => s.parent === props.item.id);
   const spaceWidth = parseInt(theme.spacing(6).replace('px', ''));
 
   // push
-  if (props.item.type !== 'group' && props.isGrouping) children.push(props.item);
+  if (props.isGrouping) children.push(props.item);
+
+  // check grouping
+  if (isGroup && !children?.length) return null;
 
   // return jsx
   return (
     <Box sx={ {
       cursor   : 'pointer',
       position : 'relative',
-    } } ref={ props.isDraggable ? drag : null }>
+    } } ref={ props.isDraggable ? drag : null } data-order={ `${item.order}` }>
       { !!props.isDraggable && (
         <>
           <Box sx={ {
@@ -137,7 +144,7 @@ const NFTSideBarSpace = (props = {}) => {
           { isGroup ? (
             <Box sx={ {
               cursor          : 'pointer',
-              borderRadius    : item.open ? `${(spaceWidth / 2)}px` : undefined,
+              borderRadius    : item.open ? `${(spaceWidth / 3)}px` : undefined,
               backgroundColor : item.open ? 'rgba(255,255,255,0.15)' : 'transparent',
             } }>
               { item.open ? (
@@ -145,13 +152,14 @@ const NFTSideBarSpace = (props = {}) => {
                   <Tooltip title={ children.map((c) => c.name).filter((n) => n).join(', ') } placement="right">
                     <Avatar
                       sx={ {
+                        color      : `rgba(255, 255, 255, 0.25)`,
                         width      : spaceWidth,
                         height     : spaceWidth,
                         background : 'transparent',
                       } }
                       onClick={ (e) => props.toggleOpen(item) }
                     >
-                      <Folder />
+                      <FontAwesomeIcon icon={ faFolder } />
                     </Avatar>
                   </Tooltip>
                   
@@ -183,11 +191,11 @@ const NFTSideBarSpace = (props = {}) => {
                         { children.map((child) => {
                           // return jsx
                           return (
-                            <Avatar
-                              key={ `child-${child.id}` }
-                            >
+                            <NFTAvatar item={ child } key={ `child-${child.id}` } width={ spaceWidth } height={ spaceWidth } sx={ {
+                              background : child.image?.id ? theme.palette.primary.main : toColor(child.name),
+                            } } noTooltip>
                               { initials(child.name) }
-                            </Avatar>
+                            </NFTAvatar>
                           )
                         }) }
                       </AvatarGroup>
@@ -211,24 +219,16 @@ const NFTSideBarSpace = (props = {}) => {
               ) }
 
               <Link to={ `/s/${item.id}` }>
-                <Tooltip title={ item.name } placement="right">
-                  <Avatar alt={ props.item.name } sx={ {
-                    width      : spaceWidth,
-                    height     : spaceWidth,
-                    transition : 'all 0.2s ease',
-
-                    background   : item.image?.id ? theme.palette.primary.main : toColor(item.name),
-                    borderRadius : props.isActive ? `${(spaceWidth / 4)}px` : undefined,
-
-                    '& .MuiCircularProgress-svg' : {
-                      color : `${theme.palette.mode === 'light' ? theme.palette.grey[400] : theme.palette.grey[600]}!important`,
-                    }
-                  } } onClick={ () => props.onActive(item) } src={ props.item.image?.image?.url ? `https://media.dashup.com/?width=${spaceWidth}&height=${spaceWidth}&src=${props.item.image?.image?.url}` : null }>
-                    { props.isLoading ? (
-                      <CircularProgress size={ 20 } thickness={ 5 } />
-                    ) : initials(item.name) }
-                  </Avatar>
-                </Tooltip>
+                <NFTAvatar item={ props.item } onClick={ () => props.onActive(item) } width={ spaceWidth } height={ spaceWidth } sx={ {
+                  background : item.image?.id ? theme.palette.primary.main : toColor(item.name),
+                } } TooltipProps={ {
+                  title     : item.name || '',
+                  placement : 'right',
+                } }>
+                  { props.isLoading ? (
+                    <CircularProgress size={ 20 } thickness={ 5 } />
+                  ) : initials(item.name) }
+                </NFTAvatar>
               </Link>
             </Badge>
           ) }

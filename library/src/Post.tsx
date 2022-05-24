@@ -1,17 +1,27 @@
 
 import moment from 'moment';
 import dotProp from 'dot-prop';
+import humanNumber from 'human-number';
 import { useIntersectionObserver } from 'usehooks-ts';
-import React, { useRef, useEffect } from 'react';
-import { Box, Stack, Avatar, useTheme, Tooltip, IconButton } from '@mui/material';
+import React, { useRef, useEffect, useState } from 'react';
+import { Box, Badge, Stack, useTheme, Tooltip, IconButton, Typography } from '@mui/material';
 
 // icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEllipsis, faHeart, faComment, faShareNodes } from '@fortawesome/pro-regular-svg-icons';
+import { faEllipsis, faMoon, faComment, faSpinnerThird, faShareNodes } from '@fortawesome/pro-regular-svg-icons';
+import {
+  faMoon as faMoonSolid,
+  faComment as faCommentSolid,
+  faShareNodes as faShareNodesSolid,
+} from '@fortawesome/pro-solid-svg-icons';
 
 // local hooks
+import useId from './useId';
+import useAuth from './useAuth';
+import useLike from './useLike';
 import useTyping from './useTyping';
 import useBrowse from './useBrowse';
+import useSocket from './useSocket';
 
 // embeds
 import EmbedVideo from './EmbedVideo';
@@ -21,17 +31,36 @@ import EmbedCollection from './EmbedCollection';
 import Link from './Link';
 import PostList from './PostList';
 import ScrollBar from './ScrollBar';
+import NFTAvatar from './NFTAvatar';
+import PostCreate from './PostCreate';
 import PostTyping from './PostTyping';
 import PostMarkdown from './PostMarkdown';
+
+// timeout
+let timeout;
+const debounce = (fn, to = 200) => {
+  // clear timeout
+  clearTimeout(timeout);
+
+  // timeout
+  timeout = setTimeout(fn, to);
+};
 
 // nft post
 const NFTPost = (props = {}) => {
   // theme
+  const uuid = useId();
+  const like = useLike(props.item, props.item?.liked, 'post');
+  const auth = useAuth();
   const theme = useTheme();
   const browse = useBrowse();
   const typing = useTyping({
     thread : props.item?.id,
   });
+  const socket = useSocket();
+
+  // state
+  const [updated, setUpdated] = useState(new Date());
 
   // use ref
   const postRef = useRef(null);
@@ -94,9 +123,85 @@ const NFTPost = (props = {}) => {
       // remove segment
       links = links.filter((l) => l.ref !== `space:${browse.space.id}`);
     }
+    if (browse.subSpace?.id) {
+      // remove segment
+      links = links.filter((l) => l.ref !== `space:${browse.subSpace.id}`);
+    }
 
     // return links
     return links;
+  };
+
+  // on post
+  const onRespond = async (value) => {
+    // done typing
+    typing.update(false);
+
+    // check add
+    if (!auth.account) {
+      // login
+      auth.login();
+
+      // login
+      return false;
+    }
+
+    // uuid
+    const tempId = uuid();
+  
+    // temp id
+    let loadedPost;
+    let foundPost = {
+      id        : tempId,
+      temp      : tempId,
+      feed      : 'response',
+      status    : 'posting',
+      thread    : item.id,
+      account   : auth.account ? auth.account.toLowerCase() : null,
+      createdAt : new Date(),
+      updatedAt : new Date(),
+      
+      ...value,
+    };
+
+    // add to children
+    if (!item.children) item.children = [];
+    item.replied = true;
+    item.children.push(foundPost);
+
+    // updated
+    setUpdated(new Date());
+
+    // on respond
+    props.onRespond && props.onRespond(null);
+
+    // load
+    loadedPost = await socket.post('/post', {
+      temp    : tempId,
+      feed    : 'response',
+      status  : 'posting',
+      thread  : item.id,
+      account : auth.account ? auth.account.toLowerCase() : null,
+      
+      ...value,
+    });
+
+    // push again
+    Object.keys(loadedPost).forEach((key) => {
+      foundPost[key] = loadedPost[key];
+    });
+
+    // updated
+    setUpdated(new Date());
+  };
+
+  // on key up
+  const onKeyDown = async () => {
+    // debounce
+    debounce(() => {
+      // call typing
+      typing.update(true);
+    });
   };
 
   // on visible
@@ -115,7 +220,7 @@ const NFTPost = (props = {}) => {
   // return jsx
   return (
     <Box sx={ {
-      mt   : props.feed === 'chat' && !props.inThread ? 1 : undefined,
+      mt   : props.feed === 'chat' && !props.inThread && !props.noMargin ? 2 : undefined,
       flex : 1,
     } } ref={ postRef }>
       <Stack spacing={ 2 } direction="row">
@@ -130,18 +235,15 @@ const NFTPost = (props = {}) => {
           } }>
             { (!props.inThread || props.feed !== 'chat') && (
               <Link to={ `/a/${item.account}` }>
-                <Tooltip title={ item.user?.avatar?.value?.name || item.account }>
-                  <Avatar alt={ item.user?.avatar?.value?.name || item.account } sx={ {
-                    width  : avatarWidth,
-                    height : avatarWidth,
-        
-                    ...(props.feed === 'chat' ? {
-                      top      : 0,
-                      left     : 0,
-                      position : 'absolute',
-                    } : {})
-                  } } src={ item.user?.avatar?.image?.url ?  `https://media.dashup.com/?width=${avatarWidth}&height=${avatarWidth}&src=${item.user.avatar.image.url}` : null } />
-                </Tooltip>
+                <NFTAvatar user={ item.user } sx={ {
+                  color : `rgba(255, 255, 255, 0.25)`,
+                  
+                  ...(props.feed === 'chat' ? {
+                    top      : 0,
+                    left     : 0,
+                    position : 'absolute',
+                  } : {})
+                } } height={ avatarWidth } width={ avatarWidth } />
               </Link>
             ) }
 
@@ -162,7 +264,7 @@ const NFTPost = (props = {}) => {
         { /* / POST AVATAR */ }
 
         { /* POST BODY */ }
-        <Stack flex={ 1 } spacing={ .5 }>
+        <Stack flex={ 1 } spacing={ props.feed === 'chat' ? .25 : .5 }>
 
           { /* POST USER `*/ }
           { (!props.inThread || props.feed !== 'chat') && (
@@ -210,7 +312,7 @@ const NFTPost = (props = {}) => {
             <Box display="block">
               <Box
                 sx={ {
-                  ...(theme.typography.body1),
+                  ...(props.feed === 'chat' ? theme.typography.body2 : theme.typography.body1),
                   
                   wordBreak  : 'break-word',
                   whiteSpace : 'pre',
@@ -248,6 +350,32 @@ const NFTPost = (props = {}) => {
             </Stack>
           ) }
           { /* / POST LINKS */ }
+
+          { /* POST REPLY */ }
+          { props.feed !== 'chat' && !!item.replyTo?.account && (
+            <Box>
+              <Box p={ 1 } border={ `1px solid ${theme.palette.divider}` } borderRadius={ `${theme.shape.borderRadius * 2}px` }>
+                <NFTPost
+                  { ...props }
+
+                  item={ item.replyTo }
+                  feed="chat"
+                  inThread={ false }
+                  noMargin
+
+                  extra={ (
+                    <Typography component={ Link } to={ `/p/${item.replyTo.id}` } sx={ {
+                      color : theme.palette.primary.main,
+                      ...theme.typography.body2,
+                    } }>
+                      View Post
+                    </Typography>
+                  ) }
+                />
+              </Box>
+            </Box>
+          ) }
+          { /* / POST REPLY */ }
 
           { /* EMBED */ }
           { !!getEmbeds().length && (
@@ -290,20 +418,35 @@ const NFTPost = (props = {}) => {
 
           { /* POST SHARE LINE */ }
           { !!(props.feed !== 'chat') && (
-            <Stack direction="row" spacing={ 1 }>
-              <Tooltip title="Like Post">
-                <IconButton>
-                  <FontAwesomeIcon icon={ faHeart } size="xs" />
-                </IconButton>
+            <Stack direction="row" spacing={ 1 } sx={ {
+              '& .MuiBadge-badge': {
+                top     : 14,
+                right   : 5,
+                border  : `2px solid ${theme.palette.background.default}`,
+                padding : '0 4px',
+              },
+            } }>
+              <Tooltip title="Moon Post">
+                <Badge badgeContent={ like.count ? humanNumber(like.count) : 0 } color="primary">
+                  <IconButton onClick={ () => like.toggle() }>
+                    { like.loading ? (
+                      <FontAwesomeIcon icon={ faSpinnerThird } size="sm" className="fa-spin" />
+                    ) : (
+                      <FontAwesomeIcon icon={ like.like ? faMoonSolid : faMoon } size="sm" />
+                    ) }
+                  </IconButton>
+                </Badge>
               </Tooltip>
               <Tooltip title="Reply">
-                <IconButton>
-                  <FontAwesomeIcon icon={ faComment } size="xs" />
-                </IconButton>
+                <Badge badgeContent={ item.count?.replies ? humanNumber(item.count.replies) : 0 } color="primary">
+                  <IconButton onClick={ () => props.onRespond && props.onRespond(props.isResponding ? null : item) }>
+                    <FontAwesomeIcon icon={ props.isResponding || item.replied ? faCommentSolid : faComment } size="sm" />
+                  </IconButton>
+                </Badge>
               </Tooltip>
-              <Tooltip title="Share">
-                <IconButton>
-                  <FontAwesomeIcon icon={ faShareNodes } size="xs" />
+              <Tooltip title="Repost">
+                <IconButton onClick={ () => {} }>
+                  <FontAwesomeIcon icon={ false ? faShareNodesSolid : faShareNodes } size="sm" />
                 </IconButton>
               </Tooltip>
               
@@ -311,7 +454,7 @@ const NFTPost = (props = {}) => {
                 <IconButton sx={ {
                   ml : 'auto!important',
                 } }>
-                  <FontAwesomeIcon icon={ faEllipsis } size="xs" />
+                  <FontAwesomeIcon icon={ faEllipsis } size="sm" />
                 </IconButton>
               </Tooltip>
             </Stack>
@@ -319,7 +462,7 @@ const NFTPost = (props = {}) => {
           { /* / POST SHARE LINE */ }
 
           { /* POST SUBS */ }
-          { !!props.withReplies && !!(item.children || []).length && !!item.count?.replies && (
+          { !!props.withReplies && !!(item.children || []).length && (
             <Box>
               <PostList
                 feed="chat"
@@ -329,12 +472,36 @@ const NFTPost = (props = {}) => {
                   noAvatar : true,
                 } }
               />
+              <Typography component={ Link } to={ `/p/${item.id}` } sx={ {
+                color : theme.palette.primary.main,
+                ...theme.typography.body2,
+              } }>
+                View Thread
+              </Typography>
               <PostTyping
                 typing={ typing.typing }
               />
             </Box>
           ) }
           { /* / POST SUBS */ }
+
+          { /* POST RESPOND */ }
+          { !!props.isResponding && (
+            <PostCreate
+              isOpen
+              noAvatar
+
+              space={ item.space }
+              onPost={ onRespond }
+              replyTo={ item }
+              onKeyDown={ onKeyDown }
+            />
+          ) }
+          { /* / POST RESPOND */ }
+
+          { /* EXTRA */ }
+          { props.extra }
+          { /* / EXTRA */ }
 
         </Stack>
         { /* / POST BODY */ }

@@ -11,7 +11,7 @@ export default class FollowController extends NFTController {
   /**
    * login route
    */
-  @Route('GET', '/follow/:subject')
+  @Route('GET', '/api/v1/follow/:subject')
   async getAction(req, { data, params }, next) {
     // return json
     const { subject } = params;
@@ -38,7 +38,7 @@ export default class FollowController extends NFTController {
   /**
    * login route
    */
-  @Route('POST', '/follow/:subject')
+  @Route('POST', '/api/v1/follow/:subject')
   async followAction(req, { data, params }, next) {
     // return json
     const { subject } = params;
@@ -68,7 +68,7 @@ export default class FollowController extends NFTController {
   /**
    * login route
    */
-  @Route('DELETE', '/follow/:subject')
+  @Route('DELETE', '/api/v1/follow/:subject')
   async unfollowAction(req, { data, params }, next) {
     // return json
     const { subject } = params;

@@ -10,7 +10,8 @@ const useSpaces = (props = {}) => {
   const auth = useAuth();
   const socket = useSocket();
   const [spaces, setSpaces] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState('list');
+  const [updated, setUpdated] = useState(new Date());
 
   // cache timeout
   const cacheTimeout = props.timeout || props.cache || (60 * 1000);
@@ -33,9 +34,123 @@ const useSpaces = (props = {}) => {
     return backendSpace;
   };
 
+  // emit
+  const emitSpace = (space, isRemove = false) => {
+    // update post
+    const parentId = props.requireSpace ? (props.space?.id || props.space || 'null') : (props.space?.id || props.space);
+
+    // check parent
+    if ((!parentId && space.parent) || (parentId !== space.parent)) return;
+
+    // remove
+    if (isRemove) {
+      // spaces
+      for (let i = (spaces.length - 1); i >= 0; i--) {
+        // check if space
+        if (space.id === spaces[i].id) {
+          // removed
+          spaces.splice(i, 1);
+        }
+      }
+
+      // update
+      setUpdated(new Date());
+    } else {
+      // update
+      updateSpace(space, false);
+    }
+  };
+
+  // emit space remove
+  const emitSpaceRemove = (space) => emitSpace(space, true);
+
+  /**
+   * create group
+   *
+   * @param param0 
+   * @returns 
+   */
+  const createGroup = async ({
+    name        = null,
+    order       = 0,
+    description = '',
+  }) => {
+    // set loading
+    setLoading('create');
+
+    // loaded
+    let createdGroup = {};
+
+    // try/catch
+    try {
+      // load
+      createdGroup = await socket.post('/spacegroup', {
+        name,
+        order,
+        description,
+
+        account : auth?.account,
+      }, cacheTimeout);
+
+      // set spaces
+      updateSpace(createdGroup, false);
+    } catch (e) {
+      // loading
+      setLoading(null);
+      throw e;
+    }
+
+    // done loading
+    setLoading(null);
+
+    // return spaces
+    return createdGroup;
+  };
+
+  /**
+   * create group
+   *
+   * @param param0 
+   * @returns 
+   */
+  const removeGroup = async ({
+    id = null,
+  }) => {
+    // set loading
+    setLoading('remove');
+
+    // try/catch
+    try {
+      // load
+      await socket.delete(`/spacegroup/${id}`);
+
+      // spaces
+      for (let i = (spaces.length - 1); i >= 0; i--) {
+        // check if space
+        if (spaces[i].id === id) {
+          // removed
+          spaces.splice(i, 1);
+        }
+      }
+
+      // update spaces
+      setUpdated(new Date());
+    } catch (e) {
+      // loading
+      throw e;
+    }
+
+    // done loading
+    setLoading(null);
+
+    // return spaces
+    return true;
+  };
+
   // create
   const createSpace = async ({
     nfts        = [],
+    feed        = null,
     name        = null,
     image       = {},
     order       = 0,
@@ -44,7 +159,7 @@ const useSpaces = (props = {}) => {
     description = '',
   }) => {
     // set loading
-    setLoading(true);
+    setLoading('create');
 
     // loaded
     let createdSpace = {};
@@ -55,10 +170,10 @@ const useSpaces = (props = {}) => {
       createdSpace = await socket.post('/space', {
         name,
         nfts,
+        feed,
         space,
         image,
         order,
-        parent,
         privacy,
         description,
 
@@ -69,21 +184,21 @@ const useSpaces = (props = {}) => {
       updateSpace(createdSpace, false);
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // done loading
-    setLoading(false);
+    setLoading(null);
 
     // return spaces
     return createdSpace;
   };
 
   // bulk space updates
-  const updateSpaces = async (spaces) => {
+  const updateSpaces = async (updates = spaces) => {
     // loading
-    setLoading(true);
+    setLoading('update');
 
     // loaded
     let loadedSpaces = [];
@@ -91,38 +206,48 @@ const useSpaces = (props = {}) => {
     // try/catch
     try {
       // load
-      loadedSpaces = await socket.post(`/space/updates`, {
-        spaces,
+      loadedSpaces = await socket.post(`/space/sidebar`, {
+        space  : props.space,
+        spaces : updates,
+      });
+
+      // replace all info
+      loadedSpaces.forEach((space) => {
+        // local
+        const localSpace = spaces.find((s) => s.id === space.id);
+
+        // check local space
+        if (!localSpace) return spaces.push(space);
+
+        // update info
+        Object.keys(space).forEach((key) => {
+          // space key
+          localSpace[key] = space[key];
+        });
       });
 
       // set spaces
-      setSpaces(loadedSpaces);
+      setUpdated(new Date());
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // done loading
-    setLoading(false);
+    setLoading(null);
 
     // return spaces
     return loadedSpaces;
   };
 
   // create
-  const updateSpace = async ({
+  const updateGroup = async ({
     id,
-    nfts,
     name,
     open,
-    image,
     order,
-    parent,
-    privacy,
     description,
-
-    space = props.space,
   }, save = true) => {
     // set loading
     if (save) setLoading(id);
@@ -135,15 +260,88 @@ const useSpaces = (props = {}) => {
       // set space
       localSpace = {
         id,
-        nfts,
         name,
         open,
-        image,
         order,
-        space,
-        parent,
-        privacy,
         description,
+      };
+
+      // push
+      spaces.push(localSpace);
+    }
+
+    // keys
+    if (typeof name !== 'undefined') localSpace.name = name;
+    if (typeof open !== 'undefined') localSpace.open = open;
+    if (typeof order !== 'undefined') localSpace.order = order;
+    if (typeof description !== 'undefined') localSpace.description = description;
+
+    // update
+    if (!save) {
+      // update
+      return setUpdated(new Date());
+    } else {
+      // update in place
+      setUpdated(new Date());
+    }
+
+    // loaded
+    let loadedSpace = localSpace;
+
+    // try/catch
+    try {
+      // load
+      loadedSpace = await socket.patch(`/spacegroup/${id}`, {
+        name,
+        open,
+        order,
+        description,
+      });
+
+      // loop
+      Object.keys(loadedSpace).forEach((key) => {
+        // add to loaded
+        localSpace[key] = loadedSpace[key];
+      });
+
+      // set spaces
+      setUpdated(new Date());
+    } catch (e) {
+      // loading
+      throw e;
+    }
+
+    // done loading
+    setLoading(null);
+
+    // return spaces
+    return loadedSpace;
+  };
+
+  // create
+  const updateSpace = async ({
+    id,
+    type,
+    nfts,
+    name,
+    image,
+    order,
+    parent,
+    privacy,
+    description,
+  }, save = true) => {
+    // set loading
+    if (save) setLoading(id);
+
+    // update space
+    let localSpace = spaces.find((s) => s.id === id);
+
+    // check local space
+    if (!localSpace) {
+      // set space
+      localSpace = {
+        id,
+        type,
       };
 
       // push
@@ -153,7 +351,6 @@ const useSpaces = (props = {}) => {
     // keys
     if (typeof nfts !== 'undefined') localSpace.nfts = nfts;
     if (typeof name !== 'undefined') localSpace.name = name;
-    if (typeof open !== 'undefined') localSpace.open = open;
     if (typeof image !== 'undefined') localSpace.image = image;
     if (typeof order !== 'undefined') localSpace.order = order;
     if (typeof parent !== 'undefined') localSpace.parent = parent;
@@ -163,10 +360,10 @@ const useSpaces = (props = {}) => {
     // update
     if (!save) {
       // update
-      return setSpaces([...spaces]);
+      return setUpdated(new Date());
     } else {
       // update in place
-      setSpaces([...spaces]);
+      setUpdated(new Date());
     }
 
     // loaded
@@ -189,15 +386,14 @@ const useSpaces = (props = {}) => {
       });
 
       // set spaces
-      setSpaces([...spaces]);
+      setUpdated(new Date());
     } catch (e) {
       // loading
-      setLoading(false);
       throw e;
     }
 
     // done loading
-    setLoading(false);
+    setLoading(null);
 
     // return spaces
     return loadedSpace;
@@ -213,16 +409,24 @@ const useSpaces = (props = {}) => {
       // load
       await socket.delete(`/space/${id}`);
 
+      // spaces
+      for (let i = (spaces.length - 1); i >= 0; i--) {
+        // check if space
+        if (id === spaces[i].id) {
+          // removed
+          spaces.splice(i, 1);
+        }
+      }
+
       // set spaces
-      setSpaces(spaces.filter((s) => s.id !== id));
+      setUpdated(new Date());
     } catch (e) {
       // loading
-      setLoading(false);
       throw e;
     }
 
     // done loading
-    setLoading(false);
+    setLoading(null);
 
     // return spaces
     return true;
@@ -234,7 +438,7 @@ const useSpaces = (props = {}) => {
     if (props.requireSpace && !props.space) return;
 
     // set loading
-    setLoading(true);
+    setLoading('list');
 
     // loaded
     let loadedSpaces = [];
@@ -246,16 +450,40 @@ const useSpaces = (props = {}) => {
         space : props.space,
       });
 
+      // spaces
+      for (let i = (spaces.length - 1); i >= 0; i--) {
+        // check if space
+        if (!loadedSpaces.find((s) => s.id === spaces[i].id)) {
+          // removed
+          spaces.splice(i, 1);
+        }
+      }
+
+      // replace all info
+      loadedSpaces.forEach((space) => {
+        // local
+        const localSpace = spaces.find((s) => s.id === space.id);
+
+        // check local space
+        if (!localSpace) return spaces.push(space);
+
+        // update info
+        Object.keys(space).forEach((key) => {
+          // space key
+          localSpace[key] = space[key];
+        });
+      });
+
       // set spaces
-      setSpaces(loadedSpaces);
+      setUpdated(new Date());
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // set loading
-    setLoading(false);
+    setLoading(null);
 
     // return spaces
     return loadedSpaces;
@@ -267,17 +495,21 @@ const useSpaces = (props = {}) => {
     listSpaces();
 
     // on connect
+    socket.socket.on('space', emitSpace);
     socket.socket.on('connect', listSpaces);
+    socket.socket.on('space+remove', emitSpaceRemove);
 
     // done
     return () => {
       // off connect
+      socket.socket.removeListener('space', emitSpace);
       socket.socket.removeListener('connect', listSpaces);
+      socket.socket.removeListener('space+remove', emitSpaceRemove);
     };
   }, [auth?.account, props.space]);
 
   // return spaces
-  return {
+  const NFTSpaces = {
     get     : getSpace,
     list    : listSpaces,
     update  : updateSpace,
@@ -285,9 +517,20 @@ const useSpaces = (props = {}) => {
     delete  : deleteSpace,
     updates : updateSpaces,
 
-    loading,
+    groupCreate : createGroup,
+    groupUpdate : updateGroup,
+    groupRemove : removeGroup,
+
     spaces,
+    loading,
+    updated,
   };
+
+  // nft spaces
+  if (spaces?.length) window.NFTSpaces = NFTSpaces;
+
+  // return
+  return NFTSpaces;
 };
 
 // export default

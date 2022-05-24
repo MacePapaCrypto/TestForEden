@@ -14,6 +14,7 @@ import { faPlus, faUser } from '@fortawesome/pro-regular-svg-icons';
 import Link from './Link';
 import Logo from './assets/logo.png';
 import useAuth from './useAuth';
+import NFTAvatar from './NFTAvatar';
 import useSocket from './useSocket';
 import ScrollBar from './ScrollBar';
 import NFTPicker from './NFTPicker';
@@ -34,7 +35,7 @@ const NFTSideBarSpaces = (props = {}) => {
   // get mixin
   const { browse, mixin } = props;
   const { space } = browse;
-  const { spaces } = mixin;
+  let { spaces } = mixin;
 
   // menu
   const userMenuRef = useRef(null);
@@ -67,12 +68,11 @@ const NFTSideBarSpaces = (props = {}) => {
 
   // open
   const toggleGroupOpen = (group) => {
-    // update
-    mixin.update({
-      ...group,
+    // set open
+    group.open = group.open ? false : new Date();
 
-      open : group.open ? false : new Date(),
-    });
+    // update
+    mixin.groupUpdate(group);
   };
 
   // set drag place
@@ -88,7 +88,7 @@ const NFTSideBarSpaces = (props = {}) => {
 
     // is group
     const over    = spaces.find((seg) => seg.id === id);
-    const aParent = spaces.find((g) => g.id === parent)?.type === 'group' ? spaces.find((g) => g.id === parent) : null;
+    const aParent = spaces.find((g) => g.id === parent)?.type === 'spaceGroup' ? spaces.find((g) => g.id === parent) : null;
 
     // check default variables
     if (actualDragging.id === id) return;
@@ -110,7 +110,7 @@ const NFTSideBarSpaces = (props = {}) => {
       actualDragging.order = order;
 
       // check over
-      if (!aParent && over?.type !== 'group' && parent) {
+      if (!aParent && over?.type !== 'spaceGroup' && parent) {
         // grouping over
         actualDragging.parent = over.id;
         setGrouping(over);
@@ -119,9 +119,9 @@ const NFTSideBarSpaces = (props = {}) => {
         setGrouping(null);
 
         // set parent
-        if (aParent && over?.type !== 'group') {
+        if (aParent && over?.type !== 'spaceGroup') {
           actualDragging.parent = aParent.id;
-        } else if (over?.type === 'group' && parent) {
+        } else if (over?.type === 'spaceGroup' && parent) {
           actualDragging.parent = over.id;
         } else {
           actualDragging.parent = null;
@@ -130,9 +130,6 @@ const NFTSideBarSpaces = (props = {}) => {
 
       // update
       mixin.update(actualDragging, false);
-
-      // which to update
-      setUpdated(new Date());
     }, parent && !aParent ? 500 : 1);
   };
 
@@ -141,19 +138,64 @@ const NFTSideBarSpaces = (props = {}) => {
     // clear timeout
     clearTimeout(timeout);
 
+    // check draging
+    if (!dragging) return;
+
+    // force update
+    mixin.update(dragging, false);
+
     // create group if grouping
     if (grouping) {
       // create
-      const tempGroup = await mixin.create({
-        type  : 'group',
+      const tempGroup = await mixin.groupCreate({
         order : grouping.order,
       });
 
       // set parents
+      dragging.order  = grouping.order + .5;
       grouping.parent = tempGroup.id;
       dragging.parent = tempGroup.id;
-      dragging.order  = grouping.order + .5;
+
+      // update
+      mixin.update(tempGroup, false);
+
+      // updated
+      setGrouping(null);
     }
+
+    // remove all single parent groups
+    const allGroups = spaces.filter((s) => !!s.parent).reduce((accum, space) => {
+      // check parent
+      if (!accum[space.parent]) accum[space.parent] = [];
+
+      // push id
+      accum[space.parent].push(space.id);
+
+      // return done
+      return accum;
+    }, {});
+
+    // loop
+    await Promise.all(Object.keys(allGroups).map((groupId) => {
+      // check length
+      if (allGroups[groupId].length > 1) return;
+
+      // get group
+      const actualGroup = spaces.find((s) => s.id === groupId);
+      
+      // remove from parent
+      return Promise.all(allGroups[groupId].map((spaceId) => {
+        // get space
+        const actualSpace = spaces.find((s) => s.id === spaceId);
+
+        // set parent
+        actualSpace.order = actualGroup.order;
+        actualSpace.parent = null;
+
+        // remove group
+        return mixin.groupRemove(actualGroup);
+      }));
+    }));
 
     // new groups
     spaces.sort((a, b) => {
@@ -170,7 +212,6 @@ const NFTSideBarSpaces = (props = {}) => {
 
     // set updated
     setDragging(null);
-    setGrouping(null);
   };
 
   // on select
@@ -236,7 +277,7 @@ const NFTSideBarSpaces = (props = {}) => {
             </Box>
 
             { /* FLOATING SPACE */ }
-            { !!space && !spaces.find((s) => s.id === space.id) && (
+            { !!space && !(spaces || []).find((s) => s.id === space.id) && (
               <SideBarSpace
                 item={ space }
 
@@ -245,6 +286,7 @@ const NFTSideBarSpaces = (props = {}) => {
 
                 onActive={ browse.setSpace }
                 isActive
+                isTemporary
               />
             ) }
             
@@ -324,32 +366,18 @@ const NFTSideBarSpaces = (props = {}) => {
               // pop up menu
               setUserMenu(true);
             } } ref={ userMenuRef }>
-              <Tooltip title={ auth.account ? 'My Profile' : 'Login' } placement="right">
-                { auth.loading ? (
-                  <Skeleton variant="circular" width={ spaceWidth } height={ spaceWidth } sx={ {
-                    minHeight : `${spaceWidth}px`,
-                  } } />
-                ) : (
-                  <Avatar
-                    sx={ {
-                      color      : `rgba(255, 255, 255, 0.25)`,
-                      width      : `${spaceWidth}px`,
-                      height     : `${spaceWidth}px`,
-                      bgcolor    : `rgba(255,255,255,0.1)`,
-                      transition : `all 0.2s ease`,
-  
-                      '&:hover' : {
-                        bgcolor : theme.palette.mode === 'light' ? theme.palette.grey[400] : theme.palette.grey[600],
-                      },
-                    } }
-                    src={ auth.authed?.avatar?.image?.url ? `https://media.dashup.com/?width=${spaceWidth}&height=${spaceWidth}&src=${auth.authed.avatar.image.url}` : null }
-                  >
-                    { !auth.loading && !!(!auth.account || (auth.account && !auth.authed?.avatar?.image?.url)) && (
-                      <FontAwesomeIcon icon={ faUser } />
-                    ) }
-                  </Avatar>
-                ) }
-              </Tooltip>
+              { auth.loading ? (
+                <Skeleton variant="circular" width={ spaceWidth } height={ spaceWidth } sx={ {
+                  minHeight : `${spaceWidth}px`,
+                } } />
+              ) : (
+                <NFTAvatar user={ auth.authed } width={ spaceWidth } height={ spaceWidth } sx={ {
+                  color : `rgba(255, 255, 255, 0.25)`,
+                } } TooltipProps={ {
+                  title     : auth.account ? 'My Profile' : 'Login',
+                  placement : 'right',
+                } } />
+              ) }
             </Box>
 
 
@@ -376,7 +404,7 @@ const NFTSideBarSpaces = (props = {}) => {
             <Paper>
               <ClickAwayListener onClickAway={ () => setUserMenu(null) }>
                 <MenuList>
-                  <MenuItem onClick={ () => history.push(`/account/${auth.account}`) }>Profile</MenuItem>
+                  <MenuItem onClick={ () => history.push(`/a/${auth.account}`) }>Profile</MenuItem>
                   <MenuItem onClick={ () => {
                     setUserMenu(null);
                     setAvatarMenu(true);

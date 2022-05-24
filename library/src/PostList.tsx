@@ -14,6 +14,7 @@ const NFTPostList = (props = {}) => {
   // use state
   let [visible, setVisible] = useState([]);
   const [playing, setPlaying] = useState(null);
+  const [responding, setResponding] = useState(null);
   const [userPlaying, setUserPlaying] = useState(false);
 
   // faux
@@ -61,7 +62,16 @@ const NFTPostList = (props = {}) => {
   };
 
   // sorted posts
-  const sortedPosts = props.feed === 'chat' ? [...(props.posts)].reverse() : props.posts;
+  const sortedPosts = props.feed === 'chat' ? props.posts.sort((a, b) => {
+    // ab
+    const aS = new Date(a.createdAt);
+    const bS = new Date(b.createdAt);
+
+    // return sorted
+    if (aS > bS) return 1;
+    if (aS < bS) return -1;
+    return 0;
+  }) : props.posts;
 
   // return jsx
   return (
@@ -84,9 +94,11 @@ const NFTPostList = (props = {}) => {
               playing={ playing }
               inThread={ prev?.account === post.account }
               onHidden={ (ref, item) => updateVisible(ref, item, false) }
+              onRespond={ (item) => setResponding(item?.id) }
               onVisible={ (ref, item) => updateVisible(ref, item, true) }
               setPlaying={ (id, index) => setRealPlaying(id ? { id, index } : null) }
               EmbedProps={ props.EmbedProps }
+              isResponding={ responding === post.id }
             />
             { props.feed !== 'chat' && (
               <Box mt={ 2 }>

@@ -20,9 +20,9 @@ import controllers from './controllers';
 // events
 class NFTBackend extends Events {
   // built controllers
+  private __html = fs.readFileSync(`${__dirname}/index.html`, 'utf-8');
   private __router = new Trouter();
   private __builtRoutes = [];
-  private __builtActions = [];
   private __builtDaemons = {};
   private __builtControllers = {};
 
@@ -406,6 +406,61 @@ class NFTBackend extends Events {
           priority,
         };
       });
+
+      // add app
+      this.app[method.toLowerCase()](path, async (req, res, next) => {
+        // await
+        const data = {
+          ...(req.body || {}),
+          ...(req.query || {}),
+        };
+        const { params } = req;
+
+        // resulted
+        let resulted = null;
+
+        // do next
+        const doNext = () => {
+          // resulted
+          resulted = true;
+          next();
+        };
+
+        // try/catch
+        try {
+          // data/params
+          res.data = data;
+          res.params = params;
+
+          // await
+          const result = await ctrl[property](req, res, doNext);
+
+          // check resulted
+          if (resulted) return;
+
+          // check response
+          if (!result) return;
+
+          // check response
+          if (path.includes('/api/v1')) {
+            // done
+            res.end(JSON.stringify(result));
+          }
+
+          // end
+          res.end(result);
+        } catch (e) {
+          // error
+          res.statusCode = 500;
+          res.end(e.toString());
+        }
+      });
+    });
+
+    // add catchall
+    this.app.get('*', async (req, res) => {
+      // return html
+      res.end(this.html());
     });
 
     // set routes
@@ -488,6 +543,19 @@ class NFTBackend extends Events {
 
     // info
     this.logger.info('daemons created');
+  }
+
+  /**
+   * contructs html
+   *
+   * @param param0 
+   */
+  html(data = {}) {
+    // const
+    const { title = 'Moon Social', meta = '' } = data;
+
+    // return html
+    return `${this.__html}`.replace('{{TITLE}}', title.includes('Moon Social') ? title : `Moon Social | ${title}`).replace('{{META}}', meta);
   }
 }
 

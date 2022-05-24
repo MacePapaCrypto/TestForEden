@@ -53,7 +53,7 @@ const NFTSpaceModal = (props = {}) => {
     }, []));
 
     // set image by default
-    if (!item.name) setItem('name', nft.value?.name);
+    if (!item.name) setItem('name', nft.name);
     if (!item.image) setItem('image', nft);
 
     // close menu
@@ -189,7 +189,7 @@ const NFTSpaceModal = (props = {}) => {
                       height : 80,
                     } }
                     key={ nft.id }
-                    src={ nft.image?.url ? `https://media.dashup.com/?width=80&height=80&src=${nft.image.url}` : null }
+                    src={ nft.image?.url ? `${nft.image.url}?w=80&h=80` : null }
                   />
                 );
               }) }
@@ -208,7 +208,7 @@ const NFTSpaceModal = (props = {}) => {
             </Box>
             <Box textAlign="center" mb={ 3 }>
               <Typography>
-                { item.nft?.value?.name || 'No NFT Selected' }
+                { item.nft?.name || 'No NFT Selected' }
               </Typography>
             </Box>
 
@@ -248,14 +248,14 @@ const NFTSpaceModal = (props = {}) => {
                   height : 80,
                 } }
                 ref={ imageMenuRef }
-                src={ item.image?.image?.url ? `https://media.dashup.com/?width=80&height=80&src=${item.image?.image?.url}` : null }
+                src={ item.image?.image?.url ? `${item.image.image.url}?w=80&h=80` : null }
                 onClick={ () => setImageMenu(true) }
               />
             </Box>
-            { !!(item.image?.value?.name) && (
+            { !!(item.image?.name) && (
               <Box textAlign="center" mb={ 3 }>
                 <Typography>
-                  { item.image?.value?.name }
+                  { item.image?.name }
                 </Typography>
               </Box>
             ) }

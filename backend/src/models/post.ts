@@ -5,6 +5,7 @@ import UserModel from './user';
 import SpaceModel from './space';
 import MemberModel from './member';
 import FeedUtility from '../utilities/feed';
+import LikeModel from './like';
 
 /**
  * export model
@@ -70,9 +71,31 @@ export default class PostModel extends Model {
    *
    * @param thread 
    */
-   static findByThread(thread, ...args) {
+  static findByThread(thread, ...args) {
     // find by ref
     return PostModel.findByRef(`thread:${thread}`, ...args);
+  }
+  
+  /**
+   * find posts by thread
+   *
+   * @param thread 
+   */
+  static findByThreadAccount(thread, account, ...args) {
+    // find by ref
+    return PostModel.findByRef(`thread:${thread}:${account}`.toLowerCase(), ...args);
+  }
+
+  
+  
+  /**
+   * find posts by thread
+   *
+   * @param thread 
+   */
+  static findByResponse(thread, ...args) {
+    // find by ref
+    return PostModel.findByRef(`reply:${thread}`, ...args);
   }
   
   /**
@@ -104,6 +127,16 @@ export default class PostModel extends Model {
     // find by ref
     return PostModel.findByRef(`space:${space}`, ...args);
   }
+  
+  /**
+   * find posts by segment
+   *
+   * @param space 
+   */
+   static findBySubSpace(space, ...args) {
+    // find by ref
+    return PostModel.findByRef(`subspace:${space}`, ...args);
+  }
 
   /**
    * to json
@@ -111,6 +144,9 @@ export default class PostModel extends Model {
   async toJSON(loadCache = {}, account = null, replies = 0) {
     // get parent
     const parentJSON = await super.toJSON();
+
+    // loads
+    const loads = [];
 
     // fix context
     if (this.get('space')) {
@@ -124,13 +160,35 @@ export default class PostModel extends Model {
       })();
 
       // await
-      parentJSON.space = await loadCache[this.get('space')];
+      loads.push((async () => {
+        parentJSON.space = await loadCache[this.get('space')];
+      })());
+    }
+
+    // reply
+    if (this.get('reply') && replies) {
+      // create new promise
+      if (!loadCache[this.get('reply')]) loadCache[this.get('reply')] = (async () => {
+        // load
+        const parentPost = await PostModel.findById(this.get('reply'));
+
+        // return
+        return parentPost ? await parentPost.toJSON(loadCache, account) : null;
+      })();
+
+      // await
+      loads.push((async () => {
+        parentJSON.replyTo = await loadCache[this.get('reply')];
+      })());
     }
 
     // fix account
     if (this.get('account')) {
+      // lower account
+      const lowerAccount = this.get('account').toLowerCase();
+
       // create new promise
-      if (!loadCache[this.get('account').toLowerCase()]) loadCache[this.get('account').toLowerCase()] = (async () => {
+      if (!loadCache[lowerAccount]) loadCache[lowerAccount] = (async () => {
         // load
         const actualUser = await this.getUser();
 
@@ -139,20 +197,61 @@ export default class PostModel extends Model {
       })();
 
       // await
-      parentJSON.user = await loadCache[this.get('account')];
+      loads.push((async () => {
+        parentJSON.user = await loadCache[lowerAccount];
+      })());
+    }
+
+    // if account
+    if (account && replies) {
+      // lower account
+      const lowerAccount = (account?.id || account).toLowerCase();
+
+      // create new promise
+      if (!loadCache[`${this.id}.liked`]) loadCache[`${this.id}.liked`] = (async () => {
+        // load like
+        const actualLike = await LikeModel.isLiked(lowerAccount, this.id);
+
+        // check user
+        return actualLike ? await actualLike.toJSON() : null;
+      })();
+
+      // create new promise
+      if (!loadCache[`${this.id}.replied`]) loadCache[`${this.id}.replied`] = (async () => {
+        // load like
+        const actualReplied = (await PostModel.findByThreadAccount(this.id, lowerAccount, 1) || [])[0];
+
+        // check user
+        return actualReplied ? true : null;
+      })();
+
+      // await
+      loads.push((async () => {
+        parentJSON.liked = await loadCache[`${this.id}.liked`];
+      })());
+
+      // await
+      loads.push((async () => {
+        parentJSON.replied = await loadCache[`${this.id}.replied`];
+      })());
     }
 
     // check count
     if (this.get('count.replies') && replies) {
       // create new promise
-      if (!loadCache[`${this.get('id')}.children`]) loadCache[`${this.get('id')}.children`] = (async () => {
+      if (!loadCache[`${this.id}.children`]) loadCache[`${this.id}.children`] = (async () => {
         // load
-        return await Promise.all((await PostModel.findByThread(this.get('id'), replies)).map((child) => child.toJSON(loadCache)));
+        return await Promise.all((await PostModel.findByResponse(this.id, replies)).map((child) => child.toJSON(loadCache, account)));
       })();
 
-      // parent json
-      parentJSON.replies = await loadCache[`${this.get('id')}.children`];
+      // await
+      loads.push((async () => {
+        parentJSON.children = await loadCache[`${this.id}.children`];
+      })());
     }
+
+    // promise all
+    await Promise.all(loads);
 
     // return parent
     return parentJSON;
@@ -176,9 +275,8 @@ export default class PostModel extends Model {
     const counts = [
       'count.tips',
       'count.votes',
-      'count.upvotes',
+      'count.likes',
       'count.replies',
-      'count.downvotes',
       'count.reactions',
     ];
 
@@ -210,14 +308,15 @@ export default class PostModel extends Model {
     };
 
     // ranking
-    const upvoteRanking = (this.get('count.upvotes') || 0) + ((this.get('count.replies') || 0) * 3);
+    const upvoteRanking = (this.get('count.likes') || 0) + ((this.get('count.replies') || 0) * 3);
+    const downvoteRanking = 0;
 
     // set rank
     this.set('rank', {
-      score  : round(decay.redditHot()(upvoteRanking, this.get('count.downvotes'), created)),
-      reddit : round(decay.redditHot()(upvoteRanking, this.get('count.downvotes'), created)),
+      score  : round(decay.redditHot()(upvoteRanking, downvoteRanking, created)),
+      reddit : round(decay.redditHot()(upvoteRanking, downvoteRanking, created)),
       hacker : round(decay.hackerHot()(upvoteRanking, created)),
-      wilson : round(decay.wilsonScore()(upvoteRanking, this.get('count.downvotes')))
+      wilson : round(decay.wilsonScore()(upvoteRanking, downvoteRanking))
     });
 
     // return super

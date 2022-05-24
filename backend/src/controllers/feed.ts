@@ -20,7 +20,7 @@ export default class FeedController extends NFTController {
     const actualPost = await PostModel.findById(post.id);
 
     // send post to socket
-    socket.emit('post', await actualPost.toJSON({}, 5));
+    socket.emit('post', await actualPost.toJSON({}, socket.account, 5));
   }
 
   /**
@@ -39,7 +39,7 @@ export default class FeedController extends NFTController {
    * 
    * @returns
    */
-  @Route('GET', '/feed/:feed')
+  @Route('GET', '/api/v1/feed/:feed')
   async listAction(req, { data, params }, next) {
     // check segment
     const feed = params.feed;
@@ -84,7 +84,7 @@ export default class FeedController extends NFTController {
 
     // return
     return {
-      result  : await Promise.all(actualPosts.map((post) => post.toJSON(loadCache, 5))),
+      result  : await Promise.all(actualPosts.map((post) => post.toJSON(loadCache, req.account, 5))),
       success : true,
     };
   }

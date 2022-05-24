@@ -39,7 +39,7 @@ const NFTSpaceCard = (props = {}) => {
                   width  : `${avatarWidth}px`,
                   height : `${avatarWidth}px`,
                   cursor : 'pointer',
-                } } src={ item.image?.image?.url ? `https://media.dashup.com/?width=${avatarWidth}&height=${avatarWidth}&src=${item.image.image.url}` : null } />
+                } } src={ item.image?.image?.url ? `${item.image.image.url}?w=${avatarWidth}&h=${avatarWidth}` : null } />
               </Tooltip>
             </Box>
 

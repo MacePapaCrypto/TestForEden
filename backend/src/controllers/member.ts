@@ -10,9 +10,58 @@ import MemberModel from '../models/member';
 export default class MemberController extends NFTController {
 
   /**
+   * constructor
+   *
+   * @param args 
+   */
+  constructor(...args) {
+    // run super
+    super(...args);
+
+    // on data
+    this.base.on('authenticated', (req) => {
+      // check account
+      if (!req.account) return;
+
+      // add member listener
+      req.subscribe(`member+account:${req.account.toLowerCase()}`, this.memberListener);
+      req.subscribe(`delete+member+account:${req.account.toLowerCase()}`, this.memberDeleteListener);
+    });
+  }
+
+  /**
+   * listen for post
+   *
+   * @param socket 
+   * @param post 
+   */
+  async memberListener(socket, member) {
+    // get post
+    const actualMember = await MemberModel.findById(member.id);
+    const actualSpace = await actualMember.getSpace();
+
+    // send post to socket
+    socket.emit('space', await actualSpace.toJSON({}, actualMember));
+  }
+
+  /**
+   * listen for post
+   *
+   * @param socket 
+   * @param post 
+   */
+  async memberDeleteListener(socket, member) {
+    // get space
+    const actualSpace = await SpaceModel.findById(member.space);
+
+    // send post to socket
+    socket.emit('space+remove', await actualSpace.toJSON({}, null, true));
+  }
+
+  /**
    * login route
    */
-  @Route('GET', '/member/:subject')
+  @Route('GET', '/api/v1/member/:subject')
   async getAction(req, { data, params }, next) {
     // return json
     const { subject } = params;
@@ -39,7 +88,7 @@ export default class MemberController extends NFTController {
   /**
    * login route
    */
-  @Route('POST', '/member/:subject')
+  @Route('POST', '/api/v1/member/:subject')
   async createAction(req, { data, params }, next) {
     // return json
     const { subject } = params;
@@ -78,7 +127,7 @@ export default class MemberController extends NFTController {
   /**
    * login route
    */
-  @Route('DELETE', '/member/:subject')
+  @Route('DELETE', '/api/v1/member/:subject')
   async removeAction(req, { data, params }, next) {
     // return json
     const { subject } = params;

@@ -4,13 +4,13 @@ import Model, { Type } from '../base/model';
 /**
  * export model
  */
-@Type('collection', 'nft')
-export default class CollectionModel extends Model {
+@Type('contract', 'nft')
+export default class ContractModel extends Model {
   
   // find by owner
   static findByCreator(creator) {
     // find by ref
-    return CollectionModel.findByRef(`creator:${creator}`);
+    return ContractModel.findByRef(`creator:${creator}`);
   }
 
   /**

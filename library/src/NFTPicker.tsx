@@ -3,11 +3,14 @@
 import useSocket from './useSocket';
 import ScrollBar from './ScrollBar';
 import React, { useEffect, useState } from 'react';
-import { Stack, Popper, Paper, Grow, Box, useTheme, CircularProgress, ClickAwayListener, Tooltip, Typography, Grid, InputAdornment, IconButton, FormControl, InputLabel, OutlinedInput } from '@mui/material';
+import { Stack, Popper, Paper, Grow, Box, useTheme, CircularProgress, ClickAwayListener, Typography, Grid, InputAdornment, IconButton, FormControl, InputLabel, OutlinedInput } from '@mui/material';
 
 // icons
 import { faSearch } from '@fortawesome/pro-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+
+// import local
+import NFT from './NFT';
 
 // image picker
 const NFTPicker = (props = {}) => {
@@ -27,10 +30,12 @@ const NFTPicker = (props = {}) => {
     setLoading(true);
 
     // images
-    const loadedImages = await socket.get('/nft/list');
+    const loadedImages = await socket.get('/nft/list', {
+      include : 'contract'
+    });
 
     // load from api
-    setImages(loadedImages);
+    setImages(loadedImages.data);
     setLoading(false);
   };
 
@@ -83,7 +88,7 @@ const NFTPicker = (props = {}) => {
   return (
     <Popper
       style={ {
-        zIndex : 5000,
+        zIndex : 1499,
       } }
       open={ props.open }
       anchorEl={ props.anchorEl }
@@ -156,26 +161,18 @@ const NFTPicker = (props = {}) => {
                                   // return image
                                   return (
                                     <Grid item xs={ 3 } key={ image.id }>
-                                      <Tooltip
-                                        title={ image.value?.name }
-                                        style={ {
-                                          zIndex : 5002,
-                                        } }
-                                      >
-                                        <Box
-                                          src={ `https://media.dashup.com/?width=${NFTWidth}&height=${NFTWidth}&src=${image.image?.url}` }
-                                          alt={ image.value?.name }
-                                          loading="lazy"
-                                          onClick={ () => props.onPick(image) }
-                                          component="img"
+                                      <NFT
+                                        item={ image }
+                                        width={ NFTWidth }
+                                        height={ NFTWidth }
+                                        onClick={ () => props.onPick(image) }
 
-                                          sx={ {
-                                            cursor       : 'pointer',
-                                            maxWidth     : '100%',
-                                            borderRadius : `${theme.shape.borderRadius}px`,
-                                          } }
-                                        />
-                                      </Tooltip>
+                                        sx={ {
+                                          cursor       : 'pointer',
+                                          maxWidth     : '100%',
+                                          borderRadius : `${theme.shape.borderRadius}px`,
+                                        } }
+                                      />
                                     </Grid>
                                   );
                                 }) }

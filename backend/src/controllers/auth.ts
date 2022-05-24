@@ -29,7 +29,7 @@ export default class AuthController extends NFTController {
   /**
    * login route
    */
-  @Route('GET', '/auth/:address')
+  @Route('GET', '/api/v1/auth/:address')
   async authAction(req, { data, params }, next) {
     // return json
     const { address } = params;
@@ -58,6 +58,7 @@ export default class AuthController extends NFTController {
       });
 
       // subscribe
+      this.base.emit('authenticated', req);
       req.subscribe(`user:${address}`.toLowerCase(), this.myUserListener);
 
       // already authed
@@ -94,7 +95,7 @@ export default class AuthController extends NFTController {
    * @param address 
    * @returns 
    */
-  @Route('POST', '/auth/:address')
+  @Route('POST', '/api/v1/auth/:address')
   async authCompleteAction(req, { data, params }, next) {
     // get message/signature
     const { address } = params;
@@ -159,6 +160,7 @@ export default class AuthController extends NFTController {
     await session.save();
 
     // subscribe
+    this.base.emit('authenticated', req);
     req.subscribe(`user:${address}`.toLowerCase(), this.myUserListener);
 
     // success

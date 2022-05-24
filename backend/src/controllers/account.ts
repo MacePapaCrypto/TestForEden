@@ -14,7 +14,7 @@ export default class PostController extends NFTController {
    * 
    * @returns
    */
-  @Route('GET', '/account/:id')
+  @Route('GET', '/api/v1/account/:id')
   async getAction(req, { data, params }, next) {
     // get post
     const user = await UserModel.findById(`${params.id}`.toLowerCase());
@@ -33,7 +33,7 @@ export default class PostController extends NFTController {
    * 
    * @returns
    */
-  @Route('POST', '/account/update')
+  @Route('POST', '/api/v1/account/update')
   async updateAction(req, { data, params }, next) {
     // check account
     if (!req.account) return {

@@ -3,8 +3,7 @@
 import fetch from 'node-fetch';
 import getUrls from 'get-urls';
 import UserModel from '../models/user';
-import TransferModel from '../models/owned';
-import CollectionModel from '../models/collection';
+import ContractModel from '../models/contract';
 
 // embed utility
 class EmbedUtility {
@@ -90,12 +89,10 @@ class EmbedUtility {
     // find possible addresses
     const [
       account,
-      transfers,
       collection,
     ] = await Promise.all([
       UserModel.findById(address),
-      TransferModel.findByHash(address),
-      CollectionModel.findById(address),
+      ContractModel.findById(address),
     ]);
 
     // check if collection

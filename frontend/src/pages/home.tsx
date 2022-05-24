@@ -47,7 +47,7 @@ const HomePage = (props = {}) => {
         flex : 1,
       } }>
         <Grid container>
-          <Grid item xs={ 7 }>
+          <Grid item xs={ 8 }>
             <Stack spacing={ 2 }>
               <PostCreate
                 onPost={ onPost }
@@ -74,7 +74,7 @@ const HomePage = (props = {}) => {
               />
             </Stack>
           </Grid>
-          <Grid item xs={ 5 }>
+          <Grid item xs={ 4 }>
 
           </Grid>
         </Grid>

@@ -305,6 +305,23 @@ export default class NFTModel extends Events {
       });
     });
 
+    // filter refs
+    const background = async () => {
+      // to json
+      const json = await this.toJSON();
+
+      // emit
+      pubsub.emit(`delete+${type}:${json.id}`, json);
+
+      // loop refs
+      (this.get('refs') || []).forEach((ref) => {
+        // emit to pubsub
+        pubsub.emit(`delete+${ref}`, type, json);
+        pubsub.emit(`delete+${type}+${ref}`, json);
+      });
+    };
+    if (!noEmission) background();
+
     // await actual query
     await NFTModel.batch(queries);
   }
@@ -459,6 +476,7 @@ export default class NFTModel extends Events {
     // keys
     return {
       type,
+
       ...data,
     };
   }

@@ -46,6 +46,7 @@ export default {
         '@mui/icons-material',
 
         '@fortawesome/react-fontawesome',
+        '@fortawesome/pro-solid-svg-icons',
         '@fortawesome/pro-regular-svg-icons',
       ],
       extensions,

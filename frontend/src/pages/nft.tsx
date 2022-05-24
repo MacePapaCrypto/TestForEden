@@ -1,7 +1,7 @@
 
 import React, { useEffect, useState } from 'react';
-import { useBrowse, useSocket, ProfileCard } from '@nft/ui';
-import { Box, Grid, Container, Typography, CircularProgress, useTheme, Stack, Tooltip } from '@mui/material';
+import { NFT, useBrowse, useSocket, ProfileCard } from '@nft/ui';
+import { Box, Grid, Container, Typography, CircularProgress, useTheme, Stack } from '@mui/material';
 
 /**
  * home page
@@ -30,10 +30,11 @@ const NftPage = (props = {}) => {
     // images
     const loadedImages = await socket.get('/nft/list', {
       account : account?.id,
+      include : 'contract',
     });
 
     // load from api
-    setImages(loadedImages);
+    setImages(loadedImages.data);
     setLoading(false);
   };
 
@@ -82,69 +83,42 @@ const NftPage = (props = {}) => {
     loadImages();
   }, [account?.id]);
 
+  // loading
+  if (loading) return (
+    <Box display="flex" alignItems="center" justifyContent="center" py={ 5 } flex={ 1 }>
+      <CircularProgress />
+    </Box>
+  );
+
   // layout
   return (
-    <Box flex={ 1 } display="flex" flexDirection="column">
-      <Container sx={ {
-        py   : 2,
-        flex : 1,
-      } }>
-        <Grid container spacing={ 3 }>
-          <Grid item xs={ 8 }>
-            { (loading || loadingAccount) ? (
-              <Box my={ 5 } display="flex" justifyContent="center">
-                <CircularProgress />
-              </Box>
-            ) : (
-              <Stack spacing={ 2 }>
-                { getContracts().map((contract) => {
-                  // return jsx
-                  return (
-                    <Box key={ contract.id }>
-                      <Box mb={ 1 }>
-                        <Typography>
-                          { contract.name }
-                        </Typography>
-                      </Box>
-                      <Grid container spacing={ 2 }>
-                        { getImages(contract.id).map((image) => {
-                          // return image
-                          return (
-                            <Grid item xs={ 2 } key={ image.id }>
-                              <Tooltip title={ image.value?.name }>
-                                <Box
-                                  src={ `https://media.dashup.com/?width=${NFTWidth}&height=${NFTWidth}&src=${image.image?.url}` }
-                                  alt={ image.value?.name }
-                                  loading="lazy"
-                                  component="img"
-
-                                  sx={ {
-                                    maxWidth     : '100%',
-                                    borderRadius : `${theme.shape.borderRadius}px`,
-                                  } }
-                                />
-                              </Tooltip>
-                            </Grid>
-                          );
-                        }) }
-                      </Grid>
-                    </Box>
-                  );
-                }) }
-              </Stack>
-            ) }
-          </Grid>
-
-          <Grid item xs={ 4 }>
-            <Box my={ 2 }>
-              { !!account?.id && (
-                <ProfileCard item={ account } />
-              ) }
+    <Stack spacing={ 2 }>
+      { getContracts().map((contract) => {
+        // return jsx
+        return (
+          <Box key={ contract.id }>
+            <Box mb={ 1 }>
+              <Typography>
+                { contract.name }
+              </Typography>
             </Box>
-          </Grid>
-        </Grid>
-      </Container>
-    </Box>
+            <Grid container spacing={ 2 }>
+              { getImages(contract.id).map((image) => {
+                // return image
+                return (
+                  <Grid item xs={ 2 } key={ `${contract.id}:${image.id}` }>
+                    <NFT width={ NFTWidth } height={ NFTWidth } item={ image } sx={ {
+                      maxWidth     : '100%',
+                      borderRadius : `${theme.shape.borderRadius}px`,
+                    } } />
+                  </Grid>
+                );
+              }) }
+            </Grid>
+          </Box>
+        );
+      }) }
+    </Stack>
   );
 };
 

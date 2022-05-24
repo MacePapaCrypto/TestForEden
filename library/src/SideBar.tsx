@@ -9,7 +9,7 @@ import useSpaces from './useSpaces';
 
 // sidebar item
 import SideBarSpaces from './SideBarSpaces';
-import SideBarSubspaces from './SideBarSubspaces';
+import SideBarSubSpaces from './SideBarSubSpaces';
 
 // nft sidebar
 const NFTSideBar = (props = {}) => {
@@ -56,7 +56,7 @@ const NFTSideBar = (props = {}) => {
           transition : 'all 0.2s ease',
         } }>
           { !!(browse.space || browse.account) && (
-            <SideBarSubspaces
+            <SideBarSubSpaces
               width={ subspaceWidth }
               mixin={ mySpace }
               browse={ browse }

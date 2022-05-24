@@ -100,6 +100,13 @@ const SocketProvider = (props = {}) => {
     return result;
   };
 
+  // get socket
+  const apiPath = 'api';
+  const apiVersion = 'v1';
+  
+  // prefix
+  const apiPrefix = `/${apiPath}/${apiVersion}`;
+
   // methods
   const fauxSocket = {
     on : socket.on.bind(socket),
@@ -108,11 +115,11 @@ const SocketProvider = (props = {}) => {
     once : socket.once.bind(socket),
     socket : socket,
 
-    get : (path, data) => socket.call('GET', path, data),
-    put : (path, data) => socket.call('PUT', path, data),
-    post : (path, data) => socket.call('POST', path, data),
-    patch : (path, data) => socket.call('PATCH', path, data),
-    delete : (path, data) => socket.call('DELETE', path, data),
+    get : (path, data) => socket.call('GET', `${apiPrefix}${path}`, data),
+    put : (path, data) => socket.call('PUT', `${apiPrefix}${path}`, data),
+    post : (path, data) => socket.call('POST', `${apiPrefix}${path}`, data),
+    patch : (path, data) => socket.call('PATCH', `${apiPrefix}${path}`, data),
+    delete : (path, data) => socket.call('DELETE', `${apiPrefix}${path}`, data),
   };
 
   // to window

@@ -6,7 +6,7 @@ import config from '../config';
 /**
  * create ftm scan utility
  */
-class FtmScanUtility {
+class EthereumAPI {
 
   /**
    * get ABI for contract
@@ -15,7 +15,7 @@ class FtmScanUtility {
    */
   async getABI(contract) {
     // get abi
-    const res = await fetch(`https://api.ftmscan.com/api?module=contract&action=getabi&address=${contract}&apikey=${config.get('ftmscan.api')}`);
+    const res = await fetch(`https://api.etherscan.io/api?module=contract&action=getabi&address=${contract}&apikey=${config.get('ethscan.api')}`);
     
     // get json
     const data = await res.json();
@@ -39,7 +39,7 @@ class FtmScanUtility {
     const { page = 1, offset = 100, sort = 'asc', startBlock = 0, endBlock = 99999999 } = opts;
 
     // get abi
-    const res = await fetch(`https://api.ftmscan.com/api?module=account&action=tokennfttx&address=${address}&startblock=${startBlock}&endblock=${endBlock}&page=${page}&offset=${offset}&sort=${sort}&apikey=${config.get('ftmscan.api')}`);
+    const res = await fetch(`https://api.etherscan.io/api?module=account&action=tokennfttx&address=${address}&startblock=${startBlock}&endblock=${endBlock}&page=${page}&offset=${offset}&sort=${sort}&apikey=${config.get('ethscan.api')}`);
     
     // get json
     const data = await res.json();
@@ -53,4 +53,4 @@ class FtmScanUtility {
 }
 
 // export default
-export default new FtmScanUtility();
+export default new EthereumAPI();

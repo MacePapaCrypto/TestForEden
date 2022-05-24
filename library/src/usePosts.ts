@@ -137,10 +137,13 @@ const usePosts = (props = {}) => {
     const tempId = uuid();
     let loadedPost;
     let foundPost = {
-      id      : tempId,
-      temp    : tempId,
-      status  : 'posting',
-      account : auth.account ? auth.account.toLowerCase() : null,
+      id        : tempId,
+      temp      : tempId,
+      user      : auth.authed,
+      status    : 'posting',
+      account   : auth.account ? auth.account.toLowerCase() : null,
+      createdAt : new Date(),
+      updatedAt : new Date(),
       
       space,
       thread,

@@ -114,7 +114,7 @@ export default class SpaceModel extends Model {
     // get roles
     if (accountId && !cache[`${accountId}.${this.id}`]) cache[`${accountId}.${this.id}`] = (async () =>{
       // get roles
-      const actualMember = account instanceof MemberModel ? account : await this.getMember(account);
+      const actualMember = account instanceof MemberModel ? account : await this.getMember(accountId);
 
       // return
       return actualMember ? await actualMember.toJSON(cache) : null;
@@ -128,7 +128,7 @@ export default class SpaceModel extends Model {
     ] = await Promise.all([
       !small ? await cache[`${this.id}.roles`] : null,
       !small ? await cache[`${this.id}.image`] : null,
-      !small ? await cache[`${account}.${this.id}`] : null,
+      !small ? await cache[`${accountId}.${this.id}`] : null,
     ]);
 
     // return json

@@ -24,7 +24,6 @@ import mainTheme from './themes/main';
 import MainLayout from './layouts/main';
 
 // pages
-import NftPage from './pages/nft';
 import PostPage from './pages/post';
 import HomePage from './pages/home';
 import FeedPage from './pages/feed';
@@ -69,12 +68,12 @@ const Main = (props = {}) => {
                   <FeedPage />
                 </MainLayout>
               </Route>
-
-              <Route exact path="/n/:account">
+              <Route exact path="/a/:account/:feed">
                 <MainLayout>
-                  <NftPage />
+                  <FeedPage />
                 </MainLayout>
               </Route>
+              
               <Route exact path="/p/:post">
                 <MainLayout>
                   <PostPage />

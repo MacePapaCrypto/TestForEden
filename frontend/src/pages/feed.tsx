@@ -2,8 +2,20 @@
 import React from 'react';
 import { useHistory } from 'react-router-dom';
 import { Box, Grid, Container, Stack, useTheme, CircularProgress } from '@mui/material';
-import { useBrowse, usePosts, useAuth, PostCreate, PostList, ProfileCard, SpaceCard } from '@nft/ui';
+import { useBrowse, useTyping, usePosts, useAuth, ScrollBar, PostTyping, PostCreate, PostList, ProfileCard, SpaceCard, SubSpaceCard } from '@nft/ui';
 
+// local
+import NftPage from './nft';
+
+// timeout
+let timeout;
+const debounce = (fn, to = 200) => {
+  // clear timeout
+  clearTimeout(timeout);
+
+  // timeout
+  timeout = setTimeout(fn, to);
+};
 
 /**
  * home page
@@ -20,8 +32,11 @@ const FeedPage = (props = {}) => {
   // create feed
   const feed = usePosts({
     feed    : feedType,
-    space   : space?.id,
+    space   : subSpace?.id || space?.id,
     account : account?.id,
+  });
+  const typing = useTyping({
+    thread : subSpace?.id,
   });
 
   // on post
@@ -36,15 +51,31 @@ const FeedPage = (props = {}) => {
     }
 
     // log
-    await feed.create({
-      space   : space?.id,
+    const loading = feed.create({
+      feed    : feedType,
+      space   : subSpace?.id || space?.id,
       account : account?.id,
 
       ...value,
     });
 
+    // check return
+    if (feedType === 'chat') return true;
+
+    // await
+    await loading;
+
     // return true
     return true;
+  };
+
+  // on key up
+  const onKeyDown = async () => {
+    // debounce
+    debounce(() => {
+      // call typing
+      typing.update(true);
+    });
   };
 
   // layout
@@ -55,36 +86,89 @@ const FeedPage = (props = {}) => {
       } }>
         <Grid container spacing={ 3 }>
           <Grid item xs={ 8 }>
-            <Stack spacing={ 2 } sx={ {
-              mt : 3,
-            } }>
-              { !!(feedType !== 'chat') && (
+            { /* FEED FEED */ }
+            { ['hot', 'new', 'feed'].includes(feedType) && (
+              <Stack spacing={ 2 } sx={ {
+                mt : 3,
+              } }>
                 <PostCreate
                   space={ space }
                   onPost={ onPost }
+                  subSpace={ subSpace }
                 />
-              ) }
 
-              { !feed.posts?.length && feed.loading && (
-                <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
-                  <CircularProgress />
+                { !feed.posts?.length && feed.loading && (
+                  <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
+                    <CircularProgress />
+                  </Box>
+                ) }
+
+                { !!feed.posts?.length && (
+                  <Box />
+                ) }
+
+                <PostList
+                  feed={ feedType }
+                  posts={ feed.posts }
+                  loading={ feed.loading }
+                  PostProps={ {
+                    history,
+                    withReplies : feedType !== 'chat',
+                  } }
+                />
+              </Stack>
+            ) }
+
+            { feedType === 'nft' && (
+              <Box flex={ 1 } py={ 2 }>
+                <NftPage { ...props } />
+              </Box>
+            ) }
+
+            { /* CHAT FEED */ }
+            { feedType === 'chat' && (
+              <Box flex={ 1 } height="100vh" display="flex" flexDirection="column">
+                <Box flex={ 1 } display="flex">
+                  { !!(!feed.posts?.length && feed.loading) ? (
+                    <Box display="flex" alignItems="center" justifyContent="center" py={ 5 } flex={ 1 }>
+                      <CircularProgress />
+                    </Box>
+                  ) : (
+                    <ScrollBar isFlex keepBottom updated={ feed.updated }>
+                      <Box py={ 2 }>
+                        <PostList
+                          feed={ feedType }
+                          posts={ feed.posts }
+                          loading={ feed.loading }
+                          PostProps={ {
+                            history,
+                          } }
+                        />
+                      </Box>
+                    </ScrollBar>
+                  ) }
                 </Box>
-              ) }
 
-              { !!feed.posts?.length && (
-                <Box />
-              ) }
+                <PostTyping
+                  mb={ 1 }
+                  ml={ `calc(40px + ${theme.spacing(2)})` }
+                  typing={ typing.typing }
+                />
 
-              <PostList
-                posts={ feed.posts }
-                loading={ feed.loading === 'list' }
-                PostProps={ {
-                  history,
-                  withReplies : true,
-                } }
-              />
-            </Stack>
+                <Box mb={ 2 }>
+                  <PostCreate
+                    size="small"
+                    edge="bottom"
+                    space={ space }
+                    onPost={ onPost }
+                    subSpace={ subSpace }
+                    onKeyDown={ onKeyDown }
+                  />
+                </Box>
+              </Box>
+            ) }
           </Grid>
+          
           <Grid item xs={ 4 }>
             <Box mt={ 3 }>
               { !!account?.id && (
@@ -94,10 +178,11 @@ const FeedPage = (props = {}) => {
                 <SpaceCard item={ space } />
               ) }
               { !!subSpace?.id && (
-                <SpaceCard item={ subSpace } parent={ space } />
+                <SubSpaceCard item={ subSpace } />
               ) }
             </Box>
           </Grid>
+          
         </Grid>
       </Container>
     </Box>

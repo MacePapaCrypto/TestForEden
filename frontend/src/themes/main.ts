@@ -34,7 +34,7 @@ const mainTheme = createTheme({
         }
       }
     },
-  }
+  },
 });
 
 // theme

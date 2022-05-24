@@ -119,6 +119,9 @@ const useFollow = (subject, type = 'space') => {
 
   // use effect
   useEffect(() => {
+    // check loading
+    if (auth.loading) return;
+    
     // check found
     const id = subject?.id || subject;
 
@@ -135,7 +138,7 @@ const useFollow = (subject, type = 'space') => {
       // off
       socket.socket.removeListener('follow', emitFollow);
     };
-  }, [subject?.id || subject, type, auth.account]);
+  }, [subject?.id || subject, type, auth.loading]);
 
   // return posts
   const actualFollow = {

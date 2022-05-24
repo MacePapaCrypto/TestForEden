@@ -9,6 +9,9 @@ const useMember = (subject, existingMember = null, type = 'space') => {
   // socket
   const auth = useAuth();
   const socket = useSocket();
+    
+  // check found
+  const subjectId = subject?.id || subject;
 
   // auth
   const [member, setMember] = useState(existingMember);
@@ -18,7 +21,7 @@ const useMember = (subject, existingMember = null, type = 'space') => {
   // get post
   const loadMember = async (id = null) => {
     // check found
-    if (!id) id = subject?.id || subject;
+    if (!id) id = subjectId;
 
     // check id
     if (!id) return;
@@ -48,11 +51,8 @@ const useMember = (subject, existingMember = null, type = 'space') => {
     // check auth
     if (!auth.account) return auth.login();
 
-    // check found
-    const id = subject?.id || subject;
-
     // check id
-    if (!id) return;
+    if (!subjectId) return;
 
     // loading
     setLoading(true);
@@ -61,7 +61,7 @@ const useMember = (subject, existingMember = null, type = 'space') => {
     const {
       count  : backendCount,
       member : backendMember,
-    } = await socket.post(`/member/${id}`, {
+    } = await socket.post(`/member/${subjectId}`, {
       type,
     });
 
@@ -79,11 +79,8 @@ const useMember = (subject, existingMember = null, type = 'space') => {
     // check auth
     if (!auth.account) return auth.login();
 
-    // check found
-    const id = subject?.id || subject;
-
     // check id
-    if (!id) return;
+    if (!subjectId) return;
 
     // loading
     setLoading(true);
@@ -91,7 +88,7 @@ const useMember = (subject, existingMember = null, type = 'space') => {
     // load
     const {
       count : backendCount,
-    } = await socket.delete(`/member/${id}`, {
+    } = await socket.delete(`/member/${subjectId}`, {
       type,
     });
 
@@ -106,11 +103,8 @@ const useMember = (subject, existingMember = null, type = 'space') => {
 
   // emit user
   const emitMember = (member, count) => {
-    // check found
-    const id = subject?.id || subject;
-
     // update post
-    if (member.from === id) {
+    if (member.from === subjectId) {
       // update
       setMember(member);
       setMembers(count);
@@ -119,13 +113,12 @@ const useMember = (subject, existingMember = null, type = 'space') => {
 
   // use effect
   useEffect(() => {
-    // check found
-    const id = subject?.id || subject;
+    // check loading
+    if (auth.loading) return;
+    if (!subjectId) return;
 
-    // update
-    if (id) {
-      loadMember();
-    }
+    // load member
+    loadMember();
 
     // add listener
     socket.socket.on('member', emitMember);
@@ -135,7 +128,7 @@ const useMember = (subject, existingMember = null, type = 'space') => {
       // off
       socket.socket.removeListener('member', emitMember);
     };
-  }, [subject?.id || subject, type, auth.account]);
+  }, [subjectId, type, auth.account]);
 
   // return posts
   const actualMember = {
