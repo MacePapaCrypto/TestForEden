@@ -123,8 +123,6 @@ export default class NftController extends NFTController {
     if (nftUrl.includes('ipfs://')) {
       nftUrl = nftUrl.replace('ipfs://', 'https://moon.mypinata.cloud/ipfs/');
     }
-
-    console.log('testttt', nftUrl);
     
     // pipe
     request(nftUrl).on('response', (nftRes) => {

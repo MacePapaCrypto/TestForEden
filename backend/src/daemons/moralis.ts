@@ -1,0 +1,34 @@
+
+// import local
+import moralis from '../apis/moralis';
+import NFTDaemon, { Action } from '../base/daemon';
+
+/**
+ * create auth controller
+ */
+export default class MoralisDaemon extends NFTDaemon {
+
+  /**
+   * sync fantom
+   */
+  @Action('fantom.sync', 10000, 'background')
+  async fantomSync() {
+    // await client
+    await this.base.clientReady;
+
+    // sync with moralis
+    moralis.syncTransfers('fantom');
+  }
+
+  /**
+   * sync ethereum
+   */
+  @Action('ethereum.sync', 10000, 'background')
+  async ethereumSync() {
+    // await client
+    await this.base.clientReady;
+    
+    // sync with moralis
+    moralis.syncTransfers('ethereum');
+  }
+}

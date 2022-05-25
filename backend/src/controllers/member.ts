@@ -3,6 +3,7 @@
 import NFTController, { Route } from '../base/controller';
 import SpaceModel from '../models/space';
 import MemberModel from '../models/member';
+import moralis from '../apis/moralis';
 
 /**
  * create auth controller

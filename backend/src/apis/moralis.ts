@@ -1,10 +1,15 @@
 // import
 import fetch from 'node-fetch';
 import config from '../config';
-import ERC721 from '../contracts/ERC721';
+import jobUtility from '../utilities/job';
+import Bottleneck from 'bottleneck';
+import ProgressBar from 'cli-progress';
 
 // create class
 class MoralisAPI {
+  private __syncBottleneck = new Bottleneck({
+    maxConcurrent : 10,
+  });
 
   /**
    * call api url
@@ -97,6 +102,60 @@ class MoralisAPI {
         contract : item.token_address,
       }
     });
+  }
+
+  /**
+   * emit transfers
+   *
+   * @param chain 
+   * @param cursor 
+   * @param limit 
+   */
+  async syncTransfers(chain = 'ethereum') {
+    // check chain
+    const actualChain = chain;
+    if (chain === 'ethereum') chain = 'eth';
+
+    // cursor
+    let cursor = null;
+
+    // progress
+    let progressBar;
+    let progressTotal = 0;
+
+    // do while
+    do {
+      // get contract data
+      const transferData = await this.call('GET', `/nft/transfers?chain=${chain}&format=decimal&from_block=0${cursor ? `&cursor=${cursor}` : ''}`);
+
+      // check bar
+      if (!progressBar) {
+        progressBar = new ProgressBar.SingleBar({}, ProgressBar.Presets.shades_classic);
+        progressBar.start(transferData.total, 0);
+      }
+
+      // add to total
+      progressTotal = (progressTotal + transferData.result.length);
+
+      // add
+      progressBar.update(progressTotal);
+
+      // cursor
+      cursor = transferData.cursor;
+
+      // emit all transfers
+      await this.__syncBottleneck.schedule(() => Promise.all(transferData.result.map((tx) => {
+        // queue job
+        return jobUtility.queue('tx', `${actualChain}:${tx.transaction_hash}`, {
+          ...tx,
+
+          chain : actualChain,
+        }, false);
+      })));
+    } while (cursor !== '' && cursor !== null);
+
+    // stop
+    progressBar.stop();
   }
 
   /**

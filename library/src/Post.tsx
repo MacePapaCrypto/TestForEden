@@ -25,7 +25,7 @@ import useSocket from './useSocket';
 
 // embeds
 import EmbedVideo from './EmbedVideo';
-import EmbedCollection from './EmbedCollection';
+import EmbedContract from './EmbedContract';
 
 // local elements
 import Link from './Link';
@@ -75,7 +75,7 @@ const NFTPost = (props = {}) => {
   const { item } = props;
 
   // get content
-  const getEmbeds = (types = ['photo', 'video', 'collection']) => {
+  const getEmbeds = (types = ['photo', 'video', 'contract']) => {
     // return embeds
     return (item.embeds || []).filter((e) => e).filter((e) => types.includes(e.type));
   };
@@ -388,7 +388,7 @@ const NFTPost = (props = {}) => {
 
                     // set embed
                     if (embed.type === 'video') Embed = EmbedVideo;
-                    if (embed.type === 'collection') Embed = EmbedCollection;
+                    if (embed.type === 'contract') Embed = EmbedContract;
 
                     // check embed
                     if (!Embed) return;

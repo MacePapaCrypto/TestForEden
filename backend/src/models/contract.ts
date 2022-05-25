@@ -8,9 +8,15 @@ import Model, { Type } from '../base/model';
 export default class ContractModel extends Model {
   
   // find by owner
-  static findByCreator(creator) {
+  static findByAccount(account) {
     // find by ref
-    return ContractModel.findByRef(`creator:${creator}`);
+    return ContractModel.findByRef(`account:${account}`.toLowerCase());
+  }
+  
+  // find by owner
+  static async findByAddress(address) {
+    // find by ref
+    return (await ContractModel.findByRef(`address:${address}`.toLowerCase(), 1) || [])[0];
   }
 
   /**

@@ -89,39 +89,33 @@ class EmbedUtility {
     // find possible addresses
     const [
       account,
-      collection,
+      contract,
     ] = await Promise.all([
       UserModel.findById(address),
-      ContractModel.findById(address),
+      ContractModel.findByAddress(address),
     ]);
 
     // check if collection
-    if (collection) {
+    if (contract) {
       // return collection
       return {
         // embed
         embed : {
-          ...(await collection.toJSON()),
+          ...(await contract.toJSON()),
   
-          type : 'collection',
+          type : 'contract',
         },
         
         // reference
-        ref : `collection:${collection.get('id')}`,
+        ref : `contract:${contract.get('address')}`.toLowerCase(),
 
         // link
         link : {
-          to   : `/collection/${collection.get('id')}`,
-          ref  : `collection:${collection.get('id')}`,
-          type : 'collection',
-          name : collection.get('name'),
+          to   : `/c/${contract.get('address')}`.toLowerCase(),
+          ref  : `contract:${contract.get('address')}`.toLowerCase(),
+          type : 'contract',
+          name : contract.get('name'),
         },
-      };
-    } else if (transfers.length) {
-      return {
-        
-        
-        type : 'transfer',
       };
     }
   }

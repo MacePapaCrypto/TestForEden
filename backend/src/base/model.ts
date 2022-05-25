@@ -99,6 +99,14 @@ export default class NFTModel extends Events {
   /**
    * get pubsub
    */
+  static get client () {
+    // get pubsub
+    return client;
+  }
+
+  /**
+   * get pubsub
+   */
   static get pubsub () {
     // get pubsub
     return pubsub;
@@ -484,9 +492,9 @@ export default class NFTModel extends Events {
   /*
    * create normal query
    */
-  static async query(query, data) {
+  static async query(query, data, includeLog = true) {
     // query
-    logger.info(`executing ${query}`);
+    if (includeLog) logger.info(`executing ${query}`);
 
     // get result
     const result = await client.execute(query, data);
