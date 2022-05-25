@@ -47,6 +47,22 @@ const fetchTimeout = async (resource, options = {}) => {
   return response;
 };
 
+// nft transaction interface
+interface NFTTransaction {
+  way : 'in' | 'out',
+  hash : string,
+  from : string,
+  chain : string,
+  block : string | number,
+  index : string | number,
+  amount : number,
+  account : string,
+  tokenId : string,
+  contract : string,
+  verified : boolean,
+  createdAt : Date,
+};
+
 /**
  * create utility
  */
@@ -98,12 +114,8 @@ class ERC721Contract {
       unlock();
     })();
 
-    // get owns
-    // @todo this should be replaced with a new API @ewhal4
-    const allOwns = await moralis.getOwns(lowerAddress, ...args);
-
-    // loop
-    const result = (await Promise.all(allOwns.map((owned) => this.loadNFTOwned(owned)))).filter((owned) => owned);
+    // sync ownership
+    await moralis.syncOwnership(lowerAddress, ...args);
 
     // syncing
     (async () => {
@@ -130,9 +142,6 @@ class ERC721Contract {
       // unlock
       unlock();
     })();
-
-    // done syncing
-    return result;
   }
 
   /**
@@ -140,7 +149,7 @@ class ERC721Contract {
    *
    * @param contract 
    */
-  loadContract(address, chain = 'fantom') {
+  loadContract(chain, address, requireAbi = true) {
     // contract id
     const contractId = `${chain}:${address}`.toLowerCase();
 
@@ -154,10 +163,7 @@ class ERC721Contract {
         let actualContract = await ContractModel.findById(contractId);
     
         // check contract
-        if (actualContract && actualContract.get('abi')) return actualContract;
-
-        // load contract
-        console.log('loading contract', address, chain);
+        if (actualContract && (!requireAbi || actualContract.get('abi'))) return actualContract;
     
         // load contract
         const newContract = actualContract || new ContractModel({
@@ -174,9 +180,6 @@ class ERC721Contract {
     
         // get contract
         const contractMeta = await moralis.getContract(newContract.get('address'), chain);
-
-        // load contract
-        console.log('loaded contract', address, chain);
     
         // set
         newContract.set('name', contractMeta.name);
@@ -208,8 +211,6 @@ class ERC721Contract {
           // get abi
           newContract.set('abi', await avaScan.getABI(newContract.get('address')));
         }
-
-        console.log('TEST', chain, newContract.get('abi'));
     
         // save new contract
         newContract.save();
@@ -237,9 +238,9 @@ class ERC721Contract {
    *
    * @param nftData
    */
-  loadNFT(nftData) {
+  loadNFT(chain, contract, tokenId) {
     // nft id
-    const nftId = `${nftData.chain}:${nftData.contract}:${nftData.tokenId}`.toLowerCase();
+    const nftId = `${chain}:${contract}:${tokenId}`.toLowerCase();
 
     // check loading
     if (this.__loading[nftId]) return this.__loading[nftId];
@@ -252,10 +253,17 @@ class ERC721Contract {
         let update = false;
 
         // parsed data
-        const parsedData = { ...nftData };
-        delete parsedData.block;
-        delete parsedData.amount;
-        delete parsedData.account;
+        const parsedData = {
+          chain,
+          tokenId,
+          contract,
+        };
+
+        // get contract
+        const actualContract = await this.loadContract(chain, contract);
+
+        // check contract
+        if (!actualContract) return;
 
         // find by nft model
         const nftModel = await NftModel.findById(nftId) || new NftModel({
@@ -263,9 +271,6 @@ class ERC721Contract {
           
           ...parsedData,
         });
-
-        // get contract
-        const actualContract = await this.loadContract(nftData.contract, nftData.chain);
 
         // check uri
         if (!nftModel.get('uri') && actualContract.get('abi')) {
@@ -286,48 +291,92 @@ class ERC721Contract {
           }
 
           // create contract
-          const ERC721Contract = new ethers.Contract(actualContract.get('id'), actualContract.get('abi'), provider);
+          const ERC721Contract = new ethers.Contract(actualContract.get('address'), actualContract.get('abi'), provider);
 
-          // get token uri
-          let tokenURI = await ERC721Contract.functions.tokenURI(nftData.tokenId);
-              tokenURI = Array.isArray(tokenURI) ? tokenURI[0] : tokenURI;
+          // return null
+          try {
+            // get token uri
+            let tokenURI = await ERC721Contract.functions.tokenURI(tokenId);
+                tokenURI = Array.isArray(tokenURI) ? tokenURI[0] : tokenURI;
 
-          // load actual model
-          nftModel.set('uri', tokenURI);
+            // load actual model
+            nftModel.set('uri', tokenURI);
+          } catch (e) {
+            return;
+          }
 
           // update
           update = true;
         }
 
+        // check uri
+        if (!nftModel.get('uri')) return;
+
         // check data
         if (!nftModel.get('image')) {
           // data
-          const NFTReq = await fetchTimeout(nftModel.get('uri').replace('ipfs://', 'https://moon.mypinata.cloud/ipfs/'), {
-            timeout : 30 * 1000,
-          });
-          const NFTDat = await NFTReq.json();
+          let NFTMeta = null;
+          let NFTImage = null;
+
+          // check if ipfs
+          if (nftModel.get('uri').includes('base64,')) {
+            // create req
+            const NFTReq = new Buffer(nftModel.get('uri').split('base64,').pop(), 'base64');
+            NFTMeta = JSON.parse(NFTReq.toString('ascii'));
+          } else {
+            // uri
+            let uri = nftModel.get('uri').replace('ipfs://', config.get('ipfs.url'));
+            
+            // replace /ipfs/
+            uri = uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri;
+
+            // data
+            const NFTReq = await fetchTimeout(uri, {
+              timeout : 30 * 1000,
+            });
+            NFTMeta = await NFTReq.json();
+          }
 
           // image
-          const NFTRes = NFTDat.image && await fetchTimeout(NFTDat.image.replace('ipfs://', 'https://moon.mypinata.cloud/ipfs/'), {
-            method  : 'HEAD',
-            timeout : 30 * 1000,
-          });
-          const NFTImage = NFTRes ? {
-            url  : NFTDat.image,
-            type : NFTRes.headers.get('content-type'),
-            size : NFTRes.headers.get('content-length'),
-          } : {};
+          if (NFTMeta?.image?.includes('base64,')) {
+            // support base64
+            NFTImage = {
+              url  : NFTMeta.image,
+              type : NFTMeta.image.split('data:')[1].split(';')[0],
+            };
+          } else {
+            // uri
+            let uri = NFTMeta.image ? NFTMeta.image.replace('ipfs://', config.get('ipfs.url')) : null;
+            
+            // replace /ipfs/
+            uri = uri && (uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri);
+
+            // image
+            const NFTRes = uri && await fetchTimeout(uri, {
+              method  : 'HEAD',
+              timeout : 30 * 1000,
+            });
+            NFTImage = NFTRes ? {
+              url  : NFTMeta.image,
+              type : NFTRes.headers.get('content-type'),
+              size : NFTRes.headers.get('content-length'),
+            } : {};
+          }
+
+          // check data
+          if (!NFTMeta) return;
+          if (!NFTImage) return;
 
           // set value
           nftModel.set('refs', Array.from(new Set([
             ...(nftModel.get('refs')),
-            `hash:${nftModel.get('hash')}`.toLowerCase(),
+
             `category:${nftModel.get('category')}`,
-            `contract:${nftModel.get('contract')}`.toLowerCase(),
+            `contract:${nftModel.get('contract')}`,
           ])));
-          nftModel.set('name', NFTDat.name || nftModel.get('name'));
+          nftModel.set('name', NFTMeta?.name || nftModel.get('name'));
           nftModel.set('image', NFTImage);
-          nftModel.set('metadata', NFTDat);
+          nftModel.set('metadata', NFTMeta);
 
           // update
           update = true;
@@ -359,9 +408,12 @@ class ERC721Contract {
    *
    * @param nftData 
    */
-  loadNFTOwned(nftData) {
+  loadTransaction(tx: NFTTransaction) {
     // owned id
-    const ownedId = `${nftData.account}:${nftData.chain}:${nftData.contract}:${nftData.tokenId}`;
+    const ownedId = `${tx.account}:${tx.chain}:${tx.contract}:${tx.tokenId}`.toLowerCase();
+
+    // check account
+    if (tx.account === '0x0000000000000000000000000000000000000000') return;
 
     // check loading
     if (this.__loading[ownedId]) return this.__loading[ownedId];
@@ -370,71 +422,110 @@ class ERC721Contract {
     this.__loading[ownedId] = this.__ownedBottleneck.schedule(async () => {
       // try/catch
       try {
-        // get nft
-        const actualNFT = await this.loadNFT(nftData);
-    
-        // check nft model
-        if (!actualNFT) return;
-        
         // check owned
+        let changing = false;
         let creating = false;
         let ownedNFT = await NftOwnedModel.findById(ownedId);
 
         // check owned
         if (!ownedNFT) {
+          // get nft
+          const actualNFT = await this.loadNFT(tx.chain, tx.contract, tx.tokenId);
+      
+          // check nft model
+          if (!actualNFT) return;
+
           creating = true;
           ownedNFT = new NftOwnedModel({
-            id    : ownedId,
-            nft   : actualNFT.id,
-            sorts : ['contract'],
+            id       : ownedId,
+            nft      : actualNFT.id,
+            txs      : [],
+            sorts    : ['contract'],
+            amount   : 0,
+            account  : tx.account.toLowerCase(),
+            creatdAt : tx.createdAt,
           });;
         }
 
-        // check missing
-        const changed = !!(['hash', 'contract', 'category', 'chain', 'symbol', 'amount', 'account', 'tokenId'].filter((key) => {
-          // check key
-          if (nftData[key] !== ownedNFT.get(key)) {
-            // set
-            ownedNFT.set(key, nftData[key]);
-            return true;
+        // push transaction if not exists
+        if (!(ownedNFT.get('txs') || []).find((stx) => stx.hash === tx.hash)) {
+          // changing
+          changing = true;
+
+          // txs
+          const nftTxs = (ownedNFT.get('txs') || []);
+          nftTxs.push({
+            way    : tx.way,
+            hash   : tx.hash,
+            amount : tx.amount,
+          });
+
+          // push transaction
+          ownedNFT.set('txs', nftTxs);
+        }
+
+        // actual amount
+        const actualAmount = (ownedNFT.get('txs') || []).reduce((accum, tx) => {
+          // amount
+          return accum + (tx.way === 'in' ? tx.amount : (tx.amount * -1));
+        }, 0);
+
+        // check amount
+        if (ownedNFT.get('amount') !== actualAmount) {
+          // changing
+          changing = true;
+
+          // set amount
+          ownedNFT.set('amount', actualAmount);
+        }
+
+        // check amount
+        if (ownedNFT.get('owned') !== !!(ownedNFT.get('amount') > 0)) {
+          // changing
+          changing = true;
+
+          // set owned
+          ownedNFT.set('owned', !!(ownedNFT.get('amount') > 0));
+        }
+
+        // check created
+        if (new Date(ownedNFT.get('createdAt')) > new Date(tx.createdAt)) {
+          // changing
+          changing = true;
+
+          // set owned
+          ownedNFT.set('createdAt', new Date(tx.createdAt));
+        }
+
+        // all other info
+        ['contract', 'chain', 'account', 'tokenId'].forEach((key) => {
+          // check equals
+          if (`${tx[key]}`.toLowerCase() !== `${ownedNFT.get(key)}`.toLowerCase()) {
+            // changing
+            changing = true;
+            
+            // set key
+            ownedNFT.set(key, `${tx[key]}`.toLowerCase());
           }
-        })).length;
+        });
 
         // check changed
-        if (changed || creating) {
+        if (changing || creating) {
           // set refs
-          ownedNFT.set('refs', [
-            `account:${nftData.account}`.toLowerCase(),
-            `contract:${nftData.contract}`.toLowerCase(),
-            `account:${nftData.account}:${nftData.contract}`.toLowerCase(),
-          ]);
+          ownedNFT.set('refs', Array.from(new Set([
+            `account:${tx.account}`,
+            `contract:${tx.contract}`,
+            `${ownedNFT.get('owned') ? 'owned' : 'unowned'}:${tx.account}`,
+            `${ownedNFT.get('owned') ? 'owned' : 'unowned'}:${tx.contract}`,
+          ])).map((key) => key.toLowerCase()));
+
+          // save nft
           ownedNFT.save();
         }
 
-        // create lock
-        if (creating) (async () => {
-          // create lock
-          const unlock = await NftOwnedModel.pubsub.lock(nftData.account.toLowerCase());
-
-          // try/catch
-          try {
-            // load user model
-            const userModel = await UserModel.findById(nftData.account.toLowerCase()) || new UserModel({
-              id : nftData.account.toLowerCase(),
-            });
-
-            // set count
-            userModel.set('count.nfts', (userModel.get('count.nfts') || 0) + (ownedNFT.get('amount') || 1));
-            await userModel.save();
-          } catch (e) {}
-
-          // unlock
-          unlock();
-        })();
-
         // return
         return ownedNFT;
-      } catch (e) {}
+      } catch (e) { console.log('owned error', e) }
     });
 
     // then

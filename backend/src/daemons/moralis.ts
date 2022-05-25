@@ -17,7 +17,7 @@ export default class MoralisDaemon extends NFTDaemon {
     await this.base.clientReady;
 
     // sync with moralis
-    moralis.syncTransfers('fantom');
+    moralis.syncHistoricTransfers('fantom');
   }
 
   /**
@@ -27,8 +27,8 @@ export default class MoralisDaemon extends NFTDaemon {
   async ethereumSync() {
     // await client
     await this.base.clientReady;
-    
+
     // sync with moralis
-    moralis.syncTransfers('ethereum');
+    moralis.syncHistoricTransfers('ethereum');
   }
 }

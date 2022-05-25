@@ -142,7 +142,7 @@ export default class NFTModel extends Events {
   /**
    * Saves the current model
    */
-  public async save(noEmission = null, force = false): Promise<any> {
+  public async save(noEmission = null, force = false, includeLog = true): Promise<any> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this.constructor);
     const preface = Reflect.getMetadata('model:preface', this.constructor);
@@ -210,7 +210,7 @@ export default class NFTModel extends Events {
 
     // clear existing refs
     const actualRefs = [];
-    const existingRefs = await this.getRefs();
+    const existingRefs = await this.getRefs(includeLog);
 
     // loop refs
     (this.__data.refs || []).forEach((ref) => {
@@ -255,7 +255,7 @@ export default class NFTModel extends Events {
     });
 
     // await actual query
-    await NFTModel.batch(queries);
+    await NFTModel.batch(queries, includeLog);
 
     // reset changed
     this.__changed = false;
@@ -339,12 +339,12 @@ export default class NFTModel extends Events {
    *
    * @returns 
    */
-  async getRefs(): Promise<Array<any>> {
+  async getRefs(includeLog = true): Promise<Array<any>> {
     // get preface
     const preface = Reflect.getMetadata('model:preface', this.constructor);
 
     // execute schema create
-    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}refs_by_model WHERE model_id = ?`, [this.__data.id]);
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}refs_by_model WHERE model_id = ?`, [this.__data.id], includeLog);
 
     // get data
     return data.rows;
@@ -506,9 +506,9 @@ export default class NFTModel extends Events {
   /*
    * create batch of insert/delete queries
    */
-  static async batch(queries) {
+  static async batch(queries, includeLog = true) {
     // query
-    logger.info(`batch ${queries.map((q) => q.query).join(', ')}`);
+    if (includeLog) logger.info(`batch ${queries.map((q) => q.query).join(', ')}`);
 
     // chunks
     const arrChunks = chunks(queries, 30);

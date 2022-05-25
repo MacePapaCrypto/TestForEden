@@ -7,6 +7,7 @@ import NFTController, { Route } from '../base/controller';
 import ERC721 from '../contracts/ERC721';
 
 // models
+import config from '../config';
 import NFTModel from '../models/nft';
 import UserModel from '../models/user';
 import NFTOwnedModel from '../models/nftOwned';
@@ -30,7 +31,13 @@ export default class NftController extends NFTController {
     let owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
 
     // loading
-    if (!owned.length) owned = await ERC721.loadOwned(lowerAddress);
+    if (!owned.length || data.force) {
+      // await load owned
+      await ERC721.loadOwned(lowerAddress);
+
+      // load again
+      owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
+    }
 
     // get total
     const user = await UserModel.findById(lowerAddress);
@@ -55,41 +62,13 @@ export default class NftController extends NFTController {
    * 
    * @returns
    */
-  @Route('GET', '/api/v1/nft/load')
-  async listLoadAction(req, { data, params }, next) {
-    // lower address
-    const lowerAddress = `${data.account || req.account}`.toLowerCase();
-
-    // load owned
-    const owned = await ERC721.loadOwned(lowerAddress);
-
-    // get total
-    const user = await UserModel.findById(lowerAddress);
-
-    // return
-    return {
-      result  : {
-        data    : await Promise.all(owned.map((nft) => nft.toJSON())),
-        total   : user ? user.get('count.nfts') : 0,
-        synced  : user ? user.get('synced.nfts') : false,
-        syncing : user ? user.get('syncing.nfts') : false,
-      },
-      success : true,
-    };
-  }
-
-  /**
-   * segment get endpoint
-   * 
-   * @returns
-   */
   @Route('GET', '/nft-media/:contract')
   async mediaAction(req, res, next) {
     // contract/token
     const [chain, contract, token] = res.params.contract.split('-');
 
     // load nft contract
-    const actualContract = await ERC721.loadContract(contract, chain);
+    const actualContract = await ERC721.loadContract(contract, chain, false);
 
     // check collection
     if (!actualContract) {
@@ -118,10 +97,10 @@ export default class NftController extends NFTController {
     // check gateway
     if (nftUrl.includes('/ipfs/')) {
       // ipfs fix
-      nftUrl = `https://moon.mypinata.cloud/ipfs/${nftUrl.split('/ipfs/')[1]}`;
+      nftUrl = `${config.get('ipfs.url')}${nftUrl.split('/ipfs/')[1]}`;
     }
     if (nftUrl.includes('ipfs://')) {
-      nftUrl = nftUrl.replace('ipfs://', 'https://moon.mypinata.cloud/ipfs/');
+      nftUrl = nftUrl.replace('ipfs://', config.get('ipfs.url'));
     }
     
     // pipe

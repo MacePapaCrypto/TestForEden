@@ -90,7 +90,7 @@ class JobUtility {
    */
   async findWork(type) {
     // load jobs
-    const possibleJobs = await BaseModel.query(`SELECT * FROM nftsocial.jobs WHERE type = ? LIMIT 250 ALLOW FILTERING`, [type], false);
+    const possibleJobs = await BaseModel.query(`SELECT * FROM nftsocial.jobs WHERE type = ? LIMIT 250`, [type], false);
 
     // rows
     const possibleRows = possibleJobs.rows.filter((r) => {

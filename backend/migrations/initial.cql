@@ -4,8 +4,8 @@ CREATE TABLE IF NOT EXISTS nftsocial.jobs (
   data       text,
   running_at timestamp,
   created_at timestamp,
-  PRIMARY KEY((type, id), created_at)
-) WITH CLUSTERING ORDER BY (created_at ASC);
+  PRIMARY KEY(type, id)
+);
 
 ---
 

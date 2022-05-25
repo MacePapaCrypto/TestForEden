@@ -40,7 +40,7 @@ export default class NFTOwned extends Model {
       const actualNFT = await this.getNFT();
 
       // return contract
-      return await actualNFT.toJSON(cache, withContract);
+      return actualNFT ? await actualNFT.toJSON(cache, withContract) : null;
     })();
 
     // load contract

@@ -4,6 +4,8 @@ import config from '../config';
 import jobUtility from '../utilities/job';
 import Bottleneck from 'bottleneck';
 import ProgressBar from 'cli-progress';
+import ERC721 from '../contracts/ERC721';
+import CacheModel from '../models/cache';
 
 // create class
 class MoralisAPI {
@@ -37,71 +39,53 @@ class MoralisAPI {
    *
    * @param address 
    */
-  async getOwns(address, chains = ['ethereum', 'binance', 'matic', 'fantom', 'avalanche'], type = ['ERC721']) {
+  async syncOwnership(address, chains = ['ethereum', 'binance', 'matic', 'fantom', 'avalanche']) {
     // return get
     let moralisData = [];
 
     // loop
     await Promise.all(chains.map(async (chain) => {
-      // get data
-      const data = await this.call('GET', `/${address}/nft?chain=${chain}&format=decimal`);
+      // let cursor
+      let cursor = null;
 
-      // push
-      moralisData.push(...(data.result || []).map((result) => {
-        result.chain = chain;
-        return result;
-      }));
+      // do while
+      do {
+        // get contract data
+        const transferData = await this.call('GET', `/nft/transfers?chain=${chain}&format=decimal&address=${address}&from_block=0${cursor ? `&cursor=${cursor}` : ''}`);
+
+        // cursor
+        cursor = transferData.cursor;
+
+        // push data
+        transferData.result.forEach((tx) => moralisData.push({
+          ...tx,
+
+          chain,
+        }));
+      } while (cursor !== '' && cursor !== null);
     }));
 
-    // filter data
-    moralisData = moralisData.filter((item) => item.token_uri && type.includes(item.contract_type));
+    // await again
+    await Promise.all(moralisData.map((data) => {
+      // load owned
+      return ERC721.loadTransaction({
+        way       : 'in',
+        hash      : data.transaction_hash,
+        from      : data.from_address,
+        chain     : data.chain,
+        block     : data.block_number,
+        index     : data.transaction_index,
+        amount    : parseInt(data.amount),
+        account   : data.to_address,
+        tokenId   : data.token_id,
+        contract  : data.token_address,
+        verified  : !!data.verified,
+        createdAt : new Date(data.block_timestamp),
+      });
+    }));
 
-    // return mapped
-    return moralisData.map((item) => {
-      /*
-        {
-          !token_address: '0xc70aae0bd664255236143cc1b92a7bd9b2ef019e',
-          !token_id: '421',
-          !amount: '1',
-          !owner_of: '0x9d4150274f0a67985a53513767ebf5988cef45a4',
-          !token_hash: 'f793628a93f9e110d597c54c347acd48',
-          !block_number_minted: '17387969',      
-          !block_number: '37374044',
-          !contract_type: 'ERC721',
-          !name: 'Bruce the Goose',
-          !symbol: 'BTG',
-          !token_uri: 'https://ipfs.moralis.io:2053/ipfs/QmUVsPe4y8osG96gtrGMAzGGce1Ni1oHpef8h742Aegg2n/421',
-          !metadata: null,
-          synced_at: '2021-11-22T18:43:28.927Z',
-          last_token_uri_sync: null,
-          last_metadata_sync: null
-        }  
-      */
-
-      // uri
-      const uri = item.token_uri.split('/ipfs/').length === 1 ? item.token_uri : `ipfs://${item.token_uri.split('/ipfs/')[1]}`;
-
-      // return data
-      return {
-        uri      : uri,
-        name     : item.name,
-        hash     : item.token_hash,
-        chain    : item.chain,
-        symbol   : item.symbol,
-        amount   : parseInt(item.amount),
-        account  : item.owner_of,
-        tokenId  : item.token_id,
-        category : item.contract_type,
-        metadata : typeof item.metadata === 'string' ? JSON.parse(item.metadata) : null,
-
-        block : {
-          number : item.block_number,
-          minted : item.block_number_minted,
-        },
-
-        contract : item.token_address,
-      }
-    });
+    // return true
+    return true;
   }
 
   /**
@@ -111,7 +95,7 @@ class MoralisAPI {
    * @param cursor 
    * @param limit 
    */
-  async syncTransfers(chain = 'ethereum') {
+  async syncHistoricTransfers(chain = 'ethereum') {
     // check chain
     const actualChain = chain;
     if (chain === 'ethereum') chain = 'eth';
@@ -122,37 +106,79 @@ class MoralisAPI {
     // progress
     let progressBar;
     let progressTotal = 0;
+    
+    // set to cache
+    const cachedFrom = await CacheModel.findById(`sync:${chain}:from`) || new CacheModel({
+      id    : `sync:${chain}:from`,
+      value : null,
+    });
+    
+    // set to cache
+    const cachedTo = await CacheModel.findById(`sync:${chain}:to`) || new CacheModel({
+      id    : `sync:${chain}:to`,
+      value : null,
+    });
 
-    // do while
-    do {
-      // get contract data
-      const transferData = await this.call('GET', `/nft/transfers?chain=${chain}&format=decimal&from_block=0${cursor ? `&cursor=${cursor}` : ''}`);
+    // from block
+    const toBlock = (cachedFrom.get('value') || 1) - 1;
 
-      // check bar
-      if (!progressBar) {
-        progressBar = new ProgressBar.SingleBar({}, ProgressBar.Presets.shades_classic);
-        progressBar.start(transferData.total, 0);
-      }
+    // try/catch
+    try {
+      // do while
+      do {
+        // get contract data
+        const transferData = await this.call('GET', `/nft/transfers?chain=${chain}&order=block_timestamp.asc&format=decimal&from_block=0${toBlock ? `&to_block=${toBlock}` : ''}${cursor ? `&cursor=${cursor}` : ''}`);
 
-      // add to total
-      progressTotal = (progressTotal + transferData.result.length);
+        // check bar
+        if (!progressBar) {
+          progressBar = new ProgressBar.SingleBar({}, ProgressBar.Presets.shades_classic);
+          progressBar.start(transferData.total, 0);
+        }
 
-      // add
-      progressBar.update(progressTotal);
+        // add to total
+        progressTotal = (progressTotal + transferData.result.length);
 
-      // cursor
-      cursor = transferData.cursor;
+        // add
+        progressBar.update(progressTotal);
 
-      // emit all transfers
-      await this.__syncBottleneck.schedule(() => Promise.all(transferData.result.map((tx) => {
-        // queue job
-        return jobUtility.queue('tx', `${actualChain}:${tx.transaction_hash}`, {
-          ...tx,
+        // cursor
+        cursor = transferData.cursor;
 
-          chain : actualChain,
-        }, false);
-      })));
-    } while (cursor !== '' && cursor !== null);
+        // sort and get second
+        const sortedBlocks = Array.from(new Set(transferData.result.map((tx) => parseInt(tx.block_number))));
+        
+        // min
+        const minBlock = Math.min(...sortedBlocks);
+        const maxBlock = Math.max(...sortedBlocks);
+
+        // emit all transfers
+        await this.__syncBottleneck.schedule(() => Promise.all(transferData.result.map((tx) => {
+          // queue job
+          return jobUtility.queue('tx', `${actualChain}:${tx.transaction_hash}`, {
+            ...tx,
+
+            chain : actualChain,
+          }, false);
+        })));
+
+        // set earliest block
+        if (!cachedFrom.get('value') || minBlock < cachedFrom.get('value')) {
+          // set value
+          cachedFrom.set('value', minBlock);
+          await cachedFrom.save(null, true, false);
+        }
+
+        // set latest block
+        if (!cachedTo.get('value') || maxBlock > cachedTo.get('value')) {
+          // set value
+          cachedTo.set('value', maxBlock);
+          await cachedTo.save(null, true, false);
+        }
+      } while (cursor !== '' && cursor !== null);
+    } catch (e) {
+      // timeout and retry
+      return setTimeout(() => this.syncHistoricTransfers(chain), 2000);
+    }
 
     // stop
     progressBar.stop();
