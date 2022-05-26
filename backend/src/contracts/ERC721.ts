@@ -5,7 +5,6 @@ import { ethers } from 'ethers';
 import config from '../config';
 import moralis from '../apis/moralis';
 import Bottleneck from 'bottleneck';
-import { AbortController } from 'node-abort-controller';
 
 // models
 import NftModel from '../models/nft';
@@ -26,26 +25,7 @@ import ftmProvider from '../providers/fantom';
 import ethProvider from '../providers/ethereum';
 import mtcProvider from '../providers/polygon';
 import bscProvider from '../providers/binance';
-
-// timeout
-const fetchTimeout = async (resource, options = {}) => {
-  // create timeout
-  const { timeout = 8000 } = options;
-  
-  // create request
-  const controller = new AbortController();
-  const id = setTimeout(() => controller.abort(), timeout);
-  const response = await fetch(resource, {
-    ...options,
-    signal: controller.signal  
-  });
-
-  // clear
-  clearTimeout(id);
-
-  // return
-  return response;
-};
+import job from '../utilities/job';
 
 // nft transaction interface
 interface NFTTransaction {
@@ -149,7 +129,7 @@ class ERC721Contract {
    *
    * @param contract 
    */
-  loadContract(chain, address, requireAbi = true) {
+  loadContract(chain, address, requireAbi = true, forceLoad = true) {
     // contract id
     const contractId = `${chain}:${address}`.toLowerCase();
 
@@ -158,12 +138,25 @@ class ERC721Contract {
 
     // create loading
     this.__loading[contractId] = this.__contractBottleneck.schedule(async () => {
+      // try/catch
       try {
         // load from db
         let actualContract = await ContractModel.findById(contractId);
     
         // check contract
         if (actualContract && (!requireAbi || actualContract.get('abi'))) return actualContract;
+
+        // create scrape job
+        if (!forceLoad) {
+          // queue
+          job.queue('contract', contractId, {
+            chain,
+            address,
+          });
+
+          // return job
+          return 'queued';
+        }
     
         // load contract
         const newContract = actualContract || new ContractModel({
@@ -238,9 +231,12 @@ class ERC721Contract {
    *
    * @param nftData
    */
-  loadNFT(chain, contract, tokenId) {
+  loadNFT(chain, contract, tokenId, forceLoad = true) {
     // nft id
     const nftId = `${chain}:${contract}:${tokenId}`.toLowerCase();
+
+    // let uri
+    let nftUri, imgUri;
 
     // check loading
     if (this.__loading[nftId]) return this.__loading[nftId];
@@ -249,6 +245,28 @@ class ERC721Contract {
     this.__loading[nftId] = this.__nftBottleneck.schedule(async () => {
       // try/catch
       try {
+        // existing nft
+        const existingNFT = await NftModel.findById(nftId);
+
+        // if existing
+        if (existingNFT) {
+          // return existing
+          return existingNFT;
+        } else if (!forceLoad) {
+          // load contract
+          this.loadContract(chain, contract, true, false);
+
+          // queue
+          job.queue('nft', nftId, {
+            chain,
+            tokenId,
+            contract,
+          });
+
+          // return job
+          return 'queued';
+        }
+        
         // update
         let update = false;
 
@@ -260,13 +278,27 @@ class ERC721Contract {
         };
 
         // get contract
-        const actualContract = await this.loadContract(chain, contract);
+        const actualContract = await this.loadContract(chain, contract, true, false);
 
-        // check contract
+        // check queued
+        if (actualContract === 'queued') {
+          // queue
+          job.queue('nft', nftId, {
+            chain,
+            tokenId,
+            contract,
+          });
+
+          // return job
+          return 'queued';
+        }
+      
+        // check contract model
+        if (actualContract === null) return null;
         if (!actualContract) return;
 
         // find by nft model
-        const nftModel = await NftModel.findById(nftId) || new NftModel({
+        const nftModel = existingNFT || new NftModel({
           id : nftId,
           
           ...parsedData,
@@ -309,8 +341,11 @@ class ERC721Contract {
           update = true;
         }
 
+        // set uri
+        nftUri = nftModel.get('uri');
+
         // check uri
-        if (!nftModel.get('uri')) return;
+        if (!nftModel.get('uri')) return null;
 
         // check data
         if (!nftModel.get('image')) {
@@ -330,12 +365,16 @@ class ERC721Contract {
             // replace /ipfs/
             uri = uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri;
 
+            // check includes https
+            if (uri && !uri.includes('://')) uri = `${config.get('ipfs.url')}${uri}`;
+
             // data
-            const NFTReq = await fetchTimeout(uri, {
-              timeout : 30 * 1000,
-            });
+            const NFTReq = await fetch(uri);
             NFTMeta = await NFTReq.json();
           }
+
+          // set imgUri
+          imgUri = NFTMeta?.image;
 
           // image
           if (NFTMeta?.image?.includes('base64,')) {
@@ -351,11 +390,11 @@ class ERC721Contract {
             // replace /ipfs/
             uri = uri && (uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri);
 
+            // check includes https
+            if (uri && !uri.includes('://')) uri = `${config.get('ipfs.url')}${uri}`;
+
             // image
-            const NFTRes = uri && await fetchTimeout(uri, {
-              method  : 'HEAD',
-              timeout : 30 * 1000,
-            });
+            const NFTRes = uri && await fetch(uri);
             NFTImage = NFTRes ? {
               url  : NFTMeta.image,
               type : NFTRes.headers.get('content-type'),
@@ -387,7 +426,7 @@ class ERC721Contract {
 
         // return nft model
         return nftModel;
-      } catch (e) { console.log('nft error', e) }
+      } catch (e) { console.log('nft error', e, nftUri, imgUri) }
     });
 
     // then
@@ -408,12 +447,12 @@ class ERC721Contract {
    *
    * @param nftData 
    */
-  loadTransaction(tx: NFTTransaction) {
+  loadTransaction(tx: NFTTransaction, forceLoad = true) {
     // owned id
     const ownedId = `${tx.account}:${tx.chain}:${tx.contract}:${tx.tokenId}`.toLowerCase();
 
     // check account
-    if (tx.account === '0x0000000000000000000000000000000000000000') return;
+    if (tx.account === '0x0000000000000000000000000000000000000000') return null;
 
     // check loading
     if (this.__loading[ownedId]) return this.__loading[ownedId];
@@ -430,20 +469,21 @@ class ERC721Contract {
         // check owned
         if (!ownedNFT) {
           // get nft
-          const actualNFT = await this.loadNFT(tx.chain, tx.contract, tx.tokenId);
-      
-          // check nft model
-          if (!actualNFT) return;
+          this.loadNFT(tx.chain, tx.contract, tx.tokenId, forceLoad);
 
+          // creating
           creating = true;
           ownedNFT = new NftOwnedModel({
-            id       : ownedId,
-            nft      : actualNFT.id,
-            txs      : [],
-            sorts    : ['contract'],
-            amount   : 0,
-            account  : tx.account.toLowerCase(),
-            creatdAt : tx.createdAt,
+            id        : ownedId,
+            nft       : `${tx.chain}:${tx.contract}:${tx.tokenId}`.toLowerCase(),
+            txs       : [],
+            chain     : tx.chain.toLowerCase(),
+            sorts     : ['contract'],
+            amount    : 0,
+            tokenId   : tx.tokenId,
+            account   : tx.account.toLowerCase(),
+            contract  : tx.contract.toLowerCase(),
+            createdAt : tx.createdAt,
           });;
         }
 
@@ -456,6 +496,7 @@ class ERC721Contract {
           const nftTxs = (ownedNFT.get('txs') || []);
           nftTxs.push({
             way    : tx.way,
+            from   : tx.from,
             hash   : tx.hash,
             amount : tx.amount,
           });

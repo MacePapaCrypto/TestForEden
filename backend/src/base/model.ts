@@ -447,6 +447,26 @@ export default class NFTModel extends Events {
   }
 
   /**
+   * find by ids
+   *
+   * @param ids 
+   */
+  static async findByIds(ids: Array<string>): Promise<any> {
+    // Load namespace and subspace
+    const type = Reflect.getMetadata('model:type', this);
+    const preface = Reflect.getMetadata('model:preface', this);
+    
+    // check id
+    if (!ids?.length) return [];
+
+    // execute schema create
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE type = ? AND id IN ?`, [type, ids]);
+
+    // get data
+    return data?.rows ? data.rows.map((row) => new this(row)) : [];
+  }
+
+  /**
    * find by id
    *
    * @param id
@@ -465,10 +485,29 @@ export default class NFTModel extends Events {
     );
 
     // get data
-    return (await Promise.all(data.rows.map((row) => {
-      // return constructor
-      return this.findById(row.model_id);
-    }))).filter((r) => r);
+    return this.findByIds((data?.rows || []).map((row) => row.model_id));
+  }
+
+  /**
+   * find by id
+   *
+   * @param id
+   */
+  static async findByRefs(refs: Array<string>, limit: number = 25, sort: string = 'createdAt', direction: 'asc' | 'desc' = 'desc', lastSort: number | null = null): Promise<Array<any>> {
+    // Load namespace and subspace
+    const type = Reflect.getMetadata('model:type', this);
+    const preface = Reflect.getMetadata('model:preface', this);
+    
+    // check id
+    if (!refs) return [];
+
+    // execute schema create
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}refs_${direction} WHERE type = ? AND key = ? AND ref in ? ${lastSort ? ` AND sort ${direction === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
+      lastSort ? [type, sort, refs, lastSort] : [type, sort, refs]
+    );
+
+    // get data
+    return this.findByIds((data?.rows || []).map((row) => row.model_id));
   }
 
   /**
@@ -513,13 +552,22 @@ export default class NFTModel extends Events {
     // chunks
     const arrChunks = chunks(queries, 30);
 
-    // promise all
-    return await Promise.all(arrChunks.map((chunk) => {
-      // chunked query
-      return client.batch(chunk, {
-        logged  : false,
-        prepare : true,
-      });
-    }));
+    // try/catch
+    try {
+      // promise all
+      return await Promise.all(arrChunks.map((chunk) => {
+        // chunked query
+        return client.batch(chunk, {
+          logged  : false,
+          prepare : true,
+        });
+      }));
+    } catch (e) {
+      // check e
+      if (`${e}`.includes('Batch too large')) {
+        // return loop all
+        return await Promise.all(queries.map((query) => client.execute(query.query, query.params)));
+      }
+    }
   }
 }

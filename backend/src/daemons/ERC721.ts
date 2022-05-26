@@ -35,11 +35,51 @@ export default class ERC721Daemon extends NFTDaemon {
           contract  : data.token_address,
           verified  : !!data.verified,
           createdAt : new Date(data.block_timestamp),
-        });
+        }, false);
       });
 
-      // await
-      return !!(await inTx && await outTx);
-    }, 10);
+      // done
+      const inDone = await inTx;
+      const outDone = await outTx;
+
+      // return done
+      return ((inDone || inDone === null) && (outDone || outDone === null));
+    }, 200);
+  }
+
+  /**
+   * sync fantom
+   */
+  @Action('erc721.contract', 10000, 'background')
+  async contractAction() {
+    // await client
+    await this.base.clientReady;
+    
+    // schedule job
+    job.worker('contract', async (data) => {
+      // return type
+      const contract = await ERC721.loadContract(data.chain, data.address, true, true);
+      
+      // return
+      return contract === null || !!contract;
+    }, 25);
+  }
+
+  /**
+   * sync fantom
+   */
+  @Action('erc721.nft', 10000, 'background')
+  async nftAction() {
+    // await client
+    await this.base.clientReady;
+    
+    // schedule job
+    job.worker('nft', async (data) => {
+      // return type
+      const nft = await ERC721.loadNFT(data.chain, data.contract, data.tokenId, true);
+      
+      // return
+      return nft === null || !!nft;
+    }, 25);
   }
 }

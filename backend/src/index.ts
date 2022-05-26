@@ -310,32 +310,22 @@ class NFTBackend extends Events {
     // username and password provider from settings
     const authProvider = new cassandra.auth.PlainTextAuthProvider(db.username, db.password);
 
-    // ssl options
-    const sslOptions = {
-      ca : [
-        fs.readFileSync(`${global.appRoot}/sf-class2-root.crt`, 'utf-8')
-      ],    
-      host               : db.hostname,
-      rejectUnauthorized : true,
-    };
-
     // public hostname for keyspaces
-    const contactPoints = [db.hostname];
+    const contactPoints = db.hosts;
 
     // setup cassandra client
     this.client = new cassandra.Client({
       contactPoints,
       authProvider,
-      sslOptions,
 
       keyspace        : db.keyspace,
       localDataCenter : db.region,
 
       queryOptions : {
-        consistency : cassandra.types.consistencies.localQuorum,
+        consistency : cassandra.types.consistencies.one,
       },
       protocolOptions : {
-        port : 9142,
+        port : db.port,
       }
     });
 
@@ -561,6 +551,7 @@ class NFTBackend extends Events {
 
 // export default
 const backend = new NFTBackend();
+global.backend = backend;
 
 // export default
 export default backend;

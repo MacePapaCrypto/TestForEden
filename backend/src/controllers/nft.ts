@@ -28,16 +28,7 @@ export default class NftController extends NFTController {
     const lowerAddress = `${data.account || req.account}`.toLowerCase();
 
     // load owned
-    let owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
-
-    // loading
-    if (!owned.length || data.force) {
-      // await load owned
-      await ERC721.loadOwned(lowerAddress);
-
-      // load again
-      owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
-    }
+    const owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
 
     // get total
     const user = await UserModel.findById(lowerAddress);
@@ -48,10 +39,8 @@ export default class NftController extends NFTController {
     // return
     return {
       result  : {
-        data    : await Promise.all(owned.map((nft) => nft.toJSON(cache, data.include === 'contract'))),
-        total   : user ? user.get('count.nfts') : 0,
-        synced  : user ? user.get('synced.nfts') : false,
-        syncing : user ? user.get('syncing.nfts') : false,
+        data  : await Promise.all(owned.map((nft) => nft.toJSON(cache, data.include === 'contract'))),
+        total : user ? user.get('count.nfts') : 0,
       },
       success : true,
     };

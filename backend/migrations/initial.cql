@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS nftsocial.jobs (
+CREATE TABLE IF NOT EXISTS moon.jobs (
   id         text,
   type       text,
   data       text,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.jobs (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.models (
+CREATE TABLE IF NOT EXISTS moon.models (
   id         text,
   type       text,
   data       text,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.models (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.nft_models (
+CREATE TABLE IF NOT EXISTS moon.nft_models (
   id         text,
   type       text,
   data       text,
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.nft_models (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.balance_models (
+CREATE TABLE IF NOT EXISTS moon.balance_models (
   id         text,
   type       text,
   data       text,
@@ -51,7 +51,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.balance_models (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.space_models (
+CREATE TABLE IF NOT EXISTS moon.space_models (
   id         text,
   type       text,
   data       text,
@@ -65,7 +65,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.space_models (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.post_models (
+CREATE TABLE IF NOT EXISTS moon.post_models (
   id         text,
   type       text,
   data       text,
@@ -79,7 +79,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.post_models (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.feeds (
+CREATE TABLE IF NOT EXISTS moon.feeds (
   id         text,
   refs       set<text>,
   sorts      set<text>,
@@ -91,7 +91,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.feeds (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.feeds_asc (
+CREATE TABLE IF NOT EXISTS moon.feeds_asc (
   key      text,
   feed     text,
   value    double,
@@ -101,7 +101,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.feeds_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.feeds_desc (
+CREATE TABLE IF NOT EXISTS moon.feeds_desc (
   key      text,
   feed     text,
   value    double,
@@ -111,7 +111,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.feeds_desc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.refs_by_feed (
+CREATE TABLE IF NOT EXISTS moon.refs_by_feed (
   ref  text,
   feed text,
   PRIMARY KEY(feed, ref)
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.refs_by_feed (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.feeds_by_ref (
+CREATE TABLE IF NOT EXISTS moon.feeds_by_ref (
   ref  text,
   feed text,
   PRIMARY KEY(ref, feed)
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.feeds_by_ref (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.feeds_by_model (
+CREATE TABLE IF NOT EXISTS moon.feeds_by_model (
   key      text,
   feed     text,
   value    double,
@@ -137,7 +137,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.feeds_by_model (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.refs_asc (
+CREATE TABLE IF NOT EXISTS moon.refs_asc (
   ref      text,
   key      text,
   type     text,
@@ -148,7 +148,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.refs_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.refs_desc (
+CREATE TABLE IF NOT EXISTS moon.refs_desc (
   ref      text,
   key      text,
   type     text,
@@ -159,7 +159,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.refs_desc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.refs_by_model (
+CREATE TABLE IF NOT EXISTS moon.refs_by_model (
   ref      text,
   key      text,
   type     text,
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.refs_by_model (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_asc (
+CREATE TABLE IF NOT EXISTS moon.nft_refs_asc (
   ref      text,
   key      text,
   type     text,
@@ -181,7 +181,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_desc (
+CREATE TABLE IF NOT EXISTS moon.nft_refs_desc (
   ref      text,
   key      text,
   type     text,
@@ -192,7 +192,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_desc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_by_model (
+CREATE TABLE IF NOT EXISTS moon.nft_refs_by_model (
   ref      text,
   key      text,
   type     text,
@@ -203,7 +203,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.nft_refs_by_model (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_asc (
+CREATE TABLE IF NOT EXISTS moon.balance_refs_asc (
   ref      text,
   key      text,
   type     text,
@@ -214,7 +214,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_desc (
+CREATE TABLE IF NOT EXISTS moon.balance_refs_desc (
   ref      text,
   key      text,
   type     text,
@@ -225,7 +225,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_desc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_by_model (
+CREATE TABLE IF NOT EXISTS moon.balance_refs_by_model (
   ref      text,
   key      text,
   type     text,
@@ -236,7 +236,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.balance_refs_by_model (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.space_refs_asc (
+CREATE TABLE IF NOT EXISTS moon.space_refs_asc (
   ref      text,
   key      text,
   type     text,
@@ -247,7 +247,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.space_refs_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.space_refs_desc (
+CREATE TABLE IF NOT EXISTS moon.space_refs_desc (
   ref      text,
   key      text,
   type     text,
@@ -258,7 +258,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.space_refs_desc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.space_refs_by_model (
+CREATE TABLE IF NOT EXISTS moon.space_refs_by_model (
   ref      text,
   key      text,
   type     text,
@@ -269,7 +269,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.space_refs_by_model (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.post_refs_asc (
+CREATE TABLE IF NOT EXISTS moon.post_refs_asc (
   ref      text,
   key      text,
   type     text,
@@ -280,7 +280,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.post_refs_asc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.post_refs_desc (
+CREATE TABLE IF NOT EXISTS moon.post_refs_desc (
   ref      text,
   key      text,
   type     text,
@@ -291,7 +291,7 @@ CREATE TABLE IF NOT EXISTS nftsocial.post_refs_desc (
 
 ---
 
-CREATE TABLE IF NOT EXISTS nftsocial.post_refs_by_model (
+CREATE TABLE IF NOT EXISTS moon.post_refs_by_model (
   ref      text,
   key      text,
   type     text,

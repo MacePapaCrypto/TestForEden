@@ -17,7 +17,7 @@ export default class NFTOwned extends Model {
   // find by owner
   static findByOwner(address, ...args) {
     // find by ref
-    return NFTOwned.findByRef(`account:${address}`.toLowerCase(), ...args);
+    return NFTOwned.findByRef(`owned:${address}`.toLowerCase(), ...args);
   }
 
   /**

@@ -5,15 +5,18 @@ import BaseModel from '../base/model';
 
 // embed utility
 class JobUtility {
-  // doing
-  private __doing = new Set();
-
   /**
    * feed utility
    *
    * @param post 
    */
-  async queue(type, id, data, force = true) {
+  async queue(type, id, data) {
+    // check exists first
+    const existingJob = ((await BaseModel.query(`SELECT * FROM jobs WHERE id = ? AND type = ? LIMIT 1`, [id, type], false))?.rows || [])[0];
+
+    // check existing job
+    if (existingJob) return existingJob;
+
     // insert job
     const query = `INSERT INTO jobs (id, type, data, running_at, created_at) VALUES (?, ?, ?, ?, ?)`;
 
@@ -22,7 +25,7 @@ class JobUtility {
       id,
       type,
       JSON5.stringify(data),
-      null,
+      new Date(0),
       new Date()
     ];
 
@@ -37,30 +40,50 @@ class JobUtility {
    */
   async worker(type, fn, threads = 1, interval = 1000) {
     // create worker
-    const doWork = async () => {
-      // while find work
-      const work = await this.findWork(type);
-
-      // if work
-      if (!work) return setTimeout(doWork, interval);
-
-      // add to doing
-      this.__doing.add(`${type}:${work.id}`);
+    const doWork = async (thread) => {
+      // let work
+      let work;
 
       // do work
       try {
-        // run work
-        const query = `INSERT INTO jobs (id, type, data, running_at, created_at) VALUES (?, ?, ?, ?, ?)`;
-        const params = [
-          work.id,
-          work.type,
-          work.data,
-          new Date(),
-          work.created_at
-        ];
+        // create lock
+        const workLock = await global.backend.pubsub.lock(`work:${type}`);
 
-        // update work
-        await BaseModel.query(query, params, false);
+        // lock
+        try {
+          // while find work
+          work = await this.findWork(type);
+
+          // if work
+          if (!work) {
+            // unlock
+            workLock();
+
+            // timkeout
+            return setTimeout(() => doWork(thread), interval);
+          }
+
+          // check work
+          console.log(`[thread ${thread}] doing work ${work.id}`);
+          console.time(`[thread ${thread}] doing work ${work.id}`);
+
+          // run work
+          const query = `INSERT INTO jobs (id, type, data, running_at, created_at) VALUES (?, ?, ?, ?, ?)`;
+          const params = [
+            work.id,
+            work.type,
+            work.data,
+            new Date(),
+            work.created_at
+          ];
+          
+
+          // update work
+          await BaseModel.query(query, params, false);
+        } catch (e) {}
+
+        // end work lock
+        workLock();
 
         // do work
         if (await fn(JSON5.parse(work.data), new Date(work.created_at))) {
@@ -70,16 +93,19 @@ class JobUtility {
       } catch (e) {}
 
       // remove from doing
-      this.__doing.delete(`${type}:${work.id}`);
+      if (work) {
+        // delete and end
+        console.timeEnd(`[thread ${thread}] doing work ${work.id}`);
+      }
 
       // do work
-      doWork();
+      doWork(thread);
     };
 
     // loop limit
     for (let i = 0; i < threads; i++) {
       // create worker
-      doWork();
+      doWork(i);
     }
   }
 
@@ -89,23 +115,14 @@ class JobUtility {
    * @param type 
    */
   async findWork(type) {
+    // since date
+    const sinceDate = new Date(new Date().getTime() - (5 * 60 * 1000));
+
     // load jobs
-    const possibleJobs = await BaseModel.query(`SELECT * FROM nftsocial.jobs WHERE type = ? LIMIT 250`, [type], false);
-
-    // rows
-    const possibleRows = possibleJobs.rows.filter((r) => {
-      // check already doing
-      if (this.__doing.has(`${type}:${r.id}`)) return false;
-
-      // check recent
-      if (r.running_at && new Date(r.running_at).getTime() > (new Date().getTime() - (30 * 60 * 1000))) return false;
-
-      // return true
-      return true;
-    });
+    const possibleJobs = await BaseModel.query(`SELECT * FROM jobs WHERE type = ? AND running_at < ? LIMIT 1 ALLOW FILTERING`, [type, sinceDate], false);
 
     // return done
-    return possibleRows[0];
+    return possibleJobs.rows[0];
   }
 }
 
