@@ -225,6 +225,12 @@ export default class NFTModel extends Events {
         // check value
         if (typeof value === 'undefined') return;
 
+        // set value
+        value = parseFloat(value);
+
+        // check value
+        if (isNaN(value)) return;
+
         // push actual refs
         actualRefs.push(`${ref}:${sort}:${value}`);
 
@@ -431,7 +437,7 @@ export default class NFTModel extends Events {
    *
    * @param id
    */
-  static async findById(id: string): Promise<any> {
+  static async findById(id: string, includeLog = true): Promise<any> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this);
     const preface = Reflect.getMetadata('model:preface', this);
@@ -440,7 +446,7 @@ export default class NFTModel extends Events {
     if (!id) return null;
 
     // execute schema create
-    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE id = ? AND type = ?`, [id, type]);
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE id = ? AND type = ?`, [id, type], includeLog);
 
     // get data
     return data?.rows && data.rows[0] ? new this(data.rows[0]) : null;
@@ -451,7 +457,7 @@ export default class NFTModel extends Events {
    *
    * @param ids 
    */
-  static async findByIds(ids: Array<string>): Promise<any> {
+  static async findByIds(ids: Array<string>, includeLog = true): Promise<any> {
     // Load namespace and subspace
     const type = Reflect.getMetadata('model:type', this);
     const preface = Reflect.getMetadata('model:preface', this);
@@ -459,11 +465,42 @@ export default class NFTModel extends Events {
     // check id
     if (!ids?.length) return [];
 
+    // check length
+    if (ids.length > 10) {
+      // chunks
+      const idChunks = chunks(ids, 10);
+
+      // return chunked get
+      return [].concat(...(await Promise.all(idChunks.map((chunk) => this.findByIds(chunk, includeLog)))));
+    }
+
     // execute schema create
-    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE type = ? AND id IN ?`, [type, ids]);
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE type = ? AND id IN ?`, [type, ids], includeLog);
 
     // get data
     return data?.rows ? data.rows.map((row) => new this(row)) : [];
+  }
+
+  /**
+   * find by id
+   *
+   * @param id
+   */
+  static async countByRef(ref: string): Promise<number> {
+    // Load namespace and subspace
+    const type = Reflect.getMetadata('model:type', this);
+    const preface = Reflect.getMetadata('model:preface', this);
+    
+    // check id
+    if (!ref) return 0;
+
+    // execute schema create
+    const data = await NFTModel.query(`SELECT COUNT(*) FROM ${preface ? `${preface}_` : ''}refs_asc WHERE ref = ? AND type = ? AND key = 'createdAt'`,
+      [ref, type],
+    );
+
+    // return
+    return parseInt((data?.rows || [])[0]?.count || 0);
   }
 
   /**
@@ -486,6 +523,28 @@ export default class NFTModel extends Events {
 
     // get data
     return this.findByIds((data?.rows || []).map((row) => row.model_id));
+  }
+
+  /**
+   * find by id
+   *
+   * @param id
+   */
+  static async countByRefs(refs: Array<string>): Promise<number> {
+    // Load namespace and subspace
+    const type = Reflect.getMetadata('model:type', this);
+    const preface = Reflect.getMetadata('model:preface', this);
+    
+    // check id
+    if (!refs?.length) return 0;
+
+    // execute schema create
+    const data = await NFTModel.query(`SELECT COUNT(*) FROM ${preface ? `${preface}_` : ''}refs_asc WHERE ref IN ? AND type = ? AND key = 'createdAt'`,
+      [refs, type],
+    );
+
+    // return
+    return parseInt((data?.rows || [])[0]?.count || 0);
   }
 
   /**

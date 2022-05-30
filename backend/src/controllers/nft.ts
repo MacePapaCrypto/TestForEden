@@ -29,9 +29,7 @@ export default class NftController extends NFTController {
 
     // load owned
     const owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
-
-    // get total
-    const user = await UserModel.findById(lowerAddress);
+    const total = await NFTOwnedModel.countByOwner(lowerAddress);
 
     // cache
     const cache = {};
@@ -39,8 +37,8 @@ export default class NftController extends NFTController {
     // return
     return {
       result  : {
-        data  : await Promise.all(owned.map((nft) => nft.toJSON(cache, data.include === 'contract'))),
-        total : user ? user.get('count.nfts') : 0,
+        data : await Promise.all(owned.map((nft) => nft.toJSON(cache, data.include === 'contract'))),
+        total,
       },
       success : true,
     };

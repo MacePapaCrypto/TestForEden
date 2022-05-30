@@ -13,7 +13,7 @@ const NFTContractEmbed = (props = {}) => {
 
   // itme
   const { item } = props;
-  
+
   // branded colors
   const branded = {
     paintswap : 'rgb(125, 143, 209)',

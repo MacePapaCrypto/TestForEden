@@ -12,6 +12,18 @@ export default class ERC721Daemon extends NFTDaemon {
   /**
    * sync fantom
    */
+  @Action('erc721.tx.schedule', 10000, 'background')
+  async transactionScheduleAction() {
+    // await client
+    await this.base.clientReady;
+
+    // schedule
+    job.schedule('tx', 1000, 1);
+  }
+
+  /**
+   * sync fantom
+   */
   @Action('erc721.tx', 10000, 'background')
   async transactionAction() {
     // await client
@@ -32,6 +44,7 @@ export default class ERC721Daemon extends NFTDaemon {
           amount    : parseInt(data.amount),
           account   : type === 'out' ? data.from_address : data.to_address,
           tokenId   : data.token_id,
+          logIndex  : data.log_index,
           contract  : data.token_address,
           verified  : !!data.verified,
           createdAt : new Date(data.block_timestamp),
@@ -44,7 +57,7 @@ export default class ERC721Daemon extends NFTDaemon {
 
       // return done
       return ((inDone || inDone === null) && (outDone || outDone === null));
-    }, 200);
+    }, 50);
   }
 
   /**
@@ -62,7 +75,19 @@ export default class ERC721Daemon extends NFTDaemon {
       
       // return
       return contract === null || !!contract;
-    }, 25);
+    }, 50);
+  }
+
+  /**
+   * sync fantom
+   */
+  @Action('erc721.contract.schedule', 10000, 'background')
+  async contractScheduleAction() {
+    // await client
+    await this.base.clientReady;
+
+    // schedule
+    job.schedule('contract', 100, 1000);
   }
 
   /**
@@ -80,6 +105,18 @@ export default class ERC721Daemon extends NFTDaemon {
       
       // return
       return nft === null || !!nft;
-    }, 25);
+    }, 50);
+  }
+
+  /**
+   * sync fantom
+   */
+  @Action('erc721.nft.schedule', 10000, 'background')
+  async nftScheduleAction() {
+    // await client
+    await this.base.clientReady;
+
+    // schedule
+    job.schedule('nft', 200, 1000);
   }
 }

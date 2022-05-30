@@ -23,7 +23,7 @@ export default class NFTModel extends Model {
   // find by address
   getContract() {
     // find by ref
-    return ContractModel.findById(`${this.get('chain')}:${this.get('contract')}`.toLowerCase());
+    return ContractModel.findById(`${this.get('chain')}:${this.get('contract')}`.toLowerCase(), false);
   }
 
   /**
@@ -49,6 +49,11 @@ export default class NFTModel extends Model {
 
     // check contract
     if (contract) parsed.contract = contract;
+
+    // delete
+    if (parsed.uri?.includes(';base64,')) parsed.uri = 'base64://';
+    if (parsed.image?.uri?.includes(';base64,')) parsed.image.uri = 'base64://';
+    if (parsed.metadata?.image?.includes(';base64,')) parsed.metadata.image = 'base64://';
 
     // set image url
     if (parsed.image) parsed.image.url = `https://media.dashup.com/${this.get('chain')}-${this.get('contract')}-${this.get('tokenId')}`;

@@ -322,7 +322,7 @@ class NFTBackend extends Events {
       localDataCenter : db.region,
 
       queryOptions : {
-        consistency : cassandra.types.consistencies.one,
+        consistency : cassandra.types.consistencies.localOne,
       },
       protocolOptions : {
         port : db.port,

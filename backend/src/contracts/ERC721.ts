@@ -5,6 +5,7 @@ import { ethers } from 'ethers';
 import config from '../config';
 import moralis from '../apis/moralis';
 import Bottleneck from 'bottleneck';
+import { AbortController } from 'node-abort-controller';
 
 // models
 import NftModel from '../models/nft';
@@ -27,6 +28,26 @@ import mtcProvider from '../providers/polygon';
 import bscProvider from '../providers/binance';
 import job from '../utilities/job';
 
+// timeout
+const fetchTimeout = async (resource, options = {}) => {
+  // create timeout
+  const { timeout = 30 * 1000 } = options;
+  
+  // create request
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  const response = await fetch(resource, {
+    ...options,
+    signal: controller.signal  
+  });
+
+  // clear
+  clearTimeout(id);
+
+  // return
+  return response;
+};
+
 // nft transaction interface
 interface NFTTransaction {
   way : 'in' | 'out',
@@ -38,6 +59,7 @@ interface NFTTransaction {
   amount : number,
   account : string,
   tokenId : string,
+  logIndex : string | number,
   contract : string,
   verified : boolean,
   createdAt : Date,
@@ -141,7 +163,7 @@ class ERC721Contract {
       // try/catch
       try {
         // load from db
-        let actualContract = await ContractModel.findById(contractId);
+        let actualContract = await ContractModel.findById(contractId, false);
     
         // check contract
         if (actualContract && (!requireAbi || actualContract.get('abi'))) return actualContract;
@@ -206,7 +228,7 @@ class ERC721Contract {
         }
     
         // save new contract
-        newContract.save();
+        newContract.save(null, false, false);
     
         // create ethers contract
         return newContract;
@@ -246,7 +268,7 @@ class ERC721Contract {
       // try/catch
       try {
         // existing nft
-        const existingNFT = await NftModel.findById(nftId);
+        const existingNFT = await NftModel.findById(nftId, false);
 
         // if existing
         if (existingNFT) {
@@ -334,6 +356,16 @@ class ERC721Contract {
             // load actual model
             nftModel.set('uri', tokenURI);
           } catch (e) {
+            // check not a function
+            if (`${e}`.includes('Not exist')) return null;
+            if (`${e}`.includes('DoesNotExist')) return null;
+            if (`${e}`.includes('does not exist')) return null;
+            if (`${e}`.includes('nonexistent token')) return null;
+            if (`${e}`.includes('is not a function')) return null;
+
+            console.log('test', e);
+
+            // return
             return;
           }
 
@@ -341,11 +373,11 @@ class ERC721Contract {
           update = true;
         }
 
-        // set uri
-        nftUri = nftModel.get('uri');
-
         // check uri
         if (!nftModel.get('uri')) return null;
+
+        // set uri
+        nftUri = nftModel.get('uri');
 
         // check data
         if (!nftModel.get('image')) {
@@ -359,18 +391,28 @@ class ERC721Contract {
             const NFTReq = new Buffer(nftModel.get('uri').split('base64,').pop(), 'base64');
             NFTMeta = JSON.parse(NFTReq.toString('ascii'));
           } else {
-            // uri
-            let uri = nftModel.get('uri').replace('ipfs://', config.get('ipfs.url'));
-            
-            // replace /ipfs/
-            uri = uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri;
+            // try/catch
+            try {
+              // uri
+              let uri = nftModel.get('uri').replace('ipfs://', config.get('ipfs.url'));
+              
+              // replace /ipfs/
+              uri = uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri;
 
-            // check includes https
-            if (uri && !uri.includes('://')) uri = `${config.get('ipfs.url')}${uri}`;
+              // check includes https
+              if (uri && !uri.includes('://')) uri = `${config.get('ipfs.url')}${uri}`;
 
-            // data
-            const NFTReq = await fetch(uri);
-            NFTMeta = await NFTReq.json();
+              // data
+              const NFTReq = await fetchTimeout(uri);
+              NFTMeta = await NFTReq.json();
+            } catch (e) {
+              // check error
+              if (e.type === 'aborted') return;
+              if (e.type === 'invalid-json') return null;
+
+              // throw error
+              throw e;
+            }
           }
 
           // set imgUri
@@ -384,22 +426,31 @@ class ERC721Contract {
               type : NFTMeta.image.split('data:')[1].split(';')[0],
             };
           } else {
-            // uri
-            let uri = NFTMeta.image ? NFTMeta.image.replace('ipfs://', config.get('ipfs.url')) : null;
-            
-            // replace /ipfs/
-            uri = uri && (uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri);
+            // try/catch
+            try {
+              // uri
+              let uri = NFTMeta.image ? NFTMeta.image.replace('ipfs://', config.get('ipfs.url')) : null;
+              
+              // replace /ipfs/
+              uri = uri && (uri.includes('/ipfs/') ? `${config.get('ipfs.url')}${uri.split('/ipfs/')[1]}` : uri);
 
-            // check includes https
-            if (uri && !uri.includes('://')) uri = `${config.get('ipfs.url')}${uri}`;
+              // check includes https
+              if (uri && !uri.includes('://')) uri = `${config.get('ipfs.url')}${uri}`;
 
-            // image
-            const NFTRes = uri && await fetch(uri);
-            NFTImage = NFTRes ? {
-              url  : NFTMeta.image,
-              type : NFTRes.headers.get('content-type'),
-              size : NFTRes.headers.get('content-length'),
-            } : {};
+              // image
+              const NFTRes = uri && await fetchTimeout(uri);
+              NFTImage = NFTRes ? {
+                url  : NFTMeta.image,
+                type : NFTRes.headers.get('content-type'),
+                size : NFTRes.headers.get('content-length'),
+              } : {};
+            } catch (e) {
+              // check error
+              if (e.type === 'aborted') return;
+
+              // throw error
+              throw e;
+            }
           }
 
           // check data
@@ -422,7 +473,7 @@ class ERC721Contract {
         }
 
         // if update
-        if (update) nftModel.save();
+        if (update) nftModel.save(null, false, false);
 
         // return nft model
         return nftModel;
@@ -459,12 +510,18 @@ class ERC721Contract {
 
     // create promise
     this.__loading[ownedId] = this.__ownedBottleneck.schedule(async () => {
+      // create lock
+      const ownedLock = await global.backend.pubsub.lock(ownedId);
+      let ownedNFT;
+
       // try/catch
       try {
         // check owned
         let changing = false;
         let creating = false;
-        let ownedNFT = await NftOwnedModel.findById(ownedId);
+
+        // load owned nft
+        ownedNFT = await NftOwnedModel.findById(ownedId, false);
 
         // check owned
         if (!ownedNFT) {
@@ -482,23 +539,26 @@ class ERC721Contract {
             amount    : 0,
             tokenId   : tx.tokenId,
             account   : tx.account.toLowerCase(),
+            verified  : false,
             contract  : tx.contract.toLowerCase(),
-            createdAt : tx.createdAt,
+            createdAt : new Date(tx.createdAt),
           });;
         }
 
         // push transaction if not exists
-        if (!(ownedNFT.get('txs') || []).find((stx) => stx.hash === tx.hash)) {
+        if (!(ownedNFT.get('txs') || []).find((stx) => stx.hash === tx.hash && stx.logIndex === parseInt(tx.logIndex))) {
           // changing
           changing = true;
 
           // txs
           const nftTxs = (ownedNFT.get('txs') || []);
           nftTxs.push({
-            way    : tx.way,
-            from   : tx.from,
-            hash   : tx.hash,
-            amount : tx.amount,
+            way       : tx.way,
+            from      : tx.from,
+            hash      : tx.hash,
+            amount    : tx.amount,
+            logIndex  : parseInt(tx.logIndex),
+            createdAt : new Date(tx.createdAt),
           });
 
           // push transaction
@@ -521,12 +581,12 @@ class ERC721Contract {
         }
 
         // check amount
-        if (ownedNFT.get('owned') !== !!(ownedNFT.get('amount') > 0)) {
+        if (ownedNFT.get('way') !== ((ownedNFT.get('amount') > 0) ? 'in' : 'out')) {
           // changing
           changing = true;
 
           // set owned
-          ownedNFT.set('owned', !!(ownedNFT.get('amount') > 0));
+          ownedNFT.set('way', ((ownedNFT.get('amount') > 0) ? 'in' : 'out'));
         }
 
         // check created
@@ -556,17 +616,22 @@ class ERC721Contract {
           ownedNFT.set('refs', Array.from(new Set([
             `account:${tx.account}`,
             `contract:${tx.contract}`,
-            `${ownedNFT.get('owned') ? 'owned' : 'unowned'}:${tx.account}`,
-            `${ownedNFT.get('owned') ? 'owned' : 'unowned'}:${tx.contract}`,
+            `${ownedNFT.get('way')}:${tx.account}`,
+            `${ownedNFT.get('way')}:${tx.contract}`,
+            `${ownedNFT.get('verified') ? 'verified' : 'unverified'}:${ownedNFT.get('way')}:${tx.account}`,
+            `${ownedNFT.get('verified') ? 'verified' : 'unverified'}:${ownedNFT.get('way')}:${tx.contract}`,
           ])).map((key) => key.toLowerCase()));
 
           // save nft
-          ownedNFT.save();
+          ownedNFT.save(null, false, false);
         }
-
-        // return
-        return ownedNFT;
       } catch (e) { console.log('owned error', e) }
+
+      // unlock
+      ownedLock();
+
+      // return
+      return ownedNFT;
     });
 
     // then

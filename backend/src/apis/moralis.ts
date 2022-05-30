@@ -78,6 +78,7 @@ class MoralisAPI {
         amount    : parseInt(data.amount),
         account   : data.to_address,
         tokenId   : data.token_id,
+        logIndex  : data.log_index,
         contract  : data.token_address,
         verified  : !!data.verified,
         createdAt : new Date(data.block_timestamp),
@@ -154,11 +155,11 @@ class MoralisAPI {
         // emit all transfers
         await this.__syncBottleneck.schedule(() => Promise.all(transferData.result.map((tx) => {
           // queue job
-          return jobUtility.queue('tx', `${actualChain}:${tx.transaction_hash}`, {
+          return jobUtility.queue('tx', `${actualChain}:${tx.transaction_hash}:${tx.log_index}`, {
             ...tx,
 
             chain : actualChain,
-          }, false);
+          });
         })));
 
         // set earliest block

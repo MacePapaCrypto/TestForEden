@@ -2,10 +2,15 @@ CREATE TABLE IF NOT EXISTS moon.jobs (
   id         text,
   type       text,
   data       text,
+  attempts   double,
   running_at timestamp,
   created_at timestamp,
   PRIMARY KEY(type, id)
 );
+
+---
+
+CREATE INDEX ON moon.jobs(running_at);
 
 ---
 
