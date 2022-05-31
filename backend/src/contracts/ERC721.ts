@@ -103,10 +103,6 @@ class ERC721Contract {
         });
 
         // set count
-        userModel.set('sorts', Array.from(new Set([
-          ...(userModel.get('sorts') || []),
-          `syncing.nfts`
-        ])));
         userModel.set('synced.nfts', false);
         userModel.set('syncing.nfts', new Date());
         await userModel.save();
@@ -132,10 +128,6 @@ class ERC721Contract {
         });
 
         // set count
-        userModel.set('sorts', Array.from(new Set([
-          ...(userModel.get('sorts') || []),
-          `synced.nfts`
-        ])));
         userModel.set('synced.nfts', new Date());
         userModel.set('syncing.nfts', false);
         await userModel.save();
@@ -204,7 +196,7 @@ class ERC721Contract {
     
         // set refs
         newContract.set('refs', Array.from(new Set([
-          ...(newContract.get('refs')),
+          ...(newContract.get('refs') || []),
     
           `category:${contractMeta.type}`,
         ])));
@@ -268,7 +260,7 @@ class ERC721Contract {
       // try/catch
       try {
         // existing nft
-        const existingNFT = await NftModel.findById(nftId, false);
+        const existingNFT = await NftModel.findById(nftId);
 
         // if existing
         if (existingNFT) {
@@ -459,7 +451,7 @@ class ERC721Contract {
 
           // set value
           nftModel.set('refs', Array.from(new Set([
-            ...(nftModel.get('refs')),
+            ...(nftModel.get('refs') || []),
 
             `category:${nftModel.get('category')}`,
             `contract:${nftModel.get('contract')}`,
@@ -473,7 +465,7 @@ class ERC721Contract {
         }
 
         // if update
-        if (update) nftModel.save(true, false, false);
+        if (update) nftModel.save(true, true);
 
         // return nft model
         return nftModel;
@@ -521,7 +513,7 @@ class ERC721Contract {
         let creating = false;
 
         // load owned nft
-        ownedNFT = await NftOwnedModel.findById(ownedId, false);
+        ownedNFT = await NftOwnedModel.findById(ownedId);
 
         // check owned
         if (!ownedNFT) {
@@ -535,7 +527,6 @@ class ERC721Contract {
             nft       : `${tx.chain}:${tx.contract}:${tx.tokenId}`.toLowerCase(),
             txs       : [],
             chain     : tx.chain.toLowerCase(),
-            sorts     : ['contract'],
             amount    : 0,
             tokenId   : tx.tokenId,
             account   : tx.account.toLowerCase(),
@@ -623,7 +614,7 @@ class ERC721Contract {
           ])).map((key) => key.toLowerCase()));
 
           // save nft
-          ownedNFT.save(true, false, false);
+          ownedNFT.save(true, true);
         }
       } catch (e) { console.log('owned error', e) }
 

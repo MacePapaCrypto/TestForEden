@@ -6,8 +6,8 @@ import polka from 'polka';
 import Events from 'events';
 import winston from 'winston';
 import Trouter from 'trouter';
-import cassandra from 'cassandra-driver';
 import { Server } from 'socket.io';
+import { MongoClient } from 'mongodb';
 
 // local dependencies
 // import Media from './base/media';
@@ -304,56 +304,22 @@ class NFTBackend extends Events {
     // info
     this.logger.info('db creating');
 
-    // get config
-    const db = config.get('db');
+    // client
+    const client = new MongoClient(config.get('db.url'));
 
-    // username and password provider from settings
-    const authProvider = new cassandra.auth.PlainTextAuthProvider(db.username, db.password);
+    // await connect
+    this.cientReady = client.connect();
+    await this.clientReady;
 
-    // public hostname for keyspaces
-    const contactPoints = db.hosts;
+    // db
+    const database = client.db(config.get('db.name'));
 
-    // setup cassandra client
-    this.client = new cassandra.Client({
-      contactPoints,
-      authProvider,
-
-      keyspace        : db.keyspace,
-      localDataCenter : db.region,
-
-      pooling : {
-        coreConnectionsPerHost : {
-          [cassandra.types.distance.local]  : 3,
-          [cassandra.types.distance.remote] : 1
-        },
-        maxRequestsPerConnection : 2048 * 5,
-      },
-
-      queryOptions : {
-        consistency : cassandra.types.consistencies.one,
-      },
-
-      protocolOptions : {
-        port : db.port,
-      }
-    });
+    // set client
+    this.client = client;
+    this.database = database;
 
     // build model
     NFTModel.build(this);
-
-    // create on ready event
-    this.clientReady = new Promise(async (resolve) => {
-      // try/catch
-      try {
-        await this.client.execute('SELECT * FROM models LIMIT 1', []);
-      } catch (e) { console.log(e) }
-
-      // info
-      this.logger.info('db ready');
-
-      // resolve
-      resolve(true);
-    });
     
     // info
     this.logger.info('db created');

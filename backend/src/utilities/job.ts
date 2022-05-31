@@ -5,7 +5,7 @@ import redis from 'redis';
 import Queue from 'bee-queue';
 import config from '../config';
 import Measured from 'measured-core';
-import BaseModel from '../base/model';
+import JobModel from '../models/job';
 import ProgressBar from 'cli-progress';
 
 // embed utility
@@ -44,26 +44,27 @@ class JobUtility {
    */
   async queue(type, id, data) {
     // check exists first
-    const existingJob = ((await BaseModel.query(`SELECT * FROM jobs WHERE id = ? AND type = ? LIMIT 1`, [id, type], false))?.rows || [])[0];
+    const existingJob = await JobModel.collection.where({
+      type,
+      id,
+    }).findOne();
 
     // check existing job
     if (existingJob) return existingJob;
 
     // insert job
-    const query = `INSERT INTO jobs (id, type, data, attempts, running_at, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
-
-    // create data
-    const params = [
+    const newJob = new JobModel({
       id,
       type,
-      JSON5.stringify(data),
-      0,
-      new Date(0),
-      new Date()
-    ];
-
-    // done
-    return BaseModel.query(query, params, false);
+      
+      data      : JSON5.stringify(data),
+      attempts  : 0,
+      runningAt : null,
+      createdAt : new Date(),
+    });
+    
+    // save job
+    await newJob.save(true, true);
   }
 
   /**
@@ -107,19 +108,13 @@ class JobUtility {
 
       // update job
       const bg = (() => {
-        // backgorund query
-        const query = `INSERT INTO jobs (id, type, data, attempts, running_at, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
-        const params = [
-          work.id,
-          work.type,
-          work.data,
-          (work.attempts || 0) + 1,
-          new Date(),
-          new Date(work.created_at)
-        ];
-
-        // update work
-        return BaseModel.query(query, params, false);
+        // collection
+        return JobModel.collection.where({
+          id : work.id,
+        }).update({
+          attempts  : (work.attempts || 0) + 1,
+          runningAt : new Date(),
+        });
       })();
 
       // do work
@@ -132,8 +127,10 @@ class JobUtility {
           // await bg
           await bg;
 
-          // delete work
-          await BaseModel.query('DELETE FROM jobs WHERE type = ? AND id = ?', [work.type, work.id], false);
+          // collection
+          await JobModel.collection.where({
+            id : work.id,
+          }).remove();
         }
       } catch (e) {}
 
@@ -197,55 +194,47 @@ class JobUtility {
 
       // since date
       const sinceDate = new Date(new Date().getTime() - (5 * 60 * 1000));
-      const futureDate = new Date(new Date().getTime() + (30 * 24 * 60 * 60 * 1000));
 
-      // load jobs
-      const possibleJobs = await BaseModel.query(`SELECT * FROM jobs WHERE type = ? LIMIT ${limit}`, [type], false);
+      // get jobs
+      const possibleJobs = await JobModel.collection.where({
+        type,
+
+        attempts : {
+          $lte : 5,
+        },
+      }).or([
+        {
+          runningAt : {
+            $lte : sinceDate,
+          }
+        },
+        {  
+          runningAt : null,
+        }
+      ]).limit(limit).find();
 
       // add to queues
-      await Promise.all(possibleJobs.rows.map(async (possibleJob) => {
-        // last id
-        // lastId = possibleJob.id;
-
+      await Promise.all(possibleJobs.map(async (possibleJob) => {
         // get job
         const actualJob = await queue.getJob(possibleJob.id);
         
         // job exists
         if (actualJob) return;
 
-        // check job
-        if (possibleJob && (possibleJob.attempts || 0) > 10) {
-          // insert job
-          const query = `INSERT INTO jobs (id, type, data, attempts, running_at, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
-    
-          // create data
-          const params = [
-            possibleJob.id,
-            possibleJob.type,
-            possibleJob.data,
-            possibleJob.attempts,
-            futureDate,
-            possibleJob.created_at
-          ];
-    
-          // query
-          await BaseModel.query(query, params, false);
-        } else {
-          // set count
-          this.__counts.set(type, this.__counts.get(type) + 1);
-    
-          // add
-          meter.mark();
+        // set count
+        this.__counts.set(type, this.__counts.get(type) + 1);
+  
+        // add
+        meter.mark();
 
-          // update
-          bar.update(this.__counts.get(type), {
-            speed  : meter.toJSON()['1MinuteRate'],
-            queued : totalInQueue,
-          });
-          
-          // queue job
-          queue.createJob(possibleJob).timeout(30 * 1000).retries(3).setId(possibleJob.id).save();
-        }
+        // update
+        bar.update(this.__counts.get(type), {
+          speed  : meter.toJSON()['1MinuteRate'],
+          queued : totalInQueue,
+        });
+        
+        // queue job
+        queue.createJob(possibleJob).timeout(30 * 1000).retries(3).setId(possibleJob.id).save();
       }));
     } catch (e) {}
 

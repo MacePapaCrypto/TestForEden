@@ -39,6 +39,11 @@ export default class MemberController extends NFTController {
   async memberListener(socket, member) {
     // get post
     const actualMember = await MemberModel.findById(member.id);
+
+    // check member
+    if (!actualMember) return;
+
+    // check member
     const actualSpace = await actualMember.getSpace();
 
     // send post to socket

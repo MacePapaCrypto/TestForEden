@@ -5,7 +5,7 @@ import Model, { Type } from '../base/model';
 /**
  * export model
  */
-@Type('nft', 'nft')
+@Type('nft')
 export default class NFTModel extends Model {
   
   // find by owner
