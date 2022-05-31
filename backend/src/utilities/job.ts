@@ -164,11 +164,9 @@ class JobUtility {
       // start
       this.__bars.get(type).start(9999999999999, 0, {
         speed : this.__meters.get(type).currentRate(),
+        queued : 0,
       });
     }
-
-    // last id
-    let lastId = null;
 
     // check count
     if (!this.__counts.has(type)) this.__counts.set(type, 0);
@@ -202,7 +200,7 @@ class JobUtility {
       const futureDate = new Date(new Date().getTime() + (30 * 24 * 60 * 60 * 1000));
 
       // load jobs
-      const possibleJobs = await BaseModel.query(`SELECT * FROM jobs WHERE type = ? AND running_at < ?${lastId ? ` AND id > ?` : ''} LIMIT ${limit} ALLOW FILTERING`, [type, sinceDate, ...(lastId ? [lastId] : [])], false);
+      const possibleJobs = await BaseModel.query(`SELECT * FROM jobs WHERE type = ? LIMIT ${limit}`, [type], false);
 
       // add to queues
       await Promise.all(possibleJobs.rows.map(async (possibleJob) => {
@@ -216,7 +214,7 @@ class JobUtility {
         if (actualJob) return;
 
         // check job
-        if (possibleJob && (possibleJob.attempts || 0) > 2) {
+        if (possibleJob && (possibleJob.attempts || 0) > 10) {
           // insert job
           const query = `INSERT INTO jobs (id, type, data, attempts, running_at, created_at) VALUES (?, ?, ?, ?, ?, ?)`;
     

@@ -9,15 +9,15 @@ import Model, { Type } from '../base/model';
 export default class NFTModel extends Model {
   
   // find by owner
-  static findByCreator(creator) {
+  static findByCreator(creator, ...args) {
     // find by ref
-    return NFTModel.findByRef(`creator:${creator}`);
+    return NFTModel.findByRef(`creator:${creator}`, ...args);
   }
 
   // find by address
-  static findByContract(contract) {
+  static findByContract(contract, ...args) {
     // find by ref
-    return NFTModel.findByRef(`contract:${contract}`);
+    return NFTModel.findByRef(`contract:${contract}`, ...args);
   }
 
   // find by address

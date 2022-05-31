@@ -17,37 +17,37 @@ export default class NFTOwned extends Model {
   // find by owner
   static findByOwner(address, ...args) {
     // find by ref
-    return NFTOwned.findByRef(`owned:${address}`.toLowerCase(), ...args);
+    return NFTOwned.findByRef(`in:${address}`.toLowerCase(), ...args);
   }
   
   // find by owner
   static countByOwner(address) {
     // find by ref
-    return NFTOwned.countByRef(`owned:${address}`.toLowerCase());
+    return NFTOwned.countByRef(`in:${address}`.toLowerCase());
   }
   
   // find by owner
   static findByVerifiedOwner(address, ...args) {
     // find by ref
-    return NFTOwned.findByRef(`verified:owned:${address}`.toLowerCase(), ...args);
+    return NFTOwned.findByRef(`verified:in:${address}`.toLowerCase(), ...args);
   }
   
   // find by owner
   static countByVerifiedOwner(address) {
     // find by ref
-    return NFTOwned.countByRef(`verified:owned:${address}`.toLowerCase());
+    return NFTOwned.countByRef(`verified:in:${address}`.toLowerCase());
   }
   
   // find by owner
   static findByUnverifiedOwner(address, ...args) {
     // find by ref
-    return NFTOwned.findByRef(`unverified:owned:${address}`.toLowerCase(), ...args);
+    return NFTOwned.findByRef(`unverified:in:${address}`.toLowerCase(), ...args);
   }
   
   // find by owner
   static countByUnverifiedOwner(address) {
     // find by ref
-    return NFTOwned.countByRef(`unverified:owned:${address}`.toLowerCase());
+    return NFTOwned.countByRef(`unverified:in:${address}`.toLowerCase());
   }
 
   /**
@@ -55,7 +55,7 @@ export default class NFTOwned extends Model {
    */
   getNFT() {
     // return nft
-    return NFTModel.findById(this.get('nft'), false);
+    return NFTModel.findById(this.get('nft'));
   }
 
   /**

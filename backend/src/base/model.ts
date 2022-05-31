@@ -234,6 +234,12 @@ export default class NFTModel extends Events {
         // push actual refs
         actualRefs.push(`${ref}:${sort}:${value}`);
 
+        // check existing ref exists already
+        if (existingRefs.find((existingRef) => {
+          // return key
+          return `${ref}:${sort}:${value}` === `${existingRef.ref}:${existingRef.key}:${existingRef.value}`;
+        })) return;
+
         // add ref1
         ['refs_desc', 'refs_asc', 'refs_by_model'].forEach((table) => {
           // add queries
@@ -475,7 +481,7 @@ export default class NFTModel extends Events {
     }
 
     // execute schema create
-    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE type = ? AND id IN ?`, [type, ids], includeLog);
+    const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}models WHERE id IN ? AND type = ?`, [ids, type], includeLog);
 
     // get data
     return data?.rows ? data.rows.map((row) => new this(row)) : [];
@@ -516,13 +522,26 @@ export default class NFTModel extends Events {
     // check id
     if (!ref) return [];
 
+    // time
+    console.time(`findByRef ${type}:${ref}:${sort}`);
+
     // execute schema create
     const data = await NFTModel.query(`SELECT * FROM ${preface ? `${preface}_` : ''}refs_${direction} WHERE ref = ? AND type = ? AND key = ?${lastSort ? ` AND sort ${direction === 'asc' ? '>' : '<'} ?` : ''} LIMIT ${limit}`,
       lastSort ? [`${ref}`, type, sort, lastSort] : [`${ref}`, type, sort]
     );
 
+    // time
+    console.timeEnd(`findByRef ${type}:${ref}:${sort}`);
+    console.time(`findByIds ${type}:${ref}:${sort}`);
+
     // get data
-    return this.findByIds((data?.rows || []).map((row) => row.model_id));
+    const result = await this.findByIds((data?.rows || []).map((row) => row.model_id));
+
+    // time end
+    console.timeEnd(`findByIds ${type}:${ref}:${sort}`);
+
+    // return data
+    return result;
   }
 
   /**
@@ -609,7 +628,7 @@ export default class NFTModel extends Events {
     if (includeLog) logger.info(`batch ${queries.map((q) => q.query).join(', ')}`);
 
     // chunks
-    const arrChunks = chunks(queries, 30);
+    const arrChunks = chunks(queries, 10);
 
     // try/catch
     try {

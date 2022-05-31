@@ -1,8 +1,9 @@
 
 // import local
-import NFTDaemon, { Action } from '../base/daemon';
-import ERC721 from '../contracts/ERC721';
 import job from '../utilities/job';
+import ERC721 from '../contracts/ERC721';
+import NFTOwned from '../models/nftOwned';
+import NFTDaemon, { Action } from '../base/daemon';
 
 /**
  * create auth controller
@@ -118,5 +119,61 @@ export default class ERC721Daemon extends NFTDaemon {
 
     // schedule
     job.schedule('nft', 200, 1000);
+  }
+
+  /**
+   * sync fantom
+   */
+  @Action('erc721.nft.verify', 10000, 'background')
+  async nftVerifyAction() {
+    // await client
+    await this.base.clientReady;
+    // each row
+    NFTOwned.client.eachRow('SELECT * FROM balance_models', [], {
+      prepare   : true,
+      fetchSize : 50,
+    }, async (n, row) => {
+      // The callback will be invoked per each row as soon as they are received
+      if (row.type !== 'nftOwned') return;
+      if (row.verified) return;
+
+      // check nft exists
+      const ownedModel = new NFTOwned(row);
+
+      // check nft
+      const ownedNFT = await ownedModel.getNFT();
+
+      // check
+      if (!!ownedNFT) {
+        // create lock
+        const ownedLock = await global.backend.pubsub.lock(ownedNFT.id);
+
+        // try/catch
+        try {
+          // set verified
+          ownedModel.set('verified', true);
+
+          // set refs
+          ownedModel.set('refs', (Array.from(new Set([
+            ...(ownedModel.get('refs') || []),
+
+            `${ownedNFT.get('verified') ? 'verified' : 'unverified'}:${ownedNFT.get('way')}:${ownedModel.get('account')}`,
+            `${ownedNFT.get('verified') ? 'verified' : 'unverified'}:${ownedNFT.get('way')}:${ownedModel.get('contract')}`,
+          ]))).filter((ref) => !ref.includes('unverified')).map((ref) => ref.toLowerCase()));
+
+          // save model
+          await ownedModel.save();
+        } catch (e) {}
+
+        // unlock
+        ownedLock();
+      }
+    }, (err, result) => {
+      // err
+      console.log(err);
+      
+      // complete
+      if (result?.nextPage) result.nextPage();
+    });
   }
 }

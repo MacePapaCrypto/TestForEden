@@ -321,9 +321,18 @@ class NFTBackend extends Events {
       keyspace        : db.keyspace,
       localDataCenter : db.region,
 
-      queryOptions : {
-        consistency : cassandra.types.consistencies.localOne,
+      pooling : {
+        coreConnectionsPerHost : {
+          [cassandra.types.distance.local]  : 3,
+          [cassandra.types.distance.remote] : 1
+        },
+        maxRequestsPerConnection : 2048 * 5,
       },
+
+      queryOptions : {
+        consistency : cassandra.types.consistencies.one,
+      },
+
       protocolOptions : {
         port : db.port,
       }

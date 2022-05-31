@@ -9,8 +9,8 @@ import ERC721 from '../contracts/ERC721';
 // models
 import config from '../config';
 import NFTModel from '../models/nft';
-import UserModel from '../models/user';
 import NFTOwnedModel from '../models/nftOwned';
+import ContractModel from '../models/contract';
 
 /**
  * create auth controller
@@ -22,14 +22,47 @@ export default class NftController extends NFTController {
    * 
    * @returns
    */
+  @Route('GET', '/api/v1/contract/list')
+  async featuredAction(req, { data, params }, next) {
+    // load contracts
+    const contracts = await ContractModel.findByRef('chain:fantom', 10, 'createdAt', 'asc');
+
+    // cache
+    const cache = {};
+
+    // return
+    return {
+      result  : await Promise.all(contracts.map((contract) => contract.toJSON(cache))),
+      success : true,
+    };
+  }
+
+  /**
+   * segment get endpoint
+   * 
+   * @returns
+   */
   @Route('GET', '/api/v1/nft/list')
   async listAction(req, { data, params }, next) {
-    // lower address
-    const lowerAddress = `${data.account || req.account}`.toLowerCase();
+    // let
+    let owned, total;
 
-    // load owned
-    const owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
-    const total = await NFTOwnedModel.countByOwner(lowerAddress);
+    // check account
+    if (data.account) {
+      // lower address
+      const lowerAddress = `${data.account}`.toLowerCase();
+  
+      // load owned
+      owned = await NFTOwnedModel.findByVerifiedOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
+      // total = await NFTOwnedModel.countByOwner(lowerAddress);
+    } else if (data.contract) {
+      // lower address
+      const lowerAddress = `${data.contract}`.toLowerCase();
+  
+      // load owned
+      owned = await NFTModel.findByContract(lowerAddress, data.limit || 100, 'createdAt', 'asc');
+      // total = await NFTOwnedModel.countByOwner(lowerAddress);
+    }
 
     // cache
     const cache = {};

@@ -228,7 +228,7 @@ class ERC721Contract {
         }
     
         // save new contract
-        newContract.save(null, false, false);
+        newContract.save(true, false, false);
     
         // create ethers contract
         return newContract;
@@ -473,7 +473,7 @@ class ERC721Contract {
         }
 
         // if update
-        if (update) nftModel.save(null, false, false);
+        if (update) nftModel.save(true, false, false);
 
         // return nft model
         return nftModel;
@@ -623,7 +623,7 @@ class ERC721Contract {
           ])).map((key) => key.toLowerCase()));
 
           // save nft
-          ownedNFT.save(null, false, false);
+          ownedNFT.save(true, false, false);
         }
       } catch (e) { console.log('owned error', e) }
 

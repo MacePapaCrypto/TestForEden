@@ -5,6 +5,7 @@ import Box from './Box';
 import Link from './Link';
 import Post from './Post';
 import SideBar from './SideBar';
+import NFTList from './NFTList';
 import PostList from './PostList';
 import NFTAvatar from './NFTAvatar';
 import SpaceCard from './SpaceCard';
@@ -31,6 +32,7 @@ import BrowseProvider from './BrowseProvider';
 
 // hooks
 import useId from './useId';
+import useNFTs from './useNFTs';
 import useFeed from './useFeed';
 import usePost from './usePost';
 import useAuth from './useAuth';
@@ -52,6 +54,7 @@ export {
 
   NFT,
   Post,
+  NFTList,
   PostList,
   NFTAvatar,
   SpaceCard,
@@ -71,6 +74,7 @@ export {
 
   // hooks
   useId,
+  useNFTs,
   useFeed,
   usePost,
   useAuth,

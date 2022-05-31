@@ -1,8 +1,11 @@
 
-import React from 'react';
 import { useHistory } from 'react-router-dom';
-import { useFeed, useAuth, PostCreate, PostList } from '@nft/ui';
-import { Box, Grid, Container, Stack, CircularProgress } from '@mui/material';
+import { useAuth, useSocket } from '@nft/ui';
+import React, { useState, useEffect } from 'react';
+import { Box, Grid, Container, Stack, Typography } from '@mui/material';
+
+// home nfts
+import HomePageContract from './home/contract';
 
 /**
  * home page
@@ -10,34 +13,19 @@ import { Box, Grid, Container, Stack, CircularProgress } from '@mui/material';
  * @param props 
  */
 const HomePage = (props = {}) => {
+  // state
+  const [contracts, setContracts] = useState([]);
+
   // theme
   const auth = useAuth();
+  const socket = useSocket();
   const history = useHistory();
 
-  // create feed
-  const feed = useFeed({
-    feed : 'public',
-  });
-
-  // on post
-  const onPost = async (value) => {
-    // check add
-    if (!auth.account) {
-      // login
-      auth.login();
-
-      // login
-      return false;
-    }
-
-    // log
-    await feed.create({
-      ...value,
-    });
-
-    // return true
-    return true;
-  };
+  // use effect
+  useEffect(() => {
+    // load contracts
+    socket.get('/contract/list').then(setContracts);
+  }, []);
 
   // layout
   return (
@@ -49,29 +37,17 @@ const HomePage = (props = {}) => {
         <Grid container>
           <Grid item xs={ 8 }>
             <Stack spacing={ 2 }>
-              <PostCreate
-                onPost={ onPost }
-              />
-
-              { !feed.posts?.length && feed.loading && (
-                <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
-                  <CircularProgress />
-                </Box>
-              ) }
-
-              { !!feed.posts?.length && (
-                <Box />
-              ) }
-
-              <PostList
-                feed="feed"
-                posts={ feed.posts }
-                loading={ feed.loading }
-                PostProps={ {
-                  history,
-                  withReplies : true,
-                } }
-              />
+              { contracts.map((contract) => {
+                // return jsx
+                return (
+                  <Box key={ contract.id }>
+                    <Typography>
+                      { contract.name }
+                    </Typography>
+                    <HomePageContract contract={ contract } />
+                  </Box>
+                );
+              }) }
             </Stack>
           </Grid>
           <Grid item xs={ 4 }>
