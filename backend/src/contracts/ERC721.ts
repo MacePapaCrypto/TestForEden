@@ -351,11 +351,10 @@ class ERC721Contract {
             // check not a function
             if (`${e}`.includes('Not exist')) return null;
             if (`${e}`.includes('DoesNotExist')) return null;
+            if (`${e}`.includes(`doesn't exist`)) return null;
             if (`${e}`.includes('does not exist')) return null;
             if (`${e}`.includes('nonexistent token')) return null;
             if (`${e}`.includes('is not a function')) return null;
-
-            console.log('test', e);
 
             // return
             return;
@@ -400,6 +399,9 @@ class ERC721Contract {
             } catch (e) {
               // check error
               if (e.type === 'aborted') return;
+              if (e.code === 'EAI_AGAIN') return null;
+              if (e.code === 'ENOTFOUND') return null;
+              if (e.code === 'ECONNREFUSED') return null;
               if (e.type === 'invalid-json') return null;
 
               // throw error
@@ -439,6 +441,9 @@ class ERC721Contract {
             } catch (e) {
               // check error
               if (e.type === 'aborted') return;
+              if (e.code === 'EAI_AGAIN') return null;
+              if (e.code === 'ENOTFOUND') return null;
+              if (e.code === 'ECONNREFUSED') return null;
 
               // throw error
               throw e;

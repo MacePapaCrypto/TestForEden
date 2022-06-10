@@ -10,7 +10,7 @@ import { faSearch } from '@fortawesome/pro-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 
 // import local
-import NFT from './NFT';
+import NFTImage from './NFTImage';
 
 // image picker
 const NFTPicker = (props = {}) => {
@@ -161,7 +161,7 @@ const NFTPicker = (props = {}) => {
                                   // return image
                                   return (
                                     <Grid item xs={ 3 } key={ image.id }>
-                                      <NFT
+                                      <NFTImage
                                         item={ image }
                                         width={ NFTWidth }
                                         height={ NFTWidth }

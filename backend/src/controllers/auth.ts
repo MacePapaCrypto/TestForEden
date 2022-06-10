@@ -54,7 +54,7 @@ export default class AuthController extends NFTController {
       // create user
       const user = await UserModel.findById(req.account.toLowerCase()) || new UserModel({
         id      : req.account.toLowerCase(),
-        account : req.account,
+        account : req.account.toLowerCase(),
       });
 
       // subscribe

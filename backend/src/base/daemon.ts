@@ -21,7 +21,7 @@ export function Action(path: string, priority: number = 100, type: string = 'pol
 /**
  * Create Controller class
  */
-export default class NFTDaemon extends Events {
+export default class MoonDaemon extends Events {
   // variables
   public routes: Array<any>;
   public building: Promise<any>;

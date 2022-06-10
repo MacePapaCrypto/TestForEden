@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { NFT, useBrowse, useSocket, ProfileCard } from '@nft/ui';
+import { NFTImage, useBrowse, useSocket, ProfileCard } from '@nft/ui';
 import { Box, Grid, Container, Typography, CircularProgress, useTheme, Stack } from '@mui/material';
 
 /**
@@ -107,7 +107,7 @@ const NftPage = (props = {}) => {
                 // return image
                 return (
                   <Grid item xs={ 2 } key={ `${contract.id}:${image.id}` }>
-                    <NFT width={ NFTWidth } height={ NFTWidth } item={ image } sx={ {
+                    <NFTImage width={ NFTWidth } height={ NFTWidth } item={ image } sx={ {
                       maxWidth     : '100%',
                       borderRadius : `${theme.shape.borderRadius}px`,
                     } } />

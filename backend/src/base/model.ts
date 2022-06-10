@@ -44,6 +44,12 @@ export default class NFTModel extends Events {
     // set data
     this.__data = data;
 
+    // check created at
+    if (!this.__data.createdAt || !this.__data.updatedAt) {
+      // changed
+      this.__changed = true;
+    }
+
     // fix cammel case
     this.__data.createdAt = this.__data.createdAt || this.__data.created_at || new Date();
     this.__data.updatedAt = this.__data.updatedAt || this.__data.updated_at || new Date();

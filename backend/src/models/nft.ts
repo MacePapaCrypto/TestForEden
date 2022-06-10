@@ -21,6 +21,12 @@ export default class NFTModel extends Model {
   }
 
   // find by address
+  static countByContract(contract) {
+    // find by ref
+    return NFTModel.countByRef(`contract:${contract}`);
+  }
+
+  // find by address
   getContract() {
     // find by ref
     return ContractModel.findById(`${this.get('chain')}:${this.get('contract')}`.toLowerCase(), false);

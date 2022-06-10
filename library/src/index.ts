@@ -1,11 +1,10 @@
 
 // import local
-import NFT from './NFT';
 import Box from './Box';
 import Link from './Link';
 import Post from './Post';
-import SideBar from './SideBar';
 import NFTList from './NFTList';
+import NFTImage from './NFTImage';
 import PostList from './PostList';
 import NFTAvatar from './NFTAvatar';
 import SpaceCard from './SpaceCard';
@@ -13,6 +12,7 @@ import ScrollBar from './ScrollBar';
 import NFTPicker from './NFTPicker';
 import PostCreate from './PostCreate';
 import PostTyping from './PostTyping';
+import NFTContract from './NFTContract';
 import SubSpaceCard from './SubSpaceCard';
 
 // profile
@@ -30,6 +30,10 @@ import SocketProvider from './SocketProvider';
 import BrowseContext from './BrowseContext';
 import BrowseProvider from './BrowseProvider';
 
+// task
+import DesktopContext from './DesktopContext';
+import DesktopProvider from './DesktopProvider';
+
 // hooks
 import useId from './useId';
 import useNFTs from './useNFTs';
@@ -43,34 +47,38 @@ import useSocket from './useSocket';
 import useSpaces from './useSpaces';
 import useFollow from './useFollow';
 import useMember from './useMember';
+import useDesktop from './useDesktop';
+
+// desktop ui
+import Task from './Task';
+import Window from './Window';
+import Desktop from './Desktop';
+import TaskBar from './TaskBar';
+import WindowBar from './WindowBar';
 
 // export default
 export {
+  // desktop ui
+  Task,
+  Window,
+  Desktop,
+  TaskBar,
+  WindowBar,
+
+  // misc ui
   Box,
   Link,
-  SideBar,
   ScrollBar,
-  NFTPicker,
 
-  NFT,
-  Post,
-  NFTList,
-  PostList,
-  NFTAvatar,
-  SpaceCard,
-  PostCreate,
-  PostTyping,
-  ProfileCard,
-  SubSpaceCard,
-
+  // context/provider
   AuthContext,
   AuthProvider,
-
   SocketContext,
   SocketProvider,
-
   BrowseContext,
   BrowseProvider,
+  DesktopContext,
+  DesktopProvider,
 
   // hooks
   useId,
@@ -85,4 +93,19 @@ export {
   useSpaces,
   useFollow,
   useMember,
+  useDesktop,
+
+  // removing
+  Post,
+  NFTList,
+  NFTImage,
+  PostList,
+  NFTPicker,
+  NFTAvatar,
+  SpaceCard,
+  PostCreate,
+  PostTyping,
+  NFTContract,
+  ProfileCard,
+  SubSpaceCard,
 }

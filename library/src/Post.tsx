@@ -53,7 +53,6 @@ const NFTPost = (props = {}) => {
   const like = useLike(props.item, props.item?.liked, 'post');
   const auth = useAuth();
   const theme = useTheme();
-  const browse = useBrowse();
   const typing = useTyping({
     thread : props.item?.id,
   });
@@ -92,11 +91,10 @@ const NFTPost = (props = {}) => {
   // get member
   const getRoles = () => {
     // check member
-    if (!browse.segment) return;
     if (!props.item?.member) return;
 
     // get roles
-    const roles = (getMember('roles') || []).map((id) => (browse.segment.roles || []).find((r) => r.id === id)).filter((r) => r);
+    const roles = [];
 
     // get from member
     return roles.length ? roles : undefined;
@@ -116,16 +114,6 @@ const NFTPost = (props = {}) => {
         type : 'space',
         name : item.space.name,
       });
-    }
-
-    // remove if in segment
-    if (browse.space?.id) {
-      // remove segment
-      links = links.filter((l) => l.ref !== `space:${browse.space.id}`);
-    }
-    if (browse.subSpace?.id) {
-      // remove segment
-      links = links.filter((l) => l.ref !== `space:${browse.subSpace.id}`);
     }
 
     // return links

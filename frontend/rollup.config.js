@@ -37,7 +37,9 @@ export default {
       dedupe  : [
         'react',
         'react-dom',
+        'react-rnd',
         'react-router-dom',
+        'react-material-ui-carousel',
 
         '@mui/lab',
         '@mui/system',

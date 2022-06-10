@@ -21,7 +21,7 @@ export function Route(method: string = 'GET', path: string, acl: Array<string> =
 /**
  * Create Controller class
  */
-export default class NFTController extends Events {
+export default class MoonController extends Events {
   // variables
   public routes: Array<any>;
   public building: Promise<any>;

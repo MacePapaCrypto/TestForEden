@@ -118,7 +118,7 @@ export default class ERC721Daemon extends NFTDaemon {
     await this.base.clientReady;
 
     // schedule
-    job.schedule('nft', 200, 1000);
+    job.schedule('nft', 1000, 1);
   }
 
   /**
@@ -128,6 +128,7 @@ export default class ERC721Daemon extends NFTDaemon {
   async nftVerifyAction() {
     // await client
     await this.base.clientReady;
+
     // each row
     NFTOwned.client.eachRow('SELECT * FROM balance_models', [], {
       prepare   : true,
@@ -171,7 +172,7 @@ export default class ERC721Daemon extends NFTDaemon {
     }, (err, result) => {
       // err
       console.log(err);
-      
+
       // complete
       if (result?.nextPage) result.nextPage();
     });

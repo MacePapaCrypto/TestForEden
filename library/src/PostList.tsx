@@ -76,6 +76,9 @@ const NFTPostList = (props = {}) => {
   // return jsx
   return (
     <Stack
+      sx={ {
+        flex : 1,
+      } }
       spacing={ props.feed === 'chat' ? 0 : 2 }
     >
 

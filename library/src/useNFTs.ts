@@ -155,7 +155,7 @@ const useNFTs = (props = {}) => {
       loadedNFTs = await socket.get('/nft/list', filter);
 
       // set nfts
-      nfts = loadedNFTs;
+      nfts = loadedNFTs?.data || [];
       setNFTs(nfts);
       setUpdated(new Date());
     } catch (e) {

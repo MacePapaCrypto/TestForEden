@@ -30,6 +30,7 @@ class JobUtility {
     this.__bees.set(type, new Queue(type, {
       redis : redis.createClient(config.get('redis')),
 
+      removeOnFailure : true,
       removeOnSuccess : true,
     }));
 
@@ -211,7 +212,9 @@ class JobUtility {
         {  
           runningAt : null,
         }
-      ]).limit(limit).find();
+      ]).sort({
+        createdAt : 1,
+      }).limit(limit).find();
 
       // add to queues
       await Promise.all(possibleJobs.map(async (possibleJob) => {

@@ -6,6 +6,7 @@ import FeedController from './feed';
 import SpaceController from './space';
 import FollowController from './follow';
 import MemberController from './member';
+import DesktopController from './desktop';
 import AccountController from './account';
 
 // export default
@@ -18,4 +19,6 @@ export default {
   FollowController,
   MemberController,
   AccountController,
+
+  DesktopController,
 };

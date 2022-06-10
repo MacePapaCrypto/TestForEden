@@ -265,7 +265,7 @@ export default class PostController extends NFTController {
       // in subspace
       refs.push(`space:${actualSpace.id}`);
     }
-    if (actualSpace.get('space') && actualSpace.get('feed') !== 'chat') {
+    if (actualSpace && (actualSpace.get('space') && actualSpace.get('feed') !== 'chat')) {
       // check feed
       refs.push(`space:${actualSpace.get('space')}`);
     }

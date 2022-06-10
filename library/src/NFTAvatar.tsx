@@ -14,7 +14,7 @@ const NFTAvatar = (props = {}) => {
   const theme = useTheme();
 
   // url
-  let nftUrl = dotProp.get(props, 'user.avatar.image.url') || dotProp.get(props, 'item.image.image.url') || dotProp.get(props, 'image.url');
+  let nftUrl = dotProp.get(props, 'user.avatar.image.url') || dotProp.get(props, 'item.image.image.url') || dotProp.get(props, 'item.image.url') || dotProp.get(props, 'image.url');
 
   // check height
   if (nftUrl && props.height) nftUrl = `${nftUrl}?h=${props.height}`;
@@ -30,6 +30,7 @@ const NFTAvatar = (props = {}) => {
       alt={ avatarAlt }
       width={ props.width }
       height={ props.height }
+      variant={ props.variant }
       onClick={ props.onClick }
 
       sx={ {

@@ -19,7 +19,7 @@ const mainTheme = createTheme({
     }
   },
   typography : {
-    fontFamily : `'Roboto', sans-serif`,
+    fontFamily : `'Cutive Mono', monospace, 'Roboto', sans-serif`,
   },
   components : {
     MuiLink : {
@@ -31,6 +31,13 @@ const mainTheme = createTheme({
       styleOverrides : {
         root : {
           backgroundImage : 'none',
+        }
+      }
+    },
+    MuiCssBaseline : {
+      styleOverrides : {
+        body : {
+          overflow : 'hidden',
         }
       }
     },

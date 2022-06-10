@@ -25,7 +25,7 @@ export default class NftController extends NFTController {
   @Route('GET', '/api/v1/contract/list')
   async featuredAction(req, { data, params }, next) {
     // load contracts
-    const contracts = await ContractModel.findByRef('chain:fantom', 10, 'createdAt', 'asc');
+    const contracts = await ContractModel.findByRef('chain:fantom', data.limit || 10, 'createdAt', 'asc');
 
     // cache
     const cache = {};
@@ -53,15 +53,15 @@ export default class NftController extends NFTController {
       const lowerAddress = `${data.account}`.toLowerCase();
   
       // load owned
-      owned = await NFTOwnedModel.findByVerifiedOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
-      // total = await NFTOwnedModel.countByOwner(lowerAddress);
+      owned = await NFTOwnedModel.findByOwner(lowerAddress, data.limit || 100, 'contract', 'asc');
+      total = await NFTOwnedModel.countByOwner(lowerAddress);
     } else if (data.contract) {
       // lower address
-      const lowerAddress = `${data.contract}`.toLowerCase();
+      const lowerAddress = `${data.contract}`.toLowerCase().split(':').pop();
   
       // load owned
-      owned = await NFTModel.findByContract(lowerAddress, data.limit || 100, 'createdAt', 'asc');
-      // total = await NFTOwnedModel.countByOwner(lowerAddress);
+      owned = await NFTModel.findByContract(lowerAddress, data.limit || 10, 'createdAt', 'asc');
+      total = await NFTModel.countByContract(lowerAddress);
     }
 
     // cache

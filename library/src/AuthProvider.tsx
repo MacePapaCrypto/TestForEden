@@ -39,35 +39,22 @@ const NFTAuthProvider = (props = {}) => {
 
   // use ethers
   const socket = useSocket();
-  const [authed, setAuthed] = useState(false);
+  const [user, setUser] = useState(false);
   const [updated, setUpdated] = useState(new Date());
   const [loading, setLoading] = useState(!!initialAccount);
 
   // emit user
   const emitUser = (user) => {
     // check user
-    if (user.id === authed.id) {
+    if (user.id === user.id) {
       // update
       Object.keys(user).forEach((key) => {
-        authed[key] = user[key];
+        user[key] = user[key];
       });
 
       // update
       setUpdated(new Date());
     }
-  };
-
-  // create account context
-  const auth = {
-    authed,
-    enabled : !!window?.ethereum,
-    account : authed && account,
-    loading : loading,
-
-    login  : activateBrowserWallet,
-    logout : deactivate,
-    
-    emitUser,
   };
 
   // sign challenge
@@ -95,16 +82,16 @@ const NFTAuthProvider = (props = {}) => {
     // try/catch
     try {
       // set loading
-      setAuthed(null);
+      setUser(null);
       setLoading(true);
 
       // auth backend
       const authReq = await socket.get(`/auth/${account}`);
 
       // check authenticated
-      if (`${account}`.toLowerCase() === `${authReq.account}`.toLowerCase()) {
-        // set authed
-        setAuthed(authReq);
+      if (`${account}`.toLowerCase() === `${authReq.id}`.toLowerCase()) {
+        // set user
+        setUser(authReq);
         setLoading(false);
 
         // return
@@ -122,8 +109,8 @@ const NFTAuthProvider = (props = {}) => {
 
       // set loading
       if (result) {
-        // authed
-        setAuthed(result);
+        // user
+        setUser(result);
       
         // set item
         localStorage?.setItem('acid', account);
@@ -144,14 +131,14 @@ const NFTAuthProvider = (props = {}) => {
   // use effect for new account check
   useEffect(() => {
     // check account
-    if (authed) return;
+    if (user) return;
     if (!account) return;
 
     // authenticate account
     authBackend();
   }, [account]);
 
-  // once authed
+  // once user
   useEffect(() => {
     // check account
     if (!account) return;
@@ -166,7 +153,20 @@ const NFTAuthProvider = (props = {}) => {
       socket.socket.removeListener('user', emitUser);
       socket.socket.removeListener('connect', authBackend);
     };
-  }, [authed]);
+  }, [user]);
+
+  // create account context
+  const auth = {
+    user,
+    enabled : !!window?.ethereum,
+    account : user && account,
+    loading : loading,
+
+    login  : activateBrowserWallet,
+    logout : deactivate,
+    
+    emitUser,
+  };
 
   // to window
   window.NFTAuth = auth;

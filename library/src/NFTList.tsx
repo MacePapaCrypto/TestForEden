@@ -1,6 +1,6 @@
 // import dependencies
-import NFT from './NFT';
 import React from 'react';
+import NFTImage from './NFTImage';
 import { Grid, useTheme } from '@mui/material';
 
 // nft list
@@ -14,11 +14,11 @@ const NFTList = (props = {}) => {
   // return jsx
   return (
     <Grid container spacing={ 1 }>
-      { props.items.map((item) => {
+      { (props.items || []).map((item) => {
         // return item
         return (
           <Grid item xs={ 3 } key={ item.id }>
-            <NFT
+            <NFTImage
               item={ item }
               width={ NFTWidth }
               height={ NFTWidth }

@@ -8,7 +8,7 @@ import PostInput from './PostInput';
 import VideoLibrary from '@mui/icons-material/VideoLibrary';
 import LoadingButton from '@mui/lab/LoadingButton';
 import React, { useState } from 'react';
-import { Box, Chip, Stack, Avatar, Paper, AppBar, Tabs, Tab, Tooltip, useTheme, IconButton, Typography } from '@mui/material';
+import { Box, Chip, Stack, Avatar, Paper, AppBar, Tabs, Tab, useTheme, IconButton, Typography } from '@mui/material';
 
 // import reply
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -67,19 +67,23 @@ const NFTPostCreate = (props = {}) => {
   // return jsx
   return (
     <Box sx={ {
-      flex : 1,
+      flex : 0,
     } }>
       <Stack spacing={ 2 } direction="row">
         { /* POST USER `*/ }
         { !props.noAvatar && (
           <Box>
-            <NFTAvatar width={ avatarWidth } height={ avatarWidth } user={ auth.authed } />
+            <NFTAvatar width={ avatarWidth } height={ avatarWidth } user={ auth.authed } sx={ {
+              color : `rgba(255, 255, 255, 0.25)`,
+            } } />
           </Box>
         ) }
         { /* / POST USER */ }
 
-        <Paper sx={ {
-          flex   : 1,
+        <Box sx={ {
+          flex         : 1,
+          border       : `.1rem solid ${theme.palette.grey[300]}`,
+          borderRadius : `${theme.shape.borderRadius}px`,
 
           '& .MuiTab-root' : {
             minHeight : theme.spacing(6),
@@ -242,7 +246,7 @@ const NFTPostCreate = (props = {}) => {
               </Stack>
             </Box>
           ) }
-        </Paper>
+        </Box>
       </Stack>
     </Box>
   );

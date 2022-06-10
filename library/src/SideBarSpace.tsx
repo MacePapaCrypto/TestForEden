@@ -192,7 +192,8 @@ const NFTSideBarSpace = (props = {}) => {
                           // return jsx
                           return (
                             <NFTAvatar item={ child } key={ `child-${child.id}` } width={ spaceWidth } height={ spaceWidth } sx={ {
-                              background : child.image?.id ? theme.palette.primary.main : toColor(child.name),
+                              background   : child.image?.id ? theme.palette.primary.main : toColor(child.name),
+                              borderRadius : props.active?.id === child.id ? `${theme.shape.borderRadius * 1.5}px` : undefined,
                             } } noTooltip>
                               { initials(child.name) }
                             </NFTAvatar>
@@ -220,7 +221,8 @@ const NFTSideBarSpace = (props = {}) => {
 
               <Link to={ `/s/${item.id}` }>
                 <NFTAvatar item={ props.item } onClick={ () => props.onActive(item) } width={ spaceWidth } height={ spaceWidth } sx={ {
-                  background : item.image?.id ? theme.palette.primary.main : toColor(item.name),
+                  background   : item.image?.id ? theme.palette.primary.main : toColor(item.name),
+                  borderRadius : props.isActive ? `${theme.shape.borderRadius * 3}px` : undefined,
                 } } TooltipProps={ {
                   title     : item.name || '',
                   placement : 'right',
