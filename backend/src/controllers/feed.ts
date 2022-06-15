@@ -45,7 +45,22 @@ export default class FeedController extends NFTController {
     const feed = params.feed;
     
     // actual feed
-    const actualFeed = await FeedModel.findById(feed);
+    let actualFeed = await FeedModel.findById(feed);
+    
+    // check path
+    if (['hot', 'new', 'following'].includes(feed)) {
+      // check feed
+      if (feed === 'hot') {
+        data.dir  = 'desc';
+        data.sort = 'rank.score';
+      } else if (feed === 'new') {
+        data.dir  = 'desc';
+        data.sort = 'createdAt';
+      }
+
+      // actual feed
+      actualFeed = await FeedModel.findById('public');
+    }
 
     // check feed
     if (!actualFeed) return {

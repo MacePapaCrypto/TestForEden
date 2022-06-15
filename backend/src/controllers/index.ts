@@ -1,4 +1,5 @@
 // import auth controller
+import AppController from './app';
 import NftController from './nft';
 import PostController from './post';
 import AuthController from './auth';
@@ -20,5 +21,6 @@ export default {
   MemberController,
   AccountController,
 
+  AppController,
   DesktopController,
 };

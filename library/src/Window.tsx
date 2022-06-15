@@ -1,12 +1,20 @@
 
 // react
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import apps from './App';
 import { Rnd } from 'react-rnd';
 import { Box, useTheme } from '@mui/material';
 
 // local
 import WindowBar from './WindowBar';
+
+// debounce
+let timeout;
+const debounce = (fn, to = 500) => {
+  // clear timeout
+  clearTimeout(timeout);
+  timeout = setTimeout(fn, to);
+};
 
 // moon window
 const MoonWindow = (props = {}) => {
@@ -17,6 +25,10 @@ const MoonWindow = (props = {}) => {
   const [leftDown, setLeftDown] = useState(false);
   const [rightDown, setRightDown] = useState(false);
   const [largeGrid, setLargeGrid] = useState(false);
+
+  // ref
+  const dragRef = useRef(null);
+  const windowRef = useRef(null);
 
   // large grid size
   const largeGridSize = 20;
@@ -38,44 +50,77 @@ const MoonWindow = (props = {}) => {
     setPlace({ x, y, width, height });
 
     // save to db
-    props.desktop.updateTask({
+    debounce(() => props.desktop.updateTask({
       id       : props.item.id,
       position : { x, y, width, height },
-    });
+    }));
   };
 
-  // check mouse down
-  const onMouseDown = (e) => {
-    // bring to front
-    props.bringToFront();
+  // on mouse down
+  useEffect(() => {
+    // check current
+    if (!windowRef.current) return;
 
-    // set down
-    if (e.button === 0) {
-      setLeftDown(true);
-    } else if (e.button === 2) {
-      setRightDown(true);
-    }
-  };
+    // done
+    const bringToFront = (e) => {
+      props.bringToFront();
+    };
 
-  // on mouse up
-  const onMouseUp = (e) => {
-    // set down
-    if (e.button === 0) {
-      setLeftDown(false);
-    } else if (e.button === 2) {
-      setRightDown(false);
-    }
-  };
+    // add event listener
+    windowRef.current.addEventListener('mousedown', bringToFront);
+
+    // return done
+    return () => {
+      // add event listener
+      windowRef.current?.removeEventListener('mousedown', bringToFront);
+    };
+  }, [windowRef?.current]);
 
   // use effect
   useEffect(() => {
-    // set
-    if (leftDown && rightDown) {
-      setLargeGrid(true);
-    } else {
-      setTimeout(() => setLargeGrid(false), 200);
-    }
-  }, [leftDown, rightDown]);
+    // check position
+    if (props.item.position || !props.item.default?.width) return;
+
+    // set default size
+    const maxWidth = theme.breakpoints.values.xl;
+
+    // check window size
+    const windowWidth = window.innerWidth;
+    const actualWidth = windowWidth > maxWidth ? maxWidth : windowWidth;
+
+    // left size
+    const leftSize = (windowWidth - actualWidth) / 2;
+
+    // set actual position
+    const newPosition = {
+      width  : (actualWidth * props.item.default.width) - (props.item.default.x === 0 ? largeGridSize : 0),
+      height : (document.getElementById('desktop').clientHeight * props.item.default.height) - (props.item.default.y === 0 ? (largeGridSize * 2) : largeGridSize),
+
+      x : leftSize + (actualWidth * props.item.default.x),
+      y : props.item.default.y === 0 ? largeGridSize : (document.getElementById('desktop').clientHeight * props.item.default.y),
+    };
+
+    // log
+    setPlace({
+      ...place,
+      ...newPosition,
+    });
+  }, [props.item.position]);
+
+  // use effect
+  useEffect(() => {
+    // check position
+    if (!props.position) return;
+
+    // new place
+    const newPlace = {
+      ...place,
+      ...(props.position),
+    };
+
+    // new position
+    savePlace(newPlace);
+  }, [props.position]);
 
   // app type
   const AppType = apps[props.item.type];
@@ -83,6 +128,7 @@ const MoonWindow = (props = {}) => {
   // return jsx
   return (
     <Rnd
+      ref={ dragRef }
       size={ { width : place.width, height : place.height } }
       style={ {
         zIndex : props.zIndex,
@@ -107,10 +153,9 @@ const MoonWindow = (props = {}) => {
 
       dragGrid={ largeGrid ? [largeGridSize, largeGridSize] : [1, 1] }
       resizeGrid={ largeGrid ? [largeGridSize, largeGridSize] : [1, 1] }
+      disableDragging={ !props.canDrag }
 
-      onMouseUp={ onMouseUp }
-      onMouseDown={ onMouseDown }
-      onContextMenu={ (e) => e.preventDefault() }
+      dragHandleClassName="window-handle"
     >
       <Box sx={ {
         width         : '100%',
@@ -121,8 +166,14 @@ const MoonWindow = (props = {}) => {
         background    : theme.palette.background.paper,
         borderRadius  : `${theme.shape.borderRadius * 2}px`,
         flexDirection : 'column',
-      } } onMouseDown={ onMouseDown } onMouseUp={ onMouseUp } onContextMenu={ (e) => e.preventDefault() }>
-        <WindowBar active={ props.item.active } item={ props.item } />
+      } } ref={ windowRef }>
+        <WindowBar
+          item={ props.item }
+          active={ props.item.active }
+
+          onMoveUp={ props.onMoveUp }
+          onMoveDown={ props.onMoveDown }
+        />
         <Box sx={ {
           flex     : 1,
           display  : 'flex',

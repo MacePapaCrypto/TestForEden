@@ -12,18 +12,51 @@ import FeedModel from '../models/feed';
 class FeedApp extends App {
 
   /**
+   * menu
+   */
+  async menu() {
+    // return menu
+    return [
+      {
+        path : 'hot',
+        name : 'Hot',
+      },
+      {
+        path : 'new',
+        name : 'Latest',
+      },
+      {
+        path : 'following',
+        name : 'Following',
+      },
+    ];
+  }
+
+  /**
    * sanitise
    */
   async toJSON(sanitised, path, cache = {}) {
     // load feed
-    const actualFeed = await FeedModel.findById(path);
+    let actualFeed = await FeedModel.findById(path);
+    let actualName = null;
+
+    // menu
+    const actualMenu = await this.menu();
+    const foundMenu = actualMenu.find((m) => m.path === path);
+
+    // check path
+    if (foundMenu) {
+      // actual feed
+      actualFeed = await FeedModel.findById('public');
+      actualName = foundMenu.name;
+    }
 
     // return object
     return {
       ...sanitised,
 
       feed : actualFeed.get('id'),
-      name : actualFeed.get('name'),
+      name : actualName || actualFeed.get('name'),
     };
   }
 }

@@ -29,7 +29,7 @@ export function Type(type: string) {
 /**
  * Create Controller class
  */
-export default class NFTModel extends Events {
+export default class MoonModel extends Events {
   private __changed: boolean = false;
   
   /**

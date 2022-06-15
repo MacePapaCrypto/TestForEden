@@ -1,12 +1,13 @@
 
 // import react
-import React from 'react';
 import { faBell, faMoon } from '@fortawesome/pro-regular-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { Box, Stack, Button, useTheme } from '@mui/material';
+import React, { useRef, useState } from 'react';
+import { Box, Stack, Button, Popper, Typography, useTheme } from '@mui/material';
 
 // local
 import Task from './Task';
+import StartMenu from './StartMenu';
 import useDesktop from './useDesktop';
 
 // nft sidebar
@@ -16,6 +17,10 @@ const MoonTaskBar = (props = {}) => {
   const style = props.style || 'floating';
   const desktop = useDesktop();
   const position = props.position || 'bottom';
+  const [startMenu, setStartMenu] = useState(false);
+
+  // menu ref
+  const startMenuRef = useRef(null);
 
   // widths
   const taskBarSize = parseInt(theme.spacing(8).replace('px', ''));
@@ -23,6 +28,44 @@ const MoonTaskBar = (props = {}) => {
 
   // is vertical
   const isVertical = ['left', 'right'].includes(position);
+
+  // bring to front
+  const onBringToFront = (id) => {
+    // get window
+    const item = desktop.tasks.find((item) => item.id === id);
+
+    // for each
+    desktop.tasks.forEach((item) => item.active = false);
+
+    // remove all
+    item.active = true;
+    item.zIndex = desktop.tasks.length + 1;
+
+    // sort
+    desktop.tasks.sort((a, b) => {
+      // indexing
+      if (a.zIndex > b.zIndex) return 1;
+      if (a.zIndex < b.zIndex) return -1;
+      return 0;
+    }).forEach((item, i) => {
+      // set z index
+      item.zIndex = i + 1;
+    });
+
+    // update
+    desktop.updateTasks();
+  };
+
+  // get tasks
+  const getTasks = () => {
+    // return sorted tasks
+    return desktop.tasks.sort((a, b) => {
+      // return a,b
+      if (a.order > b.order) return 1;
+      if (a.order < b.order) return -1;
+      return 0;
+    });
+  };
 
   // return jsx
   return (
@@ -32,7 +75,7 @@ const MoonTaskBar = (props = {}) => {
         height  : isVertical ? (style === 'floating' ? `calc(100vh - ${theme.spacing(2)})` : '100vh') : taskBarSize,
         margin  : style === 'floating' ? theme.spacing(1) : undefined,
         display : 'flex',
-      } }>
+      } } ref={ startMenuRef }>
         <Stack direction={ isVertical ? 'column' : 'row' } spacing={ 1 } sx={ {
           px             : isVertical ? undefined : theme.spacing(1),
           py             : isVertical ? theme.spacing(1) : undefined,
@@ -49,13 +92,15 @@ const MoonTaskBar = (props = {}) => {
           borderBottom : style === 'fixed' && position === 'top' ? `.1rem solid ${theme.palette.grey[300]}` : undefined,
         } }>
           <Button sx={ {
-            mx         : isVertical ? 'auto!important' : undefined,
-            width      : `${taskBarItemSize}px`,
-            color      : theme.palette.grey[300],
-            height     : `${taskBarItemSize}px`,
-            minWidth   : `${taskBarItemSize}px`,
-            background : 'transparent',
-          } } variant="text" color="primary">
+            mx          : isVertical ? 'auto!important' : undefined,
+            width       : `${taskBarItemSize}px`,
+            color       : startMenu ? undefined : theme.palette.grey[300],
+            height      : `${taskBarItemSize}px`,
+            minWidth    : `${taskBarItemSize}px`,
+            background  : 'transparent',
+            borderWidth : `.1rem`,
+            borderColor : startMenu ? undefined : 'transparent',
+          } } variant="outlined" color="primary" onClick={ (e) => setStartMenu(true) }>
             <FontAwesomeIcon icon={ faMoon } size="lg" />
           </Button>
 
@@ -73,10 +118,10 @@ const MoonTaskBar = (props = {}) => {
             alignItems     : 'center',
             justifyContent : isVertical ? 'flex-start' : undefined,
           } }>
-            { desktop.tasks.map((task) => {
+            { getTasks().map((task) => {
               // return jsx
               return (
-                <Task key={ `task-${task.id}` } item={ task } />
+                <Task key={ `task-${task.id}` } item={ task } onBringToFront={ () => onBringToFront(task.id) } />
               );
             }) }
           </Stack>
@@ -101,6 +146,8 @@ const MoonTaskBar = (props = {}) => {
           </Button>
         </Stack>
       </Box>
+
+      <StartMenu open={ !!startMenu } anchorEl={ startMenuRef.current } placement="top-start" onClose={ () => setStartMenu(false) } />
     </>
   );
 };

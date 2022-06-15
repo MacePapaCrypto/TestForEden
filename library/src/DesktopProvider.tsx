@@ -605,6 +605,7 @@ const DesktopProvider = (props = {}) => {
   // create
   const createTask = async ({
     type,
+    path,
     order,
   }) => {
     // set loading
@@ -616,10 +617,11 @@ const DesktopProvider = (props = {}) => {
     // try/catch
     try {
       // load
-      createdTask = await socket.post('/shortcut', {
+      createdTask = await socket.post('/task', {
         type,
-        order,
+        path,
 
+        order   : typeof order !== 'undefined' ? order : tasks.length,
         account : auth?.account,
         desktop : desktop?.id,
       }, cacheTimeout);
@@ -646,6 +648,7 @@ const DesktopProvider = (props = {}) => {
     order,
     parent,
     active,
+    zIndex,
     position,
   }, save = true) => {
     // set loading
@@ -671,6 +674,7 @@ const DesktopProvider = (props = {}) => {
     if (typeof order !== 'undefined') localTask.order = order;
     if (typeof parent !== 'undefined') localTask.parent = parent;
     if (typeof active !== 'undefined') localTask.active = active;
+    if (typeof zIndex !== 'undefined') localTask.zIndex = zIndex;
     if (typeof position !== 'undefined') localTask.position = position;
 
     // update
@@ -692,6 +696,8 @@ const DesktopProvider = (props = {}) => {
         type,
         order,
         parent,
+        active,
+        zIndex,
         position
       });
 
@@ -768,9 +774,6 @@ const DesktopProvider = (props = {}) => {
 
     // try/catch
     try {
-      // load
-      await socket.delete(`/task/${id}`);
-
       // tasks
       for (let i = (tasks.length - 1); i >= 0; i--) {
         // check if task
@@ -782,6 +785,9 @@ const DesktopProvider = (props = {}) => {
 
       // set tasks
       setUpdated(new Date());
+
+      // load
+      await socket.delete(`/task/${id}`);
     } catch (e) {
       // loading
       throw e;
@@ -1046,6 +1052,7 @@ const DesktopProvider = (props = {}) => {
     removeGroup,
 
     tasks,
+    desktop,
     loading,
     updated,
     desktops,

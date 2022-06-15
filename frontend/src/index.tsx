@@ -24,9 +24,7 @@ import mainTheme from './themes/main';
 import MainLayout from './layouts/main';
 
 // pages
-import PostPage from './pages/post';
 import HomePage from './pages/home';
-import FeedPage from './pages/feed';
 
 // main page
 const Main = (props = {}) => {
@@ -52,35 +50,6 @@ const Main = (props = {}) => {
                   <HomePage />
                 </MainLayout>
               </Route>
-
-              <Route exact path="/s/:space">
-                <MainLayout>
-                  <FeedPage />
-                </MainLayout>
-              </Route>
-              <Route exact path="/s/:space/:feed">
-                <MainLayout>
-                  <FeedPage />
-                </MainLayout>
-              </Route>
-              <Route exact path="/a/:account">
-                <MainLayout>
-                  <FeedPage />
-                </MainLayout>
-              </Route>
-              <Route exact path="/a/:account/:feed">
-                <MainLayout>
-                  <FeedPage />
-                </MainLayout>
-              </Route>
-              
-              <Route exact path="/p/:post">
-                <MainLayout>
-                  <PostPage />
-                </MainLayout>
-              </Route>
-
-              
             </Switch>
           
           </BrowserRouter>

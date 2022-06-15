@@ -3,7 +3,7 @@ import React from 'react';
 import MetaTags from 'react-meta-tags';
 import { useHistory } from 'react-router-dom';
 import { Box, Grid, Container, Stack, useTheme, CircularProgress } from '@mui/material';
-import { useBrowse, useTyping, usePosts, useAuth, ScrollBar, PostTyping, PostCreate, PostList, ProfileCard, SpaceCard, SubSpaceCard } from '@nft/ui';
+import { useBrowse, useTyping, usePosts, useAuth, ScrollBar, PostTyping, PostCreate, PostList } from '@nft/ui';
 
 // local
 import NftPage from './nft';

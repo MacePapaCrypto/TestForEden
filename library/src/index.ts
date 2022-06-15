@@ -3,20 +3,11 @@
 import Box from './Box';
 import Link from './Link';
 import Post from './Post';
-import NFTList from './NFTList';
-import NFTImage from './NFTImage';
 import PostList from './PostList';
-import NFTAvatar from './NFTAvatar';
 import SpaceCard from './SpaceCard';
 import ScrollBar from './ScrollBar';
-import NFTPicker from './NFTPicker';
 import PostCreate from './PostCreate';
 import PostTyping from './PostTyping';
-import NFTContract from './NFTContract';
-import SubSpaceCard from './SubSpaceCard';
-
-// profile
-import ProfileCard from './ProfileCard';
 
 // auth
 import AuthContext from './AuthContext';
@@ -37,6 +28,7 @@ import DesktopProvider from './DesktopProvider';
 // hooks
 import useId from './useId';
 import useNFTs from './useNFTs';
+import useApps from './useApps';
 import useFeed from './useFeed';
 import usePost from './usePost';
 import useAuth from './useAuth';
@@ -55,6 +47,13 @@ import Window from './Window';
 import Desktop from './Desktop';
 import TaskBar from './TaskBar';
 import WindowBar from './WindowBar';
+
+// nft ui
+import NFTList from './NFT/List';
+import NFTImage from './NFT/Image';
+import NFTPicker from './NFT/Picker';
+import NFTAvatar from './NFT/Avatar';
+import NFTContract from './NFT/Contract';
 
 // export default
 export {
@@ -86,6 +85,7 @@ export {
   useFeed,
   usePost,
   useAuth,
+  useApps,
   usePosts,
   useTyping,
   useSocket,
@@ -106,6 +106,4 @@ export {
   PostCreate,
   PostTyping,
   NFTContract,
-  ProfileCard,
-  SubSpaceCard,
 }

@@ -44,8 +44,17 @@ export default class NftController extends NFTController {
    */
   @Route('GET', '/api/v1/nft/list')
   async listAction(req, { data, params }, next) {
+    // lower account
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
     // let
     let owned, total;
+
+    // check account
+    if (!data.contract) {
+      // account
+      data.account = lowerAccount;
+    }
 
     // check account
     if (data.account) {
@@ -70,7 +79,7 @@ export default class NftController extends NFTController {
     // return
     return {
       result  : {
-        data : await Promise.all(owned.map((nft) => nft.toJSON(cache, data.include === 'contract'))),
+        data : await Promise.all((owned || []).map((nft) => nft.toJSON(cache, data.include === 'contract'))),
         total,
       },
       success : true,

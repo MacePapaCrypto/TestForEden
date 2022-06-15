@@ -2,17 +2,17 @@
 // import props
 import Image from '@mui/icons-material/Image';
 import useAuth from './useAuth';
-import NFTAvatar from './NFTAvatar';
+import NFTAvatar from './NFT/Avatar';
 import ShortText from '@mui/icons-material/ShortText';
 import PostInput from './PostInput';
 import VideoLibrary from '@mui/icons-material/VideoLibrary';
 import LoadingButton from '@mui/lab/LoadingButton';
 import React, { useState } from 'react';
-import { Box, Chip, Stack, Avatar, Paper, AppBar, Tabs, Tab, useTheme, IconButton, Typography } from '@mui/material';
+import { Box, Chip, Stack, Avatar, AppBar, Tabs, Tab, useTheme, IconButton, Typography } from '@mui/material';
 
 // import reply
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faHashtag, faMoon, faFeed, faGalleryThumbnails } from '@fortawesome/pro-regular-svg-icons';
+import { faHashtag, faMoon, faFeed, faGalleryThumbnails, faComment } from '@fortawesome/pro-regular-svg-icons';
 
 /**
  * create content

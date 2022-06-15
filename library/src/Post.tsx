@@ -20,7 +20,6 @@ import useId from './useId';
 import useAuth from './useAuth';
 import useLike from './useLike';
 import useTyping from './useTyping';
-import useBrowse from './useBrowse';
 import useSocket from './useSocket';
 
 // embeds
@@ -31,7 +30,7 @@ import EmbedContract from './EmbedContract';
 import Link from './Link';
 import PostList from './PostList';
 import ScrollBar from './ScrollBar';
-import NFTAvatar from './NFTAvatar';
+import NFTAvatar from './NFT/Avatar';
 import PostCreate from './PostCreate';
 import PostTyping from './PostTyping';
 import PostMarkdown from './PostMarkdown';
@@ -240,7 +239,7 @@ const NFTPost = (props = {}) => {
                 sx={ {
                   top        : `calc(${avatarWidth}px + ${theme.spacing(2)})`,
                   left       : `calc(50% - .5px)`,
-                  width      : '1px',
+                  width      : '.1rem',
                   bottom     : 0,
                   position   : 'absolute',
                   background : theme.palette.divider,
@@ -342,7 +341,7 @@ const NFTPost = (props = {}) => {
           { /* POST REPLY */ }
           { props.feed !== 'chat' && !!item.replyTo?.account && (
             <Box>
-              <Box p={ 1 } border={ `1px solid ${theme.palette.divider}` } borderRadius={ `${theme.shape.borderRadius * 2}px` }>
+              <Box p={ 1 } border={ `.1rem solid ${theme.palette.divider}` } borderRadius={ `${theme.shape.borderRadius * 2}px` }>
                 <NFTPost
                   { ...props }
 

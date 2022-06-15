@@ -30,7 +30,7 @@ const config = {
  *
  * @param props 
  */
-const NFTAuthProvider = (props = {}) => {
+const MoonAuthProvider = (props = {}) => {
   // highest order
   const { library, activateBrowserWallet, deactivate, account } = useEthers();
 
@@ -169,7 +169,7 @@ const NFTAuthProvider = (props = {}) => {
   };
 
   // to window
-  window.NFTAuth = auth;
+  window.MoonAuth = auth;
 
   // context
   return (
@@ -185,15 +185,15 @@ const NFTAuthProvider = (props = {}) => {
  * @param props 
  * @returns 
  */
-const NFTAuthWrap = (props = {}) => {
+const MoonAuthWrap = (props = {}) => {
 
   // return jsx
   return (
     <DAppProvider config={ config }>
-      <NFTAuthProvider { ...props } />
+      <MoonAuthProvider { ...props } />
     </DAppProvider>
   );
 };
 
 // export default
-export default NFTAuthWrap;
+export default MoonAuthWrap;

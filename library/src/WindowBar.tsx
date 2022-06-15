@@ -4,12 +4,16 @@ import { Box, Stack, Button, useTheme } from '@mui/material';
 
 // font awesome
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowDownLeftAndArrowUpRightToCenter, faArrowUpRightAndArrowDownLeftFromCenter, faTimes } from '@fortawesome/pro-regular-svg-icons';
+import { faArrowUpRightAndArrowDownLeftFromCenter, faTimes } from '@fortawesome/pro-regular-svg-icons';
+
+// local
+import useDesktop from './useDesktop';
 
 // create component
 const MoonWindowBar = (props = {}) => {
   // theme
   const theme = useTheme();
+  const desktop = useDesktop();
 
   // widths
   const windowBarSize = parseInt(theme.spacing(6).replace('px', ''));
@@ -34,7 +38,7 @@ const MoonWindowBar = (props = {}) => {
           height     : `${windowBarItemSize}px`,
           minWidth   : `${windowBarItemSize}px`,
           background : 'transparent',
-        } } variant="text">
+        } } variant="text" onClick={ () => desktop.deleteTask(props.item) }>
           <FontAwesomeIcon icon={ faTimes } />
         </Button>
 
@@ -43,10 +47,12 @@ const MoonWindowBar = (props = {}) => {
         <Stack direction="row" sx={ {
           px             : theme.spacing(1),
           flex           : 1,
+          cursor         : 'move',
+          height         : '100%',
           textAlign      : 'center',
           alignItems     : 'center',
           justifyContent : 'center',
-        } }>
+        } } className="window-handle" onMouseDown={ props.onMoveDown } onMouseUp={ props.onMoveUp } onContextMenu={ (e) => e.preventDefault() }>
           { props.item.name }
         </Stack>
 

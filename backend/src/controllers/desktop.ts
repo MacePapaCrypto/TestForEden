@@ -32,28 +32,31 @@ export default class DesktopController extends NFTController {
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
-    // check lower account
-    if (!lowerAccount) return {
-      result  : [],
-      success : true,
-    };
-
     // find by desktop
-    const desktops = await DesktopModel.findByAccount(lowerAccount);
+    const accountDesktops = lowerAccount ? await DesktopModel.findByAccount(lowerAccount) : [];
+    const sessionDesktops = await DesktopModel.findBySession(req.ssid);
+
+    // desktops
+    const desktops = [
+      ...accountDesktops,
+      ...sessionDesktops,
+    ];
 
     // check no desktops
     if (!desktops.length) {
       // load default desktop
       const defaultDesktop = new DesktopModel({
-        refs : [
-          `desktop:${data.desktop}`,
+        refs : lowerAccount ? [
           `account:${lowerAccount}`,
+        ] : [
+          `session:${req.ssid}`,
         ],
         
         name    : 'Default',
         type    : 'default',
         order   : 0,
         account : lowerAccount,
+        session : lowerAccount ? null : req.ssid,
       });
 
       // save default desktop
@@ -121,10 +124,7 @@ export default class DesktopController extends NFTController {
     
     // create default segment
     const newDesktop = new DesktopModel({
-      refs : [
-        `desktop:${data.desktop}`,
-        `account:${lowerAccount}`,
-      ],
+      refs : `account:${lowerAccount}`,
       
       name    : data.name,
       type    : data.type,
@@ -155,17 +155,11 @@ export default class DesktopController extends NFTController {
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
-    // check account
-    if (!lowerAccount) return {
-      message : 'Account Required',
-      success : false,
-    };
-
     // load actual segment
     const updateDesktop = await DesktopModel.findById(params.id);
 
     // actual updates
-    if (updateDesktop.get('account') !== lowerAccount) {
+    if (updateDesktop.get('account') !== lowerAccount && updateDesktop.get('session') !== req.ssid) {
       // save task
       return {
         message : 'Authentication Required',
@@ -208,13 +202,10 @@ export default class DesktopController extends NFTController {
     const deleteDesktop = await DesktopModel.findById(params.id);
 
     // actual updates
-    if (deleteDesktop.get('account') !== lowerAccount) {
-      // save task
-      return {
-        message : 'Authentication Required',
-        success : false,
-      }
-    }
+    if (deleteDesktop.get('account') !== lowerAccount && deleteDesktop.get('session') !== req.ssid) return {
+      message : 'Authentication Required',
+      success : false,
+    };
 
     // save
     await deleteDesktop.remove();
@@ -241,10 +232,22 @@ export default class DesktopController extends NFTController {
   @Route('GET', '/api/v1/shortcut/list')
   async shortcutListAction(req, { data, params }, next) {
     // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // lowerAccount
     const desktopId = data.desktop;
 
     // check desktop id
     if (!desktopId) return {
+      success : false,
+      message : 'Desktop not found',
+    };
+
+    // load desktop
+    const desktop = await DesktopModel.findById(desktopId);
+
+    // check desktop
+    if (!desktop || (desktop.get('account') !== lowerAccount && desktop.get('session') !== req.ssid)) return {
       success : false,
       message : 'Desktop not found',
     };
@@ -304,19 +307,29 @@ export default class DesktopController extends NFTController {
   @Route('POST', '/api/v1/shortcut')
   async shortcutCreateAction(req, { data, params }, next) {
     // lowerAccount
+    const desktopId = data.desktop;
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
     // check account
-    if (!lowerAccount) return {
-      message : 'Account Required',
+    if (!desktopId) return {
+      message : 'Desktop not found',
       success : false,
+    };
+
+    // load desktop
+    const desktop = await DesktopModel.findById(desktopId);
+
+    // check desktop
+    if (!desktop || (desktop.get('account') !== lowerAccount && desktop.get('session') !== req.ssid)) return {
+      success : false,
+      message : 'Desktop not found',
     };
     
     // create default segment
     const newShortcut = new ShortcutModel({
       refs : [
         `desktop:${data.desktop}`,
-        `account:${lowerAccount}`,
+        lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
       ],
       
       type    : data.type,
@@ -324,6 +337,7 @@ export default class DesktopController extends NFTController {
       order   : data.order || 0,
       zIndex  : data.zIndex,
       account : lowerAccount,
+      session : lowerAccount ? null : req.ssid,
       desktop : data.desktop,
     });
 
@@ -350,29 +364,28 @@ export default class DesktopController extends NFTController {
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
-    // check account
-    if (!lowerAccount) return {
-      message : 'Account Required',
-      success : false,
-    };
-
     // load actual segment
     const updateShortcut = await ShortcutModel.findById(params.id);
 
     // actual updates
-    if (updateShortcut.get('account') !== lowerAccount) {
-      // save task
-      return {
-        message : 'Authentication Required',
-        success : false,
-      }
-    }
+    if (!updateShortcut) return {
+      message : 'Shortcut Not Found',
+      success : false,
+    };
+
+    // load desktop
+    const desktop = await DesktopModel.findById(updateShortcut.get('desktop'));
+
+    // check desktop
+    if (!desktop || (desktop.get('account') !== lowerAccount && desktop.get('session') !== req.ssid)) return {
+      success : false,
+      message : 'Desktop not found',
+    };
 
     // set
     if (typeof data.path !== 'undefined') updateShortcut.set('path', data.path);
     if (typeof data.order !== 'undefined') updateShortcut.set('order', data.order);
     if (typeof data.parent !== 'undefined') updateShortcut.set('parent', data.parent);
-    if (typeof data.desktop !== 'undefined') updateShortcut.set('desktop', data.desktop);
 
     // save
     await updateShortcut.save();
@@ -393,12 +406,6 @@ export default class DesktopController extends NFTController {
   async shortcutDeleteAction(req, { data, params }, next) {
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
-
-    // check account
-    if (!lowerAccount) return {
-      message : 'Account Required',
-      success : false,
-    };
 
     // load actual segment
     const deleteShortcut = await ShortcutModel.findById(params.id);
@@ -437,16 +444,8 @@ export default class DesktopController extends NFTController {
   @Route('GET', '/api/v1/task/list')
   async taskListAction(req, { data, params }, next) {
     // lowerAccount
-    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
-
-    // check account
-    if (!lowerAccount) return {
-      message : 'Account Required',
-      success : false,
-    };
-
-    // lowerAccount
     const desktopId = data.desktop;
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
     // check desktop id
     if (!desktopId) return {
@@ -458,12 +457,10 @@ export default class DesktopController extends NFTController {
     const desktop = await DesktopModel.findById(desktopId);
 
     // check desktop
-    if (!desktop) return {
+    if (!desktop || (desktop.get('account') !== lowerAccount && desktop.get('session') !== req.ssid)) return {
       success : false,
       message : 'Desktop not found',
     };
-
-    // @todo check id
 
     // load segments
     const tasks  = await TaskModel.findByDesktop(desktopId);
@@ -476,14 +473,58 @@ export default class DesktopController extends NFTController {
         new TaskModel({
           refs : [
             `desktop:${desktop.get('id')}`,
-            `account:${lowerAccount}`,
+            lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
           ],
           
           type    : 'feed',
           path    : 'public',
           order   : 0,
-          default : 'left',
+          default : {
+            y      : 0,
+            x      : 0,
+            width  : .55,
+            height : 1,
+          },
           account : lowerAccount,
+          session : lowerAccount ? null : req.ssid,
+          desktop : desktop.get('id'),
+        }),
+        new TaskModel({
+          refs : [
+            `desktop:${desktop.get('id')}`,
+            lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
+          ],
+          
+          type    : 'contract',
+          path    : 'trending',
+          order   : 1,
+          default : {
+            y      : 0,
+            x      : .55,
+            width  : .45,
+            height : .5,
+          },
+          account : lowerAccount,
+          session : lowerAccount ? null : req.ssid,
+          desktop : desktop.get('id'),
+        }),
+        new TaskModel({
+          refs : [
+            `desktop:${desktop.get('id')}`,
+            lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
+          ],
+          
+          type    : 'space',
+          path    : 'trending',
+          order   : 2,
+          default : {
+            y      : .5,
+            x      : .55,
+            width  : .45,
+            height : .5,
+          },
+          account : lowerAccount,
+          session : lowerAccount ? null : req.ssid,
           desktop : desktop.get('id'),
         }),
       ];
@@ -546,19 +587,29 @@ export default class DesktopController extends NFTController {
   @Route('POST', '/api/v1/task')
   async taskCreateAction(req, { data, params }, next) {
     // lowerAccount
+    const desktopId = data.desktop;
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
-    // check account
-    if (!lowerAccount) return {
-      message : 'Account Required',
+    // check desktop id
+    if (!desktopId) return {
       success : false,
+      message : 'Desktop not found',
+    };
+
+    // load desktop
+    const desktop = await DesktopModel.findById(desktopId);
+
+    // check desktop
+    if (!desktop || (desktop.get('account') !== lowerAccount && desktop.get('session') !== req.ssid)) return {
+      success : false,
+      message : 'Desktop not found',
     };
     
     // create default segment
     const newTask = new TaskModel({
       refs : [
-        `desktop:${data.desktop}`,
-        `account:${lowerAccount}`,
+        `desktop:${desktop.get('id')}`,
+        lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
       ],
       
       type    : data.type,
@@ -566,7 +617,8 @@ export default class DesktopController extends NFTController {
       order   : data.order || 0,
       zIndex  : data.zIndex,
       account : lowerAccount,
-      desktop : data.desktop,
+      session : lowerAccount ? null : req.ssid,
+      desktop : desktop.get('id'),
     });
 
     // save
@@ -598,16 +650,37 @@ export default class DesktopController extends NFTController {
       success : false,
     };
 
+    // create lock
+    const unlock = await this.base.pubsub.lock(params.id);
+
     // load actual segment
     const updateTask = await TaskModel.findById(params.id);
 
     // actual updates
-    if (updateTask.get('account') !== lowerAccount) {
-      // save task
+    if (!updateTask || updateTask.get('account') !== lowerAccount) {
+      // unlock
+      unlock();
+
+      // return
       return {
-        message : 'Authentication Required',
+        message : 'Task not Found',
         success : false,
-      }
+      };
+    }
+
+    // load desktop
+    const desktop = await DesktopModel.findById(updateTask.get('desktop'));
+
+    // check desktop
+    if (!desktop || (desktop.get('account') !== lowerAccount && desktop.get('session') !== req.ssid)) {
+      // unlock
+      unlock();
+
+      // return
+      return {
+        success : false,
+        message : 'Desktop not found',
+      };
     }
 
     // set
@@ -616,11 +689,13 @@ export default class DesktopController extends NFTController {
     if (typeof data.active !== 'undefined') updateTask.set('active', data.active);
     if (typeof data.parent !== 'undefined') updateTask.set('parent', data.parent);
     if (typeof data.zIndex !== 'undefined') updateTask.set('zIndex', data.zIndex);
-    if (typeof data.desktop !== 'undefined') updateTask.set('desktop', data.desktop);
     if (typeof data.position !== 'undefined') updateTask.set('position', data.position);
 
     // save
     await updateTask.save();
+
+    // unlock
+    unlock();
 
     // return
     return {
@@ -638,6 +713,7 @@ export default class DesktopController extends NFTController {
   async taskUpdatesAction(req, { data, params }, next) {
     // lowerAccount
     const desktopId = data.desktop;
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
     // check desktop id
     if (!desktopId) return {
@@ -645,13 +721,13 @@ export default class DesktopController extends NFTController {
       message : 'Desktop not found',
     };
 
-    // lowerAccount
-    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+    // load desktop
+    const desktop = await DesktopModel.findById(desktopId);
 
-    // check account
-    if (!lowerAccount) return {
-      result  : 'Account Required',
+    // check desktop
+    if (!desktop || (desktop.get('account') !== lowerAccount && desktop.get('session') !== req.ssid)) return {
       success : false,
+      message : 'Desktop not found',
     };
 
     // all tasks
@@ -672,12 +748,24 @@ export default class DesktopController extends NFTController {
       // check segment
       if (!foundTask) return;
 
-      // set values
-      if (typeof subData.order !== 'undefined') foundTask.set('order', subData.order);
-      if (typeof subData.active !== 'undefined') foundTask.set('active', subData.active);
-      if (typeof subData.parent !== 'undefined') foundTask.set('parent', subData.parent);
-      if (typeof subData.zIndex !== 'undefined') foundTask.set('zIndex', subData.zIndex);
-      if (typeof subData.position !== 'undefined') foundTask.set('position', subData.position);
+      // create lock
+      const unlock = await this.base.pubsub.lock(foundTask.get('id'));
+
+      // try/catch
+      try {
+        // set values
+        if (typeof subData.order !== 'undefined') foundTask.set('order', subData.order);
+        if (typeof subData.active !== 'undefined') foundTask.set('active', subData.active);
+        if (typeof subData.parent !== 'undefined') foundTask.set('parent', subData.parent);
+        if (typeof subData.zIndex !== 'undefined') foundTask.set('zIndex', subData.zIndex);
+        if (typeof subData.position !== 'undefined') foundTask.set('position', subData.position);
+
+        // save
+        await foundTask.save();
+      } catch (e) {}
+
+      // unlock
+      unlock();
 
       // push segment
       result.push(await foundTask.toJSON(sanitiseCache));
@@ -686,6 +774,47 @@ export default class DesktopController extends NFTController {
     // return
     return {
       result,
+      success : true,
+    };
+  }
+
+  /**
+   * segment get endpoint
+   * 
+   * @returns
+   */
+  @Route('DELETE', '/api/v1/task/:id')
+  async taskDeleteAction(req, { data, params }, next) {
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // create lock
+    const unlock = await this.base.pubsub.lock(params.id);
+
+    // load actual segment
+    const deleteTask = await TaskModel.findById(params.id);
+
+    // check desktop
+    if (!deleteTask || (deleteTask.get('account') !== lowerAccount && deleteTask.get('session') !== req.ssid)) {
+      // unlock
+      unlock();
+
+      // return
+      return {
+        success : false,
+        message : 'Desktop not found',
+      };
+    }
+    
+    // unlock
+    unlock();
+
+    // save
+    await deleteTask.remove();
+
+    // return
+    return {
+      result  : null,
       success : true,
     };
   }
@@ -722,12 +851,13 @@ export default class DesktopController extends NFTController {
     const newGroup = new ModelClass({
       refs : [
         `desktop:${data.desktop}`,
-        `account:${lowerAccount}`,
+        lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
       ],
 
       order   : data.order,
       zIndex  : data.zIndex,
       account : lowerAccount,
+      session : lowerAccount ? null : req.ssid,
       desktop : data.desktop,
     });
 
