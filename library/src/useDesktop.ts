@@ -1,6 +1,6 @@
 
 // import auth context
-import DesktopContext from './DesktopContext';
+import DesktopContext from './Desktop/Context';
 import React, { useContext } from 'react';
 
 // use auth hook

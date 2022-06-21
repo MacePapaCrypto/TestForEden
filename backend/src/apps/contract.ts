@@ -26,8 +26,8 @@ class ContractApp extends App {
         name : 'Latest Contracts',
       },
       {
-        path : 'trending',
-        name : 'Trending Contracts',
+        path : 'mooning',
+        name : 'Mooning Contracts',
       },
       {
         path : 'following',

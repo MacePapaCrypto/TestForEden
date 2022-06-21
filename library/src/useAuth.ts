@@ -1,6 +1,6 @@
 
 // import auth context
-import AuthContext from './AuthContext';
+import AuthContext from './Auth/Context';
 import React, { useContext } from 'react';
 
 // use auth hook

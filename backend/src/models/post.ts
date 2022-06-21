@@ -2,10 +2,9 @@
 import decay from 'decay';
 import Model, { Type } from '../base/model';
 import UserModel from './user';
-import SpaceModel from './space';
-import MemberModel from './member';
-import FeedUtility from '../utilities/feed';
 import LikeModel from './like';
+import SpaceModel from './space';
+import FeedUtility from '../utilities/feed';
 
 /**
  * export model

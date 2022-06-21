@@ -40,7 +40,7 @@ const useSpaces = (props = {}) => {
     const parentId = props.requireSpace ? (props.space?.id || props.space || 'null') : (props.space?.id || props.space);
 
     // check parent
-    if ((!parentId && space.parent) || (parentId !== space.parent)) return;
+    if (parentId && (parentId !== space.space)) return;
 
     // remove
     if (isRemove) {
@@ -63,89 +63,6 @@ const useSpaces = (props = {}) => {
 
   // emit space remove
   const emitSpaceRemove = (space) => emitSpace(space, true);
-
-  /**
-   * create group
-   *
-   * @param param0 
-   * @returns 
-   */
-  const createGroup = async ({
-    name        = null,
-    order       = 0,
-    description = '',
-  }) => {
-    // set loading
-    setLoading('create');
-
-    // loaded
-    let createdGroup = {};
-
-    // try/catch
-    try {
-      // load
-      createdGroup = await socket.post('/spacegroup', {
-        name,
-        order,
-        description,
-
-        account : auth?.account,
-      }, cacheTimeout);
-
-      // set spaces
-      updateSpace(createdGroup, false);
-    } catch (e) {
-      // loading
-      setLoading(null);
-      throw e;
-    }
-
-    // done loading
-    setLoading(null);
-
-    // return spaces
-    return createdGroup;
-  };
-
-  /**
-   * create group
-   *
-   * @param param0 
-   * @returns 
-   */
-  const removeGroup = async ({
-    id = null,
-  }) => {
-    // set loading
-    setLoading('remove');
-
-    // try/catch
-    try {
-      // load
-      await socket.delete(`/spacegroup/${id}`);
-
-      // spaces
-      for (let i = (spaces.length - 1); i >= 0; i--) {
-        // check if space
-        if (spaces[i].id === id) {
-          // removed
-          spaces.splice(i, 1);
-        }
-      }
-
-      // update spaces
-      setUpdated(new Date());
-    } catch (e) {
-      // loading
-      throw e;
-    }
-
-    // done loading
-    setLoading(null);
-
-    // return spaces
-    return true;
-  };
 
   // create
   const createSpace = async ({
@@ -239,83 +156,6 @@ const useSpaces = (props = {}) => {
 
     // return spaces
     return loadedSpaces;
-  };
-
-  // create
-  const updateGroup = async ({
-    id,
-    name,
-    open,
-    order,
-    description,
-  }, save = true) => {
-    // set loading
-    if (save) setLoading(id);
-
-    // update space
-    let localSpace = spaces.find((s) => s.id === id);
-
-    // check local space
-    if (!localSpace) {
-      // set space
-      localSpace = {
-        id,
-        name,
-        open,
-        order,
-        description,
-      };
-
-      // push
-      spaces.push(localSpace);
-    }
-
-    // keys
-    if (typeof name !== 'undefined') localSpace.name = name;
-    if (typeof open !== 'undefined') localSpace.open = open;
-    if (typeof order !== 'undefined') localSpace.order = order;
-    if (typeof description !== 'undefined') localSpace.description = description;
-
-    // update
-    if (!save) {
-      // update
-      return setUpdated(new Date());
-    } else {
-      // update in place
-      setUpdated(new Date());
-    }
-
-    // loaded
-    let loadedSpace = localSpace;
-
-    // try/catch
-    try {
-      // load
-      loadedSpace = await socket.patch(`/spacegroup/${id}`, {
-        name,
-        open,
-        order,
-        description,
-      });
-
-      // loop
-      Object.keys(loadedSpace).forEach((key) => {
-        // add to loaded
-        localSpace[key] = loadedSpace[key];
-      });
-
-      // set spaces
-      setUpdated(new Date());
-    } catch (e) {
-      // loading
-      throw e;
-    }
-
-    // done loading
-    setLoading(null);
-
-    // return spaces
-    return loadedSpace;
   };
 
   // create
@@ -446,8 +286,8 @@ const useSpaces = (props = {}) => {
     // try/catch
     try {
       // loaded
-      loadedSpaces = await socket.get('/space', {
-        space : props.space,
+      loadedSpaces = await socket.get('/space/list', {
+        space : props.space?.id || props.space,
       });
 
       // spaces
@@ -506,10 +346,10 @@ const useSpaces = (props = {}) => {
       socket.socket.removeListener('connect', listSpaces);
       socket.socket.removeListener('space+remove', emitSpaceRemove);
     };
-  }, [auth?.account, props.space]);
+  }, [auth?.account, (props.space?.id || props.space)]);
 
   // return spaces
-  const NFTSpaces = {
+  const MoonSpaces = {
     get     : getSpace,
     list    : listSpaces,
     update  : updateSpace,
@@ -517,20 +357,16 @@ const useSpaces = (props = {}) => {
     delete  : deleteSpace,
     updates : updateSpaces,
 
-    groupCreate : createGroup,
-    groupUpdate : updateGroup,
-    groupRemove : removeGroup,
-
     spaces,
     loading,
     updated,
   };
 
   // nft spaces
-  if (spaces?.length) window.NFTSpaces = NFTSpaces;
+  if (spaces?.length) window.MoonSpaces = MoonSpaces;
 
   // return
-  return NFTSpaces;
+  return MoonSpaces;
 };
 
 // export default

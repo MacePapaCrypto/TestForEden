@@ -1,6 +1,6 @@
 
 import React, { useRef, useState } from 'react';
-import { Box, Grow, Popper, Stack, Skeleton, Tooltip, Divider, Menu, MenuList, MenuItem, useTheme, ClickAwayListener, IconButton } from '@mui/material';
+import { Box, Grow, Popper, Stack, Skeleton, Tooltip, Divider, Menu, MenuList, MenuItem, useTheme, ClickAwayListener, IconButton, Paper } from '@mui/material';
 
 // auth
 import Link from './Link';
@@ -49,10 +49,13 @@ const MoonStartMenu = (props = {}) => {
     setSubMenu(null);
     
     // task
-    await desktop.createTask({
+    await desktop.findOrCreateTask({
       type,
       path,
     });
+
+    // loading
+    setLoading(false);
   };
 
   // on select
@@ -80,6 +83,10 @@ const MoonStartMenu = (props = {}) => {
         anchorEl={ props.anchorEl }
         placement={ props.placement || 'top-start' }
         transition
+
+        style={ {
+          zIndex : 1498,
+        } }
       >
         { ({ TransitionProps }) => (
           <Grow
@@ -88,16 +95,16 @@ const MoonStartMenu = (props = {}) => {
               transformOrigin : 'left bottom',
             } }
           >
-            <Box sx={ {
+            <Paper sx={ {
               mb           : 1,
               ml           : 1,
               width        : startMenuWidth,
-              border       : `.1rem solid ${theme.palette.grey[300]}`,
+              border       : `${theme.shape.borderWidth} solid ${theme.palette.border.primary}`,
               height       : startMenuWidth * 1.5,
               background   : theme.palette.background.paper,
               borderRadius : `${theme.shape.borderRadius * 2}px`,
 
-            } }>
+            } } elevation={ 1 }>
               <ClickAwayListener onClickAway={ () => avatarMenu || subMenu ? null : props.onClose() }>
                 <Box height="100%" width="100%" display="flex" flexDirection="column">
                   <Stack sx={ {
@@ -106,7 +113,7 @@ const MoonStartMenu = (props = {}) => {
                     display      : 'flex',
                     padding      : 2,
                     alignItems   : 'center',
-                    borderBottom : `.1rem solid ${theme.palette.grey[300]}`,
+                    borderBottom : `${theme.shape.borderWidth} solid ${theme.palette.border.primary}`,
                   } } spacing={ 2 } direction="row">
                     <Box sx={ {
                       cursor : 'pointer',
@@ -204,7 +211,9 @@ const MoonStartMenu = (props = {}) => {
                             selected={ app.type === subMenu }
                           >
                             { app.type }
-                            <FontAwesomeIcon icon={ faChevronRight } />
+                            <Box ml="auto">
+                              <FontAwesomeIcon icon={ faChevronRight } />
+                            </Box>
                           </MenuItem>
                         );
                       }) }  
@@ -212,16 +221,13 @@ const MoonStartMenu = (props = {}) => {
                   </Box>
                 </Box>
               </ClickAwayListener>
-            </Box>
+            </Paper>
           </Grow>
         ) }
       </Popper>
 
       { !!subMenu && (
         <Menu
-          sx={ {
-            border : `.1rem solid ${theme.palette.grey[300]}`,
-          } }
           open={ !!subMenu }
           onClose={ () => setSubMenu(null) }
           anchorEl={ subMenuRef?.current }
@@ -232,6 +238,13 @@ const MoonStartMenu = (props = {}) => {
           transformOrigin={ {
             vertical   : 'top',
             horizontal : 'left',
+          } }
+
+          MenuListProps={ {
+            sx : {
+              border       : `${theme.shape.borderWidth} solid ${theme.palette.border.primary}`,
+              borderRadius : `${theme.shape.borderRadius}px`,
+            }
           } }
         >
           { (app.apps.find((app) => app.type === subMenu)?.menu || []).map((item, i) => {

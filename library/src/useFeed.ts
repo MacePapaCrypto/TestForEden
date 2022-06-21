@@ -2,7 +2,7 @@
 // import auth post
 import usePosts from './usePosts';
 import useSocket from './useSocket';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 
 // use auth hook
 const useFeed = (props = {}) => {
@@ -12,53 +12,18 @@ const useFeed = (props = {}) => {
   // socket
   const socket = useSocket();
   const [updated, setUpdated] = useState(new Date());
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(null);
   
   // let posts
-  let [posts, setPosts] = useState([]);
-
-  // emit
-  const emitPost = (post) => {
-    // found post
-    const foundPost = posts.find((p) => p.id === post.id || p.temp === post.temp || p.temp === post.id);
-
-    // create or replace post
-    if (!foundPost) return;
-
-    // changed
-    let changed = false;
-
-    // find
-    Object.keys(post).forEach((key) => {
-      // check
-      if (JSON.stringify(foundPost[key]) !== JSON.stringify(post[key])) changed = true;
-
-      // update
-      foundPost[key] = post[key];
-    });
-
-    // set posts
-    if (changed) {
-      posts = [...posts];
-      setPosts(posts);
-      setUpdated(new Date());
-    }
-  };
+  const [posts, setPosts] = useState([]);
 
   // load
-  const listPosts = async () => {
+  const listPosts = useCallback(async () => {
     // check filter
     const filter = { ...props };
 
-    // set posts
-    posts = [];
-    setPosts([]);
-
-    // check feed
-    if (!filter.feed) return;
-
-    // loading
-    setLoading(true);
+    // set loading
+    setLoading('list');
 
     // loaded
     let loadedPosts = [];
@@ -68,40 +33,100 @@ const useFeed = (props = {}) => {
       // loaded
       loadedPosts = await socket.get(`/feed/${filter.feed}`, filter);
 
-      // set posts
-      posts = loadedPosts;
-      setPosts(posts);
+      // tasks
+      for (let i = (posts.length - 1); i >= 0; i--) {
+        // check if task
+        if (!loadedPosts.find((s) => s.id === posts[i].id)) {
+          // removed
+          posts.splice(i, 1);
+        }
+      }
+
+      // replace all info
+      loadedPosts.forEach((post) => {
+        // local
+        const localPost = posts.find((s) => s.id === post.id);
+
+        // check local task
+        if (!localPost) return posts.push(post);
+
+        // update info
+        Object.keys(post).forEach((key) => {
+          // task key
+          localPost[key] = post[key];
+        });
+      });
+
+      // set tasks
       setUpdated(new Date());
     } catch (e) {
       // loading
-      setLoading(false);
+      setLoading(null);
       throw e;
     }
 
     // set loading
-    setLoading(false);
+    setLoading(null);
 
-    // return posts
+    // return tasks
     return loadedPosts;
-  };
+  }, [props]);
 
   // create
-  const createPost = async (...args) => {
+  const createPost = useCallback(async (...args) => {
     // set loading
-    setLoading(true);
+    setLoading('create');
 
     // create in post
-    const actualPost = await post.create(...args);
+    const createdPost = await post.create(...args);
 
-    // push
-    if (!posts.find((p) => p.id === actualPost.id)) posts.unshift(actualPost);
+    // emit post
+    emitPost(createdPost);
+    setLoading(null);
 
-    // update
-    posts = [...posts];
-    setPosts(posts);
-    setUpdated(new Date());
-    setLoading(false);
-  };
+    // return
+    return createdPost;
+  }, []);
+
+  // create
+  const updatePost = useCallback(async (updatePost, save = true) => {
+    // find post
+    let foundPost = posts.find((post) => post.id === updatePost.id || post.temp === updatePost.temp);
+
+    // check found
+    if (foundPost) {
+      // loop keys
+      Object.keys(updatePost).forEach((key) => foundPost[key] = updatePost[key]);
+    } else {
+      // adding new
+      foundPost = updatePost;
+
+      // push
+      posts.push(updatePost);
+    }
+
+    // check save
+    if (!save) {
+      // updated
+      setUpdated(new Date());
+
+      // return update
+      return foundPost;
+    }
+
+    // set loading
+    setLoading('update');
+
+    // create in post
+    const updatedPost = await post.update(updatePost);
+
+    // emit post
+    emitPost(updatedPost);
+    setLoading(null);
+
+    // return
+    return updatedPost;
+  }, []);
   
   // load from socket
   useEffect(() => {
@@ -118,10 +143,35 @@ const useFeed = (props = {}) => {
     };
   }, [JSON.stringify(props)]);
 
+  // emit
+  const emitPost = useCallback((task, isRemove = false) => {
+    // remove
+    if (isRemove) {
+      // tasks
+      for (let i = (posts.length - 1); i >= 0; i--) {
+        // check if task
+        if (task.id === posts[i].id) {
+          // removed
+          posts.splice(i, 1);
+        }
+      }
+
+      // update
+      setUpdated(new Date());
+    } else {
+      // update
+      updatePost(task, false);
+    }
+  }, []);
+
+  // emit task remove
+  const emitPostRemove = (task) => emitPost(task, true);
+
   // return posts
-  const actualFeed = {
+  const MoonFeed = {
     ...post,
     create : createPost,
+    update : updatePost,
 
     posts,
     updated,
@@ -129,10 +179,10 @@ const useFeed = (props = {}) => {
   };
 
   // nft feed
-  window.NFTFeed = actualFeed;
+  window.MoonFeed = MoonFeed;
 
   // return feed
-  return actualFeed;
+  return MoonFeed;
 };
 
 // export default

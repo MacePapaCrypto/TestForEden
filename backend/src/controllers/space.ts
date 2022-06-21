@@ -5,7 +5,6 @@ import NFTController, { Route } from '../base/controller';
 import RoleModel from '../models/role';
 import SpaceModel from '../models/space';
 import MemberModel from '../models/member';
-import SpaceGroupModel from '../models/spaceGroup';
 
 /**
  * create auth controller
@@ -62,10 +61,13 @@ export default class SpaceController extends NFTController {
    * 
    * @returns
    */
-  @Route('GET', '/api/v1/space')
+  @Route('GET', '/api/v1/space/list')
   async listAction(req, { data, params }, next) {
     // lowerAccount
-    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+    const lowerAccount = data.account ? `${data.account}`.toLowerCase() : (req.account ? `${req.account}`.toLowerCase() : null);
+
+    // feed
+    const feed = ['account', 'latest', 'mooning'].find((l) => l === (data.feed || 'account'));
 
     // get parent
     const parent = data.space;
@@ -78,17 +80,20 @@ export default class SpaceController extends NFTController {
     if (parent) {
       // find subspaces
       const subSpaces = await SpaceModel.findBySpace(parent);
-      const subGroups = await SpaceGroupModel.findBySpace(parent);
 
       // sanitise spaces
       sanitised = [
         ...((await Promise.all(subSpaces.map((space) => space.toJSON(segmentCache)))).filter((s) => s)),
-        ...((await Promise.all(subGroups.map((group) => group.toJSON(segmentCache)))).filter((s) => s))
       ];
-    } else {
+    } else if (feed === 'account') {
+      // check account
+      if (!lowerAccount) return {
+        success : false,
+        message : 'Account required',
+      };
+
       // load segments
       const members = await MemberModel.findByAccount(lowerAccount);
-      const groups = await SpaceGroupModel.findByAccount(lowerAccount);
 
       // sanitised
       sanitised = [
@@ -99,7 +104,6 @@ export default class SpaceController extends NFTController {
           // sanitise
           return memberSpace ? await memberSpace.toJSON(segmentCache, member) : null;
         }))),
-        ...(await Promise.all(groups.map((group) => group.toJSON())))
       ].filter((s) => s).sort((a, b) => {
         // order
         const aO = a.order || 0;
@@ -114,6 +118,18 @@ export default class SpaceController extends NFTController {
         item.order = typeof item.order === 'undefined' ? order : item.order;
         return item;
       });
+    } else if (feed === 'mooning') {
+      // mooning groups
+      const spaces = await SpaceModel.findByRef('root:public', (data.limit || 25), 'rank.score');
+
+      // promise all
+      sanitised = await Promise.all(spaces.map((g) => g.toJSON(segmentCache, req.account)));
+    } else if (feed === 'latest') {
+      // mooning groups
+      const spaces = await SpaceModel.findByRef('root:public', (data.limit || 25), 'createdAt');
+
+      // promise all
+      sanitised = await Promise.all(spaces.map((g) => g.toJSON(segmentCache, req.account)));
     }
 
     // return
@@ -140,50 +156,6 @@ export default class SpaceController extends NFTController {
     return {
       result  : space ? await space.toJSON({}, lowerAccount) : null,
       success : !!space,
-    };
-  }
-
-  /**
-   * group action
-   *
-   * @param req 
-   * @param param1 
-   * @param next 
-   */
-  @Route('POST', '/api/v1/spacegroup')
-  async groupAction(req, { data, params }, next) {
-    // lowerAccount
-    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
-
-    // check account
-    if (!lowerAccount) return {
-      result  : 'Account Required',
-      success : false,
-    };
-
-    // create group model
-    const newSpaceGroup = new SpaceGroupModel({
-      refs : [
-        `account:${lowerAccount}`,
-      ],
-
-      name        : data.name,
-      order       : data.order,
-      parent      : data.parent,
-      account     : lowerAccount,
-      description : data.description,
-    });
-
-    // save
-    await newSpaceGroup.save();
-
-    // sanitised
-    const sanitisedSpace = await newSpaceGroup.toJSON();
-
-    // return
-    return {
-      result  : sanitisedSpace,
-      success : true,
     };
   }
 
@@ -240,7 +212,7 @@ export default class SpaceController extends NFTController {
         
         ...(image ? [`image:${image}`] : []),
         ...(nfts.map((nft) => `owns:${nft}`)),
-        ...(parentSpace ? [`space:${parentSpace.id}`] : []),
+        ...(parentSpace ? [`space:${parentSpace.get('id')}`] : [`root:${privacy}`]),
       ],
 
       count : {
@@ -253,7 +225,7 @@ export default class SpaceController extends NFTController {
       
       name        : data.name,
       order       : data.order || 0,
-      space       : parentSpace?.id,
+      space       : parentSpace?.get('id'),
       description : data.description,
 
       source  : 'create',
@@ -392,86 +364,6 @@ export default class SpaceController extends NFTController {
   }
 
   /**
-   * segment get endpoint
-   * 
-   * @returns
-   */
-  @Route('PATCH', '/api/v1/spacegroup/:id')
-  async updateGroupAction(req, { data, params }, next) {
-    // lowerAccount
-    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
-
-    // check account
-    if (!lowerAccount) return {
-      result  : 'Account Required',
-      success : false,
-    };
-
-    // load actual segment
-    const updateSpace = await SpaceGroupModel.findById(params.id);
-
-    // check account
-    // @todo proper acl
-    if (!updateSpace || updateSpace.get('account').toLowerCase() !== lowerAccount) return {
-      success : false,
-      message : 'Permission Denied',
-    };
-
-    // update member
-    if (typeof data.open !== 'undefined') updateSpace.set('open', data.open);
-    if (typeof data.order !== 'undefined') updateSpace.set('order', data.order);
-    if (typeof data.parent !== 'undefined') updateSpace.set('parent', data.parent);
-
-    // save
-    await updateSpace.save();
-
-    // sanitised
-    const sanitisedSpace = await updateSpace.toJSON();
-
-    // return
-    return {
-      result  : sanitisedSpace,
-      success : true,
-    };
-  }
-
-  /**
-   * segment get endpoint
-   * 
-   * @returns
-   */
-  @Route('DELETE', '/api/v1/spacegroup/:id')
-  async removeGroupAction(req, { data, params }, next) {
-    // lowerAccount
-    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
-
-    // check account
-    if (!lowerAccount) return {
-      result  : 'Account Required',
-      success : false,
-    };
-
-    // load actual segment
-    const updateSpace = await SpaceGroupModel.findById(params.id);
-
-    // check account
-    // @todo proper acl
-    if (!updateSpace || updateSpace.get('account').toLowerCase() !== lowerAccount) return {
-      success : false,
-      message : 'Permission Denied',
-    };
-
-    // save
-    await updateSpace.remove();
-
-    // return
-    return {
-      result  : true,
-      success : true,
-    };
-  }
-
-  /**
    * sidebar endpoint
    * 
    * @returns
@@ -495,11 +387,9 @@ export default class SpaceController extends NFTController {
       // find subspaces
       allSpaces = [
         ...(await SpaceModel.findBySpace(data.space)),
-        ...(await SpaceGroupModel.findBySpace(data.space))
       ];
     } else {
       allSpaces = [
-        ...(await SpaceGroupModel.findByAccount(lowerAccount)),
         ...(await MemberModel.findByAccount(lowerAccount)),
       ];
     }
@@ -519,31 +409,18 @@ export default class SpaceController extends NFTController {
       // sanitised space
       let sanitisedSpace = null;
 
-      // set
-      if (foundSpace instanceof MemberModel) {
-        // set values
-        if (typeof subData.order !== 'undefined') foundSpace.set('value.order', subData.order);
-        if (typeof subData.parent !== 'undefined') foundSpace.set('value.parent', subData.parent);
+      // set values
+      if (typeof subData.order !== 'undefined') foundSpace.set('value.order', subData.order);
+      if (typeof subData.parent !== 'undefined') foundSpace.set('value.parent', subData.parent);
 
-        // save
-        await foundSpace.save();
+      // save
+      await foundSpace.save();
 
-        // get real segment
-        const realSpace = await foundSpace.getSpace();
+      // get real segment
+      const realSpace = await foundSpace.getSpace();
 
-        // sanitised
-        sanitisedSpace = await realSpace.toJSON(sanitiseCache, foundSpace);
-      } else {
-        // set values
-        if (typeof subData.open !== 'undefined') foundSpace.set('open', !!subData.open);
-        if (typeof subData.order !== 'undefined') foundSpace.set('order', subData.order);
-
-        // save
-        await foundSpace.save();
-
-        // sanitised
-        sanitisedSpace = await foundSpace.toJSON(sanitiseCache);
-      }
+      // sanitised
+      sanitisedSpace = await realSpace.toJSON(sanitiseCache, foundSpace);
 
       // push segment
       result.push(sanitisedSpace);

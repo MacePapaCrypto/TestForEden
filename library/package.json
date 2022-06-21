@@ -43,9 +43,9 @@
   "dependencies": {
     "@cantonjs/react-scroll-view": "^0.4.2",
     "@ethersproject/units": "^5.6.0",
-    "@mui/lab": "^5.0.0-alpha.78",
     "@usedapp/core": "^1.0.1",
     "dot-prop": "^6.0.1",
+    "downshift": "^6.1.7",
     "human-number": "^1.0.10",
     "humanize-duration": "^3.27.1",
     "initials": "^3.1.2",
@@ -84,15 +84,16 @@
   "peerDependencies": {
     "@emotion/react": "^11.8.1",
     "@emotion/styled": "^11.8.1",
-    "react-material-ui-carousel": "^3.4.2",
     "@fortawesome/pro-regular-svg-icons": "^6.1.1",
     "@fortawesome/pro-solid-svg-icons": "^6.1.1",
     "@fortawesome/react-fontawesome": "^0.1.18",
     "@mui/icons-material": "^5.5.1",
     "@mui/material": "^5.5.0",
+    "@mui/lab": "^5.0.0-alpha.78",
     "react": "^17.0.2",
-    "react-rnd": "^10.3.7",
     "react-dom": "^17.0.2",
+    "react-material-ui-carousel": "^3.4.2",
+    "react-rnd": "^10.3.7",
     "react-router-dom": "^6.3.0",
     "styled-components": "^5.3.5"
   }

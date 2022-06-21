@@ -26,7 +26,7 @@ export default class TaskModel extends Model {
    *
    * @param cache 
    */
-  async toJSON(cache = {}) {
+  async toJSON(cache = {}, req) {
     // sanitised
     const sanitised = await super.toJSON();
 
@@ -43,7 +43,7 @@ export default class TaskModel extends Model {
     if (!actualApp) return sanitised;
 
     // return actual data
-    return await actualApp.toJSON(sanitised, this.get('path'), cache);
+    return await actualApp.toJSON(sanitised, this.get('path'), cache, req);
   }
 
 }

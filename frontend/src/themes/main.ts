@@ -9,6 +9,10 @@ const mainTheme = createTheme({
     text    : {
       primary : '#c9d1d9',
     },
+    border  : {
+      active  : '#fdc07b',
+      primary : '#e0e0e0',
+    },
     divider : '#30363d',
     primary : {
       main  : '#fdc07b',
@@ -42,6 +46,10 @@ const mainTheme = createTheme({
       }
     },
   },
+  shape : {
+    borderWidth  : '.1rem',
+    borderRadius : 4,
+  }
 });
 
 // theme

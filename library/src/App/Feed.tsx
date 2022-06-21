@@ -5,8 +5,10 @@ import { Box, Stack, CircularProgress } from '@mui/material';
 // import local
 import useAuth from '../useAuth';
 import useFeed from '../useFeed';
-import PostList from '../PostList';
-import PostCreate from '../PostCreate';
+import SideBar from './Feed/SideBar';
+import PostList from '../Post/List';
+import ScrollBar from '../ScrollBar';
+import PostCreate from '../Post/Create';
 
 /**
  * moon app feed
@@ -42,34 +44,42 @@ const MoonAppFeed = (props = {}) => {
 
   // return jsx
   return (
-    <Box width="100%" height="100%" display="flex" px={ 2 } py={ 3 }>
-      <Stack spacing={ 2 } sx={ {
-        width : '100%',
-      } }>
-        <PostCreate
-          onPost={ onPost }
-        />
-
-        { !feed.posts?.length && feed.loading && (
-          <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
-            <CircularProgress />
+    <Box width="100%" height="100%" display="flex">
+      <Box width="100%" height="100%" display="flex" flexDirection="row">
+        <SideBar />
+        <Stack spacing={ 2 } sx={ {
+          width : '100%',
+        } }>
+          <Box px={ 2 } pt={ 2 }>
+            <PostCreate
+              onPost={ onPost }
+            />
           </Box>
-        ) }
 
-        { !!feed.posts?.length && (
-          <Box flex={ 0 } />
-        ) }
+          { !feed.posts?.length && feed.loading && (
+            <Box display="flex" alignItems="center" justifyContent="center" py={ 5 }>
+              <CircularProgress />
+            </Box>
+          ) }
 
-        <PostList
-          feed="feed"
-          posts={ feed.posts }
-          loading={ feed.loading }
-          PostProps={ {
-            history,
-            withReplies : true,
-          } }
-        />
-      </Stack>
+          <ScrollBar isFlex>
+            <Box sx={ {
+              pt : 1,
+              px : 2,
+            } }>
+              <PostList
+                feed="feed"
+                posts={ feed.posts }
+                loading={ feed.loading }
+                PostProps={ {
+                  history,
+                  withReplies : true,
+                } }
+              />
+            </Box>
+          </ScrollBar>
+        </Stack>
+      </Box>
     </Box>
   );
 }

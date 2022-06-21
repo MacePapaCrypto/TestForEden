@@ -2,28 +2,23 @@
 // import local
 import Box from './Box';
 import Link from './Link';
-import Post from './Post';
-import PostList from './PostList';
-import SpaceCard from './SpaceCard';
 import ScrollBar from './ScrollBar';
-import PostCreate from './PostCreate';
-import PostTyping from './PostTyping';
 
 // auth
-import AuthContext from './AuthContext';
-import AuthProvider from './AuthProvider';
+import AuthContext from './Auth/Context';
+import AuthProvider from './Auth/Provider';
 
 // socket
-import SocketContext from './SocketContext';
-import SocketProvider from './SocketProvider';
+import SocketContext from './Socket/Context';
+import SocketProvider from './Socket/Provider';
 
 // browse
 import BrowseContext from './BrowseContext';
 import BrowseProvider from './BrowseProvider';
 
 // task
-import DesktopContext from './DesktopContext';
-import DesktopProvider from './DesktopProvider';
+import DesktopContext from './Desktop/Context';
+import DesktopProvider from './Desktop/Provider';
 
 // hooks
 import useId from './useId';
@@ -43,10 +38,10 @@ import useDesktop from './useDesktop';
 
 // desktop ui
 import Task from './Task';
-import Window from './Window';
-import Desktop from './Desktop';
+import Window from './Window/index';
+import Desktop from './Desktop/index';
 import TaskBar from './TaskBar';
-import WindowBar from './WindowBar';
+import WindowBar from './Window/Bar';
 
 // nft ui
 import NFTList from './NFT/List';
@@ -54,6 +49,13 @@ import NFTImage from './NFT/Image';
 import NFTPicker from './NFT/Picker';
 import NFTAvatar from './NFT/Avatar';
 import NFTContract from './NFT/Contract';
+
+// post ui
+import Post from './Post/index';
+import PostList from './Post/List';
+import PostCreate from './Post/Create';
+import PostTyping from './Post/Typing';
+
 
 // export default
 export {
@@ -95,15 +97,16 @@ export {
   useMember,
   useDesktop,
 
-  // removing
-  Post,
+  // nft ui
   NFTList,
   NFTImage,
-  PostList,
   NFTPicker,
   NFTAvatar,
-  SpaceCard,
+  NFTContract,
+
+  // removing
+  Post,
+  PostList,
   PostCreate,
   PostTyping,
-  NFTContract,
 }

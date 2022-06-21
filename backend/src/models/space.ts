@@ -1,4 +1,5 @@
 
+import decay from 'decay';
 import NFTModel from './nft';
 import RoleModel from './role';
 import MemberModel from './member';
@@ -7,7 +8,7 @@ import Model, { Type } from '../base/model';
 /**
  * export model
  */
-@Type('space', 'space')
+@Type('space')
 export default class SpaceModel extends Model {
 
   /**
@@ -140,5 +141,72 @@ export default class SpaceModel extends Model {
 
       ...(spaceMember?.value || {}),
     };
+  }
+
+  /**
+   * Saves the current model
+   */
+  public async save(noEmission = null): Promise<any> {
+    // set sort
+    if (!Array.isArray(this.__data.sorts)) this.__data.sorts = [];
+
+    // rank types
+    const ranks = [
+      'rank.score',
+      'rank.reddit',
+      'rank.hacker',
+      'rank.wilson',
+    ];
+    // count types
+    const counts = [
+      'count.likes',
+      'count.members',
+      'count.followers',
+    ];
+
+    // push sorts
+    [
+      // ranking types
+      ...ranks,
+
+      // count types
+      ...counts,
+    ].forEach((sortKey) => {
+      // check and add
+      if (!this.__data.sorts.includes(sortKey)) this.__data.sorts.push(sortKey);
+    });
+
+    // fix counts
+    counts.forEach((count) => {
+      // check and default
+      if (!this.get(count)) this.set(count, 0);
+    });
+
+    // created
+    const created = new Date(this.__data.createdAt || new Date());
+
+    // round
+    const round = (number) => {
+      // return rounded
+      return parseFloat(number.toFixed(5));
+    };
+
+    // ranking
+    const upvoteRanking = (this.get('count.likes') || 0) + ((this.get('count.members') || 0) * 5);
+    const downvoteRanking = 0;
+
+    // set rank
+    this.set('rank', {
+      score  : round(decay.redditHot()(upvoteRanking, downvoteRanking, created)),
+      reddit : round(decay.redditHot()(upvoteRanking, downvoteRanking, created)),
+      hacker : round(decay.hackerHot()(upvoteRanking, created)),
+      wilson : round(decay.wilsonScore()(upvoteRanking, downvoteRanking))
+    });
+
+    // return super
+    const saving = await super.save(noEmission);
+
+    // return saving
+    return saving;
   }
 }

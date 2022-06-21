@@ -1,6 +1,6 @@
 
 // import socket context
-import SocketContext from './SocketContext';
+import SocketContext from './Socket/Context';
 import React, { useContext } from 'react';
 
 // use socket hook

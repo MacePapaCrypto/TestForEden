@@ -1,17 +1,14 @@
 
 import babel from '@rollup/plugin-babel';
-import serve from 'rollup-plugin-serve';
 import assets from 'rollup-plugin-copy-assets';
 import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
-import globals from 'rollup-plugin-node-globals';
 import builtIns from 'rollup-plugin-node-builtins';
 import commonjs from '@rollup/plugin-commonjs';
-import livereoload from 'rollup-plugin-livereload';
 import { terser } from 'rollup-plugin-terser';
 
 // rollup
-const production = false && !process.env.ROLLUP_WATCH;
+const production = process.env.ENV === 'production';
 
 // extensions
 const extensions = ['.js', '.jsx', '.ts', '.tsx'];
@@ -80,6 +77,8 @@ export default {
         '@babel/preset-react',
       ],
     }),
+
+    production && terser(),
   ],
   watch : {
     clearScreen : false,

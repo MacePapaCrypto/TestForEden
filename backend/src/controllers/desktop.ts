@@ -252,6 +252,9 @@ export default class DesktopController extends NFTController {
       message : 'Desktop not found',
     };
 
+    // groups
+    const cache = {};
+
     // load segments
     const groups    = await ShortcutGroupModel.findByDesktop(desktopId);
     const shortcuts = await ShortcutModel.findByDesktop(desktopId);
@@ -259,7 +262,7 @@ export default class DesktopController extends NFTController {
     // sanitised
     const sanitised = [
       ...(await Promise.all(groups.map((group) => group.toJSON()))),
-      ...(await Promise.all(shortcuts.map((task) => task.toJSON()))),
+      ...(await Promise.all(shortcuts.map((task) => task.toJSON(cache, req)))),
     ].filter((s) => s).sort((a, b) => {
       // order
       const aO = a.order || 0;
@@ -462,6 +465,9 @@ export default class DesktopController extends NFTController {
       message : 'Desktop not found',
     };
 
+    // groups
+    const cache = {};
+
     // load segments
     const tasks  = await TaskModel.findByDesktop(desktopId);
     const groups = await TaskGroupModel.findByDesktop(desktopId);
@@ -496,7 +502,7 @@ export default class DesktopController extends NFTController {
           ],
           
           type    : 'contract',
-          path    : 'trending',
+          path    : 'mooning',
           order   : 1,
           default : {
             y      : 0,
@@ -515,7 +521,7 @@ export default class DesktopController extends NFTController {
           ],
           
           type    : 'space',
-          path    : 'trending',
+          path    : 'mooning',
           order   : 2,
           default : {
             y      : .5,
@@ -538,7 +544,7 @@ export default class DesktopController extends NFTController {
 
     // sanitised
     const sanitised = [
-      ...(await Promise.all(tasks.map((task) => task.toJSON()))),
+      ...(await Promise.all(tasks.map((task) => task.toJSON(cache, req)))),
       ...(await Promise.all(groups.map((group) => group.toJSON()))),
     ].filter((s) => s).sort((a, b) => {
       // order
@@ -574,7 +580,7 @@ export default class DesktopController extends NFTController {
 
     // return segment
     return {
-      result  : task ? await task.toJSON({}) : null,
+      result  : task ? await task.toJSON({}, req) : null,
       success : !!task,
     };
   }
@@ -625,7 +631,7 @@ export default class DesktopController extends NFTController {
     await newTask.save(null, true);
 
     // sanitised
-    const sanitisedTask = await newTask.toJSON();
+    const sanitisedTask = await newTask.toJSON({}, req);
 
     // return
     return {
@@ -686,7 +692,6 @@ export default class DesktopController extends NFTController {
     // set
     if (typeof data.path !== 'undefined') updateTask.set('path', data.path);
     if (typeof data.order !== 'undefined') updateTask.set('order', data.order);
-    if (typeof data.active !== 'undefined') updateTask.set('active', data.active);
     if (typeof data.parent !== 'undefined') updateTask.set('parent', data.parent);
     if (typeof data.zIndex !== 'undefined') updateTask.set('zIndex', data.zIndex);
     if (typeof data.position !== 'undefined') updateTask.set('position', data.position);
@@ -699,7 +704,7 @@ export default class DesktopController extends NFTController {
 
     // return
     return {
-      result  : await updateTask.toJSON(),
+      result  : await updateTask.toJSON({}, req),
       success : true,
     };
   }
@@ -755,7 +760,6 @@ export default class DesktopController extends NFTController {
       try {
         // set values
         if (typeof subData.order !== 'undefined') foundTask.set('order', subData.order);
-        if (typeof subData.active !== 'undefined') foundTask.set('active', subData.active);
         if (typeof subData.parent !== 'undefined') foundTask.set('parent', subData.parent);
         if (typeof subData.zIndex !== 'undefined') foundTask.set('zIndex', subData.zIndex);
         if (typeof subData.position !== 'undefined') foundTask.set('position', subData.position);
@@ -768,7 +772,7 @@ export default class DesktopController extends NFTController {
       unlock();
 
       // push segment
-      result.push(await foundTask.toJSON(sanitiseCache));
+      result.push(await foundTask.toJSON(sanitiseCache, req));
     }));
 
     // return

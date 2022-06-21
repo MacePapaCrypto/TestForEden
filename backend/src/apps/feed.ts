@@ -35,7 +35,7 @@ class FeedApp extends App {
   /**
    * sanitise
    */
-  async toJSON(sanitised, path, cache = {}) {
+  async toJSON(sanitised, path, cache = {}, req) {
     // load feed
     let actualFeed = await FeedModel.findById(path);
     let actualName = null;
