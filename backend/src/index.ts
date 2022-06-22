@@ -421,7 +421,7 @@ class NFTBackend extends Events {
             if (!result) return;
   
             // check response
-            if (path.includes('/api/v1')) {
+            if (path.includes('/api/v1') || path.includes('/npm')) {
               // done
               res.end(JSON.stringify(result));
             }
