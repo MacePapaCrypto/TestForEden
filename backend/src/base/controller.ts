@@ -19,6 +19,18 @@ export function Route(method: string = 'GET', path: string, acl: Array<string> =
 }
 
 /**
+ * Exports decorator function to set type of model
+ */
+export function Upload(type: string = 'single', ...args) {
+  // return function
+  return (target: any, propertyKey: string) => {
+    // Add namespace and subspace
+    Reflect.defineMetadata('upload:type', type, target, propertyKey);
+    Reflect.defineMetadata('upload:args', args, target, propertyKey);
+  };
+}
+
+/**
  * Create Controller class
  */
 export default class MoonController extends Events {
@@ -55,7 +67,11 @@ export default class MoonController extends Events {
         acl      : Reflect.getMetadata('route:acl', this, property),
         path     : Reflect.getMetadata('route:path', this, property),
         method   : Reflect.getMetadata('route:method', this, property),
-        priority : Reflect.getMetadata('route:priority', this, property)
+        priority : Reflect.getMetadata('route:priority', this, property),
+
+        upload : Reflect.getMetadata('upload:type', this, property) ?
+          [Reflect.getMetadata('upload:type', this, property), Reflect.getMetadata('upload:args', this, property)] :
+          null,
       }));
     
     // bind routes

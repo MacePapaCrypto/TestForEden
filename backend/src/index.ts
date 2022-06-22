@@ -4,8 +4,10 @@ import fs from 'fs-extra';
 import cors from 'cors';
 import polka from 'polka';
 import Events from 'events';
+import multer from 'multer';
 import winston from 'winston';
 import Trouter from 'trouter';
+import bodyParser from 'body-parser';
 import { Server } from 'socket.io';
 import { MongoClient } from 'mongodb';
 
@@ -16,6 +18,11 @@ import daemons from './daemons';
 import NFTModel from './base/model';
 import NFTPubSub from './utilities/pubsub';
 import controllers from './controllers';
+
+// create uploader
+const uploader = multer({
+  dest : '/tmp/',
+});
 
 // events
 class NFTBackend extends Events {
@@ -112,6 +119,10 @@ class NFTBackend extends Events {
     // use cors
     this.app.use(cors({
       origin : true,
+    }));
+    this.app.use(bodyParser.json());
+    this.app.use(bodyParser.urlencoded({
+      extended : false,
     }));
 
     // listen
@@ -360,7 +371,7 @@ class NFTBackend extends Events {
     });
 
     // add routes
-    allRoutes.forEach(({ acl, ctrl, method, path, priority, property }) => {
+    allRoutes.forEach(({ acl, ctrl, method, path, priority, property, upload }) => {
       // add method
       this.__router.add(method, path, () => {
         // return data
@@ -372,54 +383,67 @@ class NFTBackend extends Events {
         };
       });
 
-      // add app
-      this.app[method.toLowerCase()](path, async (req, res, next) => {
-        // await
-        const data = {
-          ...(req.body || {}),
-          ...(req.query || {}),
-        };
-        const { params } = req;
-
-        // resulted
-        let resulted = null;
-
-        // do next
-        const doNext = () => {
-          // resulted
-          resulted = true;
-          next();
-        };
-
-        // try/catch
-        try {
-          // data/params
-          res.data = data;
-          res.params = params;
-
+      // routes
+      const routes = [
+        async (req, res, next) => {
           // await
-          const result = await ctrl[property](req, res, doNext);
+          const data = {
+            ...(req.body || {}),
+            ...(req.query || {}),
 
-          // check resulted
-          if (resulted) return;
-
-          // check response
-          if (!result) return;
-
-          // check response
-          if (path.includes('/api/v1')) {
-            // done
-            res.end(JSON.stringify(result));
+          };
+          const { params } = req;
+  
+          // resulted
+          let resulted = null;
+  
+          // do next
+          const doNext = () => {
+            // resulted
+            resulted = true;
+            next();
+          };
+  
+          // try/catch
+          try {
+            // data/params
+            res.data = data;
+            res.files = req.files || {};
+            res.params = params;
+  
+            // await
+            const result = await ctrl[property](req, res, doNext);
+  
+            // check resulted
+            if (resulted) return;
+  
+            // check response
+            if (!result) return;
+  
+            // check response
+            if (path.includes('/api/v1')) {
+              // done
+              res.end(JSON.stringify(result));
+            }
+  
+            // end
+            res.end(result);
+          } catch (e) {
+            // error
+            res.statusCode = 500;
+            res.end(e.toString());
           }
+        },
+      ];
 
-          // end
-          res.end(result);
-        } catch (e) {
-          // error
-          res.statusCode = 500;
-          res.end(e.toString());
-        }
-      });
+      // check upload
+      if (upload) {
+        // unshift
+        routes.unshift(uploader[upload[0].toLowerCase()](...upload[1]));
+      }
+
+      // add app
+      this.app[method.toLowerCase()](path, ...routes);
     });
 
     // add catchall
