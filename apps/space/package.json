@@ -1,13 +1,60 @@
 {
   "name": "@moon/space",
-  "version": "1.0.0",
+  "version": "1.0.3",
   "description": "",
+
   "main": "dist/index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "build": "rollup -c",
     "watch": "rollup -w -c"
+  },
+  "moon" : {
+    "name" : "Moon Space",
+    "icon" : "https://icon.com/icon.png",
+    "space" : "spaceid",
+    "website" : "https://moon.social",
+    "description" : "Spaces for Discussion",
+    
+    "tags" : [
+      "Social"
+    ],
+    
+    "paths" : [
+      {
+        "path"    : "/",
+        "name"    : "Explore Spaces",
+        "default" : true
+      },
+      {
+        "path" : "/mine",
+        "name" : "My Spaces"
+      },
+      {
+        "path" : "/trending",
+        "name" : "Trending Spaces"
+      },
+      {
+        "path" : "/featured",
+        "name" : "Featured Spaces"
+      },
+      {
+        "path" : "/latest",
+        "name" : "Latest Spaces"
+      }
+    ],
+    
+    "socials" : [
+      {
+        "url"  : "https://twitter.com/bebis",
+        "type" : "twitter"
+      },
+      {
+        "url"  : "https://discord.com/bebis",
+        "type" : "discord"
+      }
+    ]
   },
   "author": "",
   "license": "ISC",
