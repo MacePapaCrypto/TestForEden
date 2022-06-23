@@ -106,7 +106,9 @@ const NFTScrollBar = (props = {}) => {
     <Box sx={ {
       '& .simplebar-track.simplebar-vertical .simplebar-scrollbar:before' : {
         background : `rgba(0, 0, 0, 0.5)`,
-      }
+      },
+
+      ...props.sx,
     } } component={ SimpleBar } scrollableNodeProps={ {
       ref : scrollRef
     } }>

@@ -11,10 +11,10 @@ import { StatusCodes } from 'http-status-codes';
 import MoonController, { Route } from '../base/controller';
 
 // apps
-import apps from '../apps';
 import AppModel from '../models/app';
-import TokenModel from '../models/token';
+import TokenModel from '../models/appToken';
 import VersionModel from '../models/appVersion';
+import AppInstallModel from '../models/appInstall';
 
 /**
  * create auth controller
@@ -89,7 +89,7 @@ export default class AppController extends MoonController {
     const [pushVersion] = Object.keys(versions);
 
     // find actual version
-    const existingVersion = actualApp.get('id') && await VersionModel.findByAppVersion(actualApp.get('id'), pushVersion);
+    const existingVersion = actualApp.get('id') ? await VersionModel.findByAppVersion(actualApp.get('id'), pushVersion) : null;
 
     // check package
     if (existingVersion) {
@@ -104,7 +104,7 @@ export default class AppController extends MoonController {
     }
 
     // set new version
-    const newVersion = (actualApp.get('version') || semver.gt(pushVersion, actualApp.get('verison'))) ? pushVersion : actualApp.get('version');
+    const newVersion = (!actualApp.get('version') || semver.gt(pushVersion, actualApp.get('version'))) ? pushVersion : actualApp.get('version');
 
     // save as file
     const fileBuffer = Buffer.from(Object.values(_attachments)[0].data, 'base64');
@@ -190,25 +190,40 @@ export default class AppController extends MoonController {
    * @returns
    */
   @Route('GET', '/api/v1/app/list')
-  async getAction(req, { data, params }, next) {
-    // accum
-    const allApps = [];
+  async listAction(req, { data, params }, next) {
+    // force default apps
+    const allApps = await AppModel.findByDefault();
 
-    // apps
-    await Promise.all(Object.values(apps).map(async (app) => {
-      // Load namespace and subspace
-      const type = Reflect.getMetadata('app:type', app.constructor);
+    // user apps
+    if (req.account) {
+      // find by user
+      const userApps = await AppInstallModel.findByAccount(req.account);
 
-      // return apps
-      allApps.push({
-        type,
-        menu : await app.menu(req),
-      });
-    }));
+      // push
+      allApps.push(...userApps);
+    }
 
     // return post
     return {
-      result  : allApps,
+      result  : await Promise.all(allApps.map((app) => app.toJSON())),
+      success : true,
+    };
+  }
+
+
+  /**
+   * post get endpoint
+   * 
+   * @returns
+   */
+  @Route('GET', '/api/v1/app/explore')
+  async exploreAction(req, { data, params }, next) {
+    // force default apps
+    const allApps = await AppModel.findByRef('verified:true');
+
+    // return post
+    return {
+      result  : await Promise.all(allApps.map((app) => app.toJSON())),
       success : true,
     };
   }

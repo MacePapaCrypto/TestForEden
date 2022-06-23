@@ -1,10 +1,10 @@
 
 import { Box, Typography, useTheme } from '@mui/material';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 
 // window
 import Window from '../Window/index';
-import Shortcut from '../Shortcut';
+import Shortcut from '../Shortcut/index';
 import useDesktop from '../useDesktop';
 
 /**

@@ -40,8 +40,8 @@ export default {
 
         '@mui/lab',
         '@mui/system',
-        '@emotion/react',
         '@mui/material',
+        '@emotion/react',
         '@mui/icons-material',
 
         '@fortawesome/react-fontawesome',

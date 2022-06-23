@@ -2,7 +2,7 @@ import React from 'react';
 import AddIcon from '@mui/icons-material/Add';
 import MenuIcon from '@mui/icons-material/Menu';
 import PersonIcon from '@mui/icons-material/Person';
-import { useAuth } from '@nft/ui';
+import { useAuth } from '@moonup/ui';
 import { AppBar, Chip, Box, Toolbar, IconButton, Typography, Menu, Container, Divider, Avatar, Button, Tooltip, MenuItem, useTheme } from '@mui/material';
 
 // pages

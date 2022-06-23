@@ -1,6 +1,6 @@
 {
-  "name": "@moon/space",
-  "version": "1.0.3",
+  "name": "@moonup/space",
+  "version": "0.0.1",
   "description": "",
 
   "main": "dist/index.js",

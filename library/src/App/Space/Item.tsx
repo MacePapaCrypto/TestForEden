@@ -1,10 +1,6 @@
-import { LoadingButton } from '@mui/lab';
+import LoadingButton from '@mui/lab/LoadingButton';
+import { Box, Stack, Paper, useTheme } from '@mui/material';
 import React, { useState, useCallback } from 'react';
-import { Box, Stack, Paper, useTheme, Button } from '@mui/material';
-
-// icons
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEye } from '@fortawesome/pro-regular-svg-icons';
 
 // locals
 import NFTAvatar from '../../NFT/Avatar';

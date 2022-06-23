@@ -4,10 +4,10 @@ import fs from 'fs-extra';
 import cors from 'cors';
 import polka from 'polka';
 import Events from 'events';
-import multer from 'multer';
 import winston from 'winston';
 import Trouter from 'trouter';
-import bodyParser from 'body-parser';
+import bodyParser from 'http-body-parser';
+import fileUpload from 'express-fileupload';
 import { Server } from 'socket.io';
 import { MongoClient } from 'mongodb';
 
@@ -18,11 +18,6 @@ import daemons from './daemons';
 import NFTModel from './base/model';
 import NFTPubSub from './utilities/pubsub';
 import controllers from './controllers';
-
-// create uploader
-const uploader = multer({
-  dest : '/tmp/',
-});
 
 // events
 class NFTBackend extends Events {
@@ -120,10 +115,7 @@ class NFTBackend extends Events {
     this.app.use(cors({
       origin : true,
     }));
-    this.app.use(bodyParser.json());
-    this.app.use(bodyParser.urlencoded({
-      extended : false,
-    }));
+    this.app.use(bodyParser.express({}));
 
     // listen
     this.app.listen(config.get('http.port'));
@@ -390,7 +382,6 @@ class NFTBackend extends Events {
           const data = {
             ...(req.body || {}),
             ...(req.query || {}),
-
           };
           const { params } = req;
   
@@ -439,7 +430,7 @@ class NFTBackend extends Events {
       // check upload
       if (upload) {
         // unshift
-        routes.unshift(uploader[upload[0].toLowerCase()](...upload[1]));
+        // routes.unshift(uploader[upload[0].toLowerCase()](...upload[1]));
       }
 
       // add app

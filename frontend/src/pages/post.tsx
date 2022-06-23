@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Box, Paper, Container, useTheme, CircularProgress } from '@mui/material';
-import { Post, usePosts, useTyping, useAuth, useBrowse, PostList, ScrollBar, PostTyping, PostCreate } from '@nft/ui';
+import { Post, usePosts, useTyping, useAuth, useBrowse, PostList, ScrollBar, PostTyping, PostCreate } from '@moonup/ui';
 
 // timeout
 let timeout;

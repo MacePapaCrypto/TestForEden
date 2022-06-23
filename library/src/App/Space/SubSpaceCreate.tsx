@@ -1,13 +1,13 @@
 
-import LoadingButton from '@mui/lab/LoadingButton';
 import { useHistory } from 'react-router-dom';
+import LoadingButton from '@mui/lab/LoadingButton';
 import React, { useRef, useState } from 'react';
-import { CircularProgress, Dialog, DialogContent, DialogContentText, DialogTitle, Typography } from '@mui/material';
+import { CircularProgress, DialogContent, DialogContentText, Typography } from '@mui/material';
 import { Button, TextField, Stack, Box, Avatar, ListItem, ListItemText, ListItemAvatar, useTheme } from '@mui/material';
 
 // icons
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faBullhorn, faPlus, faLock, faAngleRight, faCartShopping, faHexagonImage, faHashtag, faFeed, faGalleryThumbnails } from '@fortawesome/pro-regular-svg-icons';
+import { faBullhorn, faPlus, faLock, faAngleRight, faHexagonImage, faHashtag, faFeed, faGalleryThumbnails } from '@fortawesome/pro-regular-svg-icons';
 
 // local
 import useAuth from '../../useAuth';

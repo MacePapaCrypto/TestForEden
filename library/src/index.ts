@@ -1,6 +1,5 @@
 
 // import local
-import Box from './Box';
 import Link from './Link';
 import ScrollBar from './ScrollBar';
 
@@ -11,10 +10,6 @@ import AuthProvider from './Auth/Provider';
 // socket
 import SocketContext from './Socket/Context';
 import SocketProvider from './Socket/Provider';
-
-// browse
-import BrowseContext from './BrowseContext';
-import BrowseProvider from './BrowseProvider';
 
 // task
 import DesktopContext from './Desktop/Context';
@@ -28,7 +23,6 @@ import useFeed from './useFeed';
 import usePost from './usePost';
 import useAuth from './useAuth';
 import usePosts from './usePosts';
-import useBrowse from './useBrowse';
 import useTyping from './useTyping';
 import useSocket from './useSocket';
 import useSpaces from './useSpaces';
@@ -37,10 +31,11 @@ import useMember from './useMember';
 import useDesktop from './useDesktop';
 
 // desktop ui
-import Task from './Task';
+import App from './App';
+import Task from './Task/index';
 import Window from './Window/index';
 import Desktop from './Desktop/index';
-import TaskBar from './TaskBar';
+import TaskBar from './Task/Bar';
 import WindowBar from './Window/Bar';
 
 // nft ui
@@ -60,6 +55,7 @@ import PostTyping from './Post/Typing';
 // export default
 export {
   // desktop ui
+  App,
   Task,
   Window,
   Desktop,
@@ -67,7 +63,6 @@ export {
   WindowBar,
 
   // misc ui
-  Box,
   Link,
   ScrollBar,
 
@@ -76,8 +71,6 @@ export {
   AuthProvider,
   SocketContext,
   SocketProvider,
-  BrowseContext,
-  BrowseProvider,
   DesktopContext,
   DesktopProvider,
 
@@ -91,7 +84,6 @@ export {
   usePosts,
   useTyping,
   useSocket,
-  useBrowse,
   useSpaces,
   useFollow,
   useMember,

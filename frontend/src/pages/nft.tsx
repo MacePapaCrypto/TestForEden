@@ -1,6 +1,6 @@
 
 import React, { useEffect, useState } from 'react';
-import { NFTImage, useBrowse, useSocket, ProfileCard } from '@nft/ui';
+import { NFTImage, useBrowse, useSocket, ProfileCard } from '@moonup/ui';
 import { Box, Grid, Container, Typography, CircularProgress, useTheme, Stack } from '@mui/material';
 
 /**

@@ -397,7 +397,8 @@ const MoonDesktopProvider = (props = {}) => {
 
   // create
   const createShortcut = useCallback(async ({
-    type,
+    app,
+    path,
     order,
   }) => {
     // set loading
@@ -410,7 +411,8 @@ const MoonDesktopProvider = (props = {}) => {
     try {
       // load
       createdShortcut = await socket.post('/shortcut', {
-        type,
+        app,
+        path,
         order,
 
         account : auth?.account,
@@ -435,7 +437,8 @@ const MoonDesktopProvider = (props = {}) => {
   // create
   const updateShortcut = useCallback(async ({
     id,
-    type,
+    app,
+    path,
     order,
     parent,
   }, save = true) => {
@@ -450,7 +453,8 @@ const MoonDesktopProvider = (props = {}) => {
       // set shortcut
       localShortcut = {
         id,
-        type,
+        app,
+        path,
       };
 
       // push
@@ -458,7 +462,8 @@ const MoonDesktopProvider = (props = {}) => {
     }
 
     // keys
-    if (typeof type !== 'undefined') localShortcut.type = type;
+    if (typeof app !== 'undefined') localShortcut.app = app;
+    if (typeof path !== 'undefined') localShortcut.path = path;
     if (typeof order !== 'undefined') localShortcut.order = order;
     if (typeof parent !== 'undefined') localShortcut.parent = parent;
 
@@ -478,7 +483,8 @@ const MoonDesktopProvider = (props = {}) => {
     try {
       // load
       loadedShortcut = await socket.patch(`/shortcut/${id}`, {
-        type,
+        app,
+        path,
         order,
         parent
       });
@@ -694,12 +700,12 @@ const MoonDesktopProvider = (props = {}) => {
    * @returns 
    */
   const findOrCreateTask = useCallback(async ({
-    type,
+    app,
     path,
     order,
   }, exact = false) => {
     // found
-    const found = tasks.find((t) => t.type === type && (exact ? (t.path === path) : (t.path.startsWith(path))));
+    const found = tasks.find((t) => t.app === app && (exact ? (t.path === path) : (t.path.startsWith(path))));
 
     // check exists
     if (found) {
@@ -710,7 +716,7 @@ const MoonDesktopProvider = (props = {}) => {
 
     // return await
     const newTask = await createTask({
-      type,
+      app,
       path,
       order,
     });
@@ -722,7 +728,7 @@ const MoonDesktopProvider = (props = {}) => {
 
   // create
   const createTask = useCallback(async ({
-    type,
+    app,
     path,
     order,
   }) => {
@@ -736,7 +742,7 @@ const MoonDesktopProvider = (props = {}) => {
     try {
       // load
       createdTask = await socket.post('/task', {
-        type,
+        app,
         path,
 
         order   : typeof order !== 'undefined' ? order : tasks.length,
@@ -764,7 +770,7 @@ const MoonDesktopProvider = (props = {}) => {
     // const
     const {
       id,
-      type,
+      app,
       path,
       order,
       parent,
@@ -814,7 +820,7 @@ const MoonDesktopProvider = (props = {}) => {
     try {
       // load
       loadedTask = await socket.patch(`/task/${id}`, {
-        type,
+        app,
         path,
         order,
         parent,

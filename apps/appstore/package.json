@@ -1,0 +1,77 @@
+{
+  "name": "@moonup/appstore",
+  "version": "0.0.45",
+  "description": "Explore Moon web3 Applications",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c",
+    "watch": "rollup -w -c"
+  },
+  "moon": {
+    "name": "Moon App Store",
+    "icon": "https://icon.com/icon.png",
+    "space": "spaceid",
+    "website": "https://moon.social",
+    "description": "Explore Moon web3 Applications",
+    "tags": [
+      "Moon"
+    ],
+    "paths": [
+      {
+        "path": "/",
+        "name": "Explore Apps",
+        "default": true
+      },
+      {
+        "path": "/trending",
+        "name": "Trending Spaces"
+      },
+      {
+        "path": "/featured",
+        "name": "Featured Spaces"
+      },
+      {
+        "path": "/latest",
+        "name": "Latest Spaces"
+      }
+    ],
+    "socials": [
+      {
+        "url": "https://twitter.com/bebis",
+        "type": "twitter"
+      },
+      {
+        "url": "https://discord.com/bebis",
+        "type": "discord"
+      }
+    ]
+  },
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@babel/core": "^7.18.5",
+    "@babel/plugin-proposal-decorators": "^7.18.2",
+    "@babel/preset-env": "^7.18.2",
+    "@babel/preset-react": "^7.17.12",
+    "@rollup/plugin-babel": "^5.3.1",
+    "@rollup/plugin-commonjs": "^22.0.0",
+    "@rollup/plugin-json": "^4.1.0",
+    "@rollup/plugin-node-resolve": "^13.3.0",
+    "babel-plugin-transform-typescript-metadata": "^0.3.2",
+    "rollup-plugin-peer-deps-external": "^2.2.4",
+    "rollup-plugin-styles": "^4.0.0",
+    "rollup-plugin-terser": "^7.0.2"
+  },
+  "peerDependencies": {
+    "@moonup/ui": "file:../../library",
+    "@mui/material": "^5.8.5",
+    "react": "^18.2.0",
+    "@fortawesome/pro-regular-svg-icons": "^6.1.1",
+    "@fortawesome/react-fontawesome": "^0.1.18"
+  },
+  "dependencies": {
+    "react-alice-carousel": "^2.6.1"
+  }
+}

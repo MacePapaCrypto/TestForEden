@@ -1,12 +1,22 @@
 
 import Model, { Type } from '../base/model';
-import apps from '../apps';
+import AppModel from './app';
 
 /**
  * export model
  */
 @Type('task')
 export default class TaskModel extends Model {
+
+  /**
+   * get app
+   *
+   * @returns 
+   */
+  getApp() {
+    // load app
+    return AppModel.findById(this.get('app'));
+  }
 
   /**
    * find by segment
@@ -26,24 +36,18 @@ export default class TaskModel extends Model {
    *
    * @param cache 
    */
-  async toJSON(cache = {}, req) {
+  async toJSON() {
     // sanitised
     const sanitised = await super.toJSON();
 
-    // check type
-    const actualApp = Object.values(apps).find((app) => {
-      // Load namespace and subspace
-      const type = Reflect.getMetadata('app:type', app.constructor);
+    // load app
+    const app = await this.getApp();
 
-      // check type
-      if (type === this.get('type')) return true;
-    });
+    // set app
+    sanitised.application = app ? await app.toJSON() : null;
     
-    // check actual app
-    if (!actualApp) return sanitised;
-
-    // return actual data
-    return await actualApp.toJSON(sanitised, this.get('path'), cache, req);
+    // return sanitised
+    return sanitised;
   }
 
 }

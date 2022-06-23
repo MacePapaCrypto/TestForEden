@@ -473,7 +473,7 @@ export default class DesktopController extends NFTController {
     const groups = await TaskGroupModel.findByDesktop(desktopId);
 
     // check tasks
-    if (desktop.get('type') === 'default' && !tasks.length) {
+    if (desktop.get('type') === 'default' && !tasks.length && false) {
       // set default tasks
       const defaultTasks = [
         new TaskModel({
@@ -614,11 +614,12 @@ export default class DesktopController extends NFTController {
     // create default segment
     const newTask = new TaskModel({
       refs : [
+        `app:${data.app}`,
         `desktop:${desktop.get('id')}`,
         lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
       ],
       
-      type    : data.type,
+      app     : data.app,
       path    : data.path,
       order   : data.order || 0,
       zIndex  : data.zIndex,

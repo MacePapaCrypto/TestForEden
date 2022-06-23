@@ -10,7 +10,7 @@ import React, { useEffect } from 'react';
 // import react
 import { createRoot } from 'react-dom/client';
 import { ThemeProvider, CssBaseline } from '@mui/material';
-import { AuthProvider, SocketProvider } from '@nft/ui';
+import { AuthProvider, SocketProvider } from '@moonup/ui';
 import {
   Route,
   Switch,

@@ -1,5 +1,5 @@
 
-import { Desktop } from '@nft/ui';
+import { Desktop } from '@moonup/ui';
 import React, { useState, useEffect } from 'react';
 
 /**

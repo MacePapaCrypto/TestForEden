@@ -1,12 +1,13 @@
 
 // react
-import apps from '../App';
 import { Rnd } from 'react-rnd';
-import { Box, Paper, useTheme } from '@mui/material';
+import { Box, CircularProgress, Paper, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 // local
 import Bar from './Bar';
+import useApp from '../useApp';
+import Context from './Context';
 import useDesktop from '../useDesktop';
 
 // debounce
@@ -20,6 +21,7 @@ const debounce = (fn, to = 500) => {
 // moon window
 const MoonWindow = (props = {}) => {
   // use theme
+  const app = useApp(props.item.application, props.item.path);
   const theme = useTheme();
   const desktop = useDesktop();
 
@@ -27,11 +29,7 @@ const MoonWindow = (props = {}) => {
   const dragRef = useRef(null);
   const windowRef = useRef(null);
 
-  // large grid size
-  const largeGridSize = 20;
-
   // position
-  const [ready, setReady] = useState(!!(props.item.position?.width));
   const [place, setPlace] = useState({
     x : 0,
     y : 0,
@@ -41,6 +39,7 @@ const MoonWindow = (props = {}) => {
 
     ...(props.item.position || {}),
   });
+  const [placed, setPlaced] = useState(props.item.position?.width);
 
   // bring to front
   const bringToFront = () => {
@@ -52,7 +51,7 @@ const MoonWindow = (props = {}) => {
   const savePlace = useCallback(({ x, y, width, height }) => {
     // check placement
     const found = [['x', x], ['y', y], ['width', width], ['height', height]].find(([key, value]) => {
-      return (props.item.position || {})[key] !== value;
+      return (place || {})[key] !== value;
     });
     
     // check found
@@ -60,6 +59,10 @@ const MoonWindow = (props = {}) => {
 
     // set place
     setPlace({ x, y, width, height });
+    setPlaced(true);
+
+    // set position
+    props.item.position = { x, y, width, height };
 
     // save to db
     debounce(() => props.desktop.updateTask({
@@ -67,38 +70,6 @@ const MoonWindow = (props = {}) => {
       position : { x, y, width, height },
     }));
   }, [props.item?.id]);
-
-  // use effect
-  useEffect(() => {
-    // check position
-    if (props.item.position || !props.item.default?.width) return setReady(true);
-
-    // set default size
-    const maxWidth = theme.breakpoints.values.xl;
-
-    // check window size
-    const windowWidth = window.innerWidth;
-    const actualWidth = windowWidth > maxWidth ? maxWidth : windowWidth;
-
-    // left size
-    const leftSize = (windowWidth - actualWidth) / 2;
-
-    // set actual position
-    const newPosition = {
-      width  : (actualWidth * props.item.default.width) - (props.item.default.x === 0 ? largeGridSize : 0),
-      height : (document.getElementById('desktop').clientHeight * props.item.default.height) - (props.item.default.y === 0 ? (largeGridSize * 2) : largeGridSize),
-
-      x : leftSize + (actualWidth * props.item.default.x),
-      y : props.item.default.y === 0 ? largeGridSize : (document.getElementById('desktop').clientHeight * props.item.default.y),
-    };
-
-    // log
-    setPlace({
-      ...place,
-      ...newPosition,
-    });
-    setReady(true);
-  }, [props.item.position]);
 
   // use effect
   useEffect(() => {
@@ -114,12 +85,6 @@ const MoonWindow = (props = {}) => {
     // new position
     savePlace(newPlace);
   }, [props.position]);
-
-  // app type
-  const AppType = apps[props.item.type];
-
-  // check ready
-  if (!ready) return null;
 
   // return jsx
   return (
@@ -161,23 +126,46 @@ const MoonWindow = (props = {}) => {
         borderRadius  : 2,
         flexDirection : 'column',
       } } ref={ windowRef } elevation={ 2 } onMouseDown={ bringToFront }>
-        <Bar
-          item={ props.item }
-          active={ desktop.activeTask === props.item.id }
+        { app.loading ? (
+          <>
+            <Bar
+              name={ `Loading ${props.item.application?.name}` }
+              active={ desktop.activeTask === props.item.id }
 
-          onMoveUp={ props.onMoveUp }
-          onMoveDown={ props.onMoveDown }
-        />
-        <Box sx={ {
-          flex     : 1,
-          display  : 'flex',
-          overflow : 'hidden',
-          
-          borderBottomLeftRadius  : 2,
-          borderBottomRightRadius : 2,
-        } }>
-          <AppType item={ props.item } bringToFront={ props.bringToFront } />
-        </Box>
+              onDelete={ () => desktop.deleteTask(props.item) }
+              onMoveUp={ props.onMoveUp }
+              onMoveDown={ props.onMoveDown }
+            />
+            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+              <CircularProgress />
+            </Box>
+          </>
+        ) : (
+          app.App ? (
+            <Context.Provider value={ {
+              item       : props.item,
+              onMoveUp   : props.onMoveUp,
+              onMoveDown : props.onMoveDown,
+
+              // save place
+              place,
+              placed,
+              setPlace : savePlace,
+            } }>
+              <app.App
+                app={ props.item.application }
+                path={ props.item.path }
+                
+                onMoveUp={ props.onMoveUp }
+                onMoveDown={ props.onMoveDown }
+              />
+            </Context.Provider>
+          ) : (
+            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+              App Removed
+            </Box>
+          )
+        ) }
       </Paper>
     </Rnd>
   );

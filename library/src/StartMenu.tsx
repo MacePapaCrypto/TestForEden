@@ -43,14 +43,14 @@ const MoonStartMenu = (props = {}) => {
   const startMenuWidth = parseInt(theme.spacing(35).replace('px', ''));
 
   // on task
-  const onTask = async (type, path) => {
+  const onTask = async (app, path) => {
     // set loading
     setLoading(true);
     setSubMenu(null);
     
     // task
     await desktop.findOrCreateTask({
-      type,
+      app,
       path,
     });
 
@@ -205,12 +205,12 @@ const MoonStartMenu = (props = {}) => {
                         // return jsx
                         return (
                           <MenuItem
-                            id={ `app-${app.type}` }
-                            key={ `app-${app.type}` }
-                            onClick={ () => setSubMenu(app.type) }
-                            selected={ app.type === subMenu }
+                            id={ `app-${app.id}` }
+                            key={ `app-${app.id}` }
+                            onClick={ () => setSubMenu(app.id) }
+                            selected={ app.id === subMenu }
                           >
-                            { app.type }
+                            { app.name }
                             <Box ml="auto">
                               <FontAwesomeIcon icon={ faChevronRight } />
                             </Box>
@@ -247,7 +247,7 @@ const MoonStartMenu = (props = {}) => {
             }
           } }
         >
-          { (app.apps.find((app) => app.type === subMenu)?.menu || []).map((item, i) => {
+          { (app.apps.find((app) => app.id === subMenu)?.paths || []).map((item, i) => {
 
             // return jsx
             if (item === 'divider') return <Divider key={ `sub-${i}` } />;

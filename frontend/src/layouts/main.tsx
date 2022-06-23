@@ -2,7 +2,7 @@
 import React from 'react';
 import { Box } from '@mui/material';
 import { useParams } from 'react-router-dom';
-import { TaskBar, DesktopProvider } from '@nft/ui';
+import { TaskBar, DesktopProvider } from '@moonup/ui';
 
 /**
  * home page
