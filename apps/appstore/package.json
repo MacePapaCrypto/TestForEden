@@ -1,6 +1,6 @@
 {
   "name": "@moonup/appstore",
-  "version": "0.0.45",
+  "version": "0.0.132",
   "description": "Explore Moon web3 Applications",
   "main": "dist/index.js",
   "type": "module",
@@ -10,10 +10,12 @@
     "watch": "rollup -w -c"
   },
   "moon": {
-    "name": "Moon App Store",
-    "icon": "https://icon.com/icon.png",
+    "name": "Moon AppStore",
+    "icon": "https://img.edenup.com/chrome_Mp3T7BAqeh.png",
     "space": "spaceid",
+    "banner": "https://img.edenup.com/chrome_4woZKQKUBB.png",
     "website": "https://moon.social",
+    "subspace": "subspaceid",
     "description": "Explore Moon web3 Applications",
     "tags": [
       "Moon"
@@ -26,15 +28,15 @@
       },
       {
         "path": "/trending",
-        "name": "Trending Spaces"
+        "name": "Trending Apps"
       },
       {
         "path": "/featured",
-        "name": "Featured Spaces"
+        "name": "Featured Apps"
       },
       {
         "path": "/latest",
-        "name": "Latest Spaces"
+        "name": "Latest Apps"
       }
     ],
     "socials": [

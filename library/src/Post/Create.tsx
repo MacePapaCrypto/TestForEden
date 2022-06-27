@@ -182,8 +182,8 @@ const MoonPostCreate = (props = {}) => {
                     size="small"
                     onClick={ onPost }
                     variant="contained"
-                    loading={ posting ? 'Posting' : undefined }
-                    disabled={ !(value || '').trim().length }
+                    loading={ !!posting }
+                    disabled={ !!(!(value || '').trim().length) }
                   >
                     { focus ? 'Enter' : 'Post' }
                   </LoadingButton>

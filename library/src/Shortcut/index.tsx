@@ -74,7 +74,7 @@ const MoonDesktopShortcut = (props = {}) => {
           width         : shortcutSize,
           height        : shortcutSize,
           cursor        : 'pointer',
-          border        : active ? `.1rem solid ${theme.palette.border.primary}` : `.1rem solid rgba(255, 255, 255, 0)`,
+          border        : active ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : `${theme.shape.borderWidth} solid rgba(255, 255, 255, 0)`,
           display       : 'flex',
           maxWidth      : shortcutSize,
           maxHeight     : shortcutSize,
@@ -83,7 +83,7 @@ const MoonDesktopShortcut = (props = {}) => {
           flexDirection : 'column',
 
           '&:hover' : {
-            border     : active ? `.1rem solid ${theme.palette.border.primary}` : `.1rem solid rgba(255, 255, 255, 0.25)`,
+            border     : active ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : `${theme.shape.borderWidth} solid rgba(255, 255, 255, 0.25)`,
             background : active ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.125)',
           }
         } } onClick={ (e) => active ? props.onClick(e) : setActive(true) }>

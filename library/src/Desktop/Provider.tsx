@@ -765,6 +765,32 @@ const MoonDesktopProvider = (props = {}) => {
     return createdTask;
   }, [auth?.account, desktop?.id]);
 
+  // push task path
+  const pushTaskPath = useCallback(async ({ id, path }) => {
+    // update task
+    const currentPath = tasks.find((s) => s.id === id)?.path;
+
+    // update task
+    await updateTask({ id, path });
+
+    // update task
+    const localTask = tasks.find((s) => s.id === id);
+
+    // push history
+    if (localTask) {
+      // check history
+      if (!localTask.history) {
+        localTask.history = [currentPath];
+      }
+
+      // push path
+      localTask.history.push(path);
+
+      // update
+      setUpdated(new Date());
+    }
+  }, [auth?.account, desktop?.id]);
+
   // create
   const updateTask = useCallback(async (updatingTask, save = true) => {
     // const
@@ -1176,6 +1202,7 @@ const MoonDesktopProvider = (props = {}) => {
     createTask,
     deleteTask,
     updateTasks,
+    pushTaskPath,
     bringTaskToFront,
     findOrCreateTask,
 

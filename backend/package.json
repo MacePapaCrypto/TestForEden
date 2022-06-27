@@ -36,6 +36,7 @@
     "ethjs-provider-http": "^0.1.6",
     "ethjs-rpc": "^0.2.0",
     "express-fileupload": "^1.4.0",
+    "express-prometheus-middleware": "^1.2.0",
     "fs-extra": "^10.0.1",
     "get-urls": "^10.0.1",
     "http-body-parser": "^1.1.9",

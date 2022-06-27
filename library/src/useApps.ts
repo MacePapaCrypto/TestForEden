@@ -15,8 +15,8 @@ const useApps = (props = {}) => {
 
   // load
   const listApps = async () => {
-    // check app
-    if (props.requireApp && !props.app) return;
+    // check auth
+    if (!auth.account) return;
 
     // set loading
     setLoading('list');
@@ -27,7 +27,7 @@ const useApps = (props = {}) => {
     // try/catch
     try {
       // loaded
-      loadedApps = await socket.get('/app/list', {
+      loadedApps = await socket.get('/app/installed', {
         app : props.app,
       });
 

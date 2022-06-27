@@ -1,8 +1,8 @@
 import json from '@rollup/plugin-json';
 import babel from '@rollup/plugin-babel';
+import styles from 'rollup-plugin-styles';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
-import peerDeps from 'rollup-plugin-peer-deps-external';
 import { terser } from 'rollup-plugin-terser';
 
 // package
@@ -23,7 +23,29 @@ export default {
       name      : pkg.name,
       format    : 'umd',
       sourcemap : true,
+      globals : {
+        react : 'React',
+        '@mui/lab' : 'MuiLab',
+        'react-dom' : 'ReactDOM',
+        '@moonup/ui' : 'MoonUi',
+        '@mui/material' : 'Mui',
+
+        // optional
+        '@fortawesome/react-fontawesome'     : 'FontAwesome',
+        '@fortawesome/pro-regular-svg-icons' : 'FontAwesomeRegular'
+      },
     },
+  ],
+  external : [
+    'react',
+    '@mui/lab',
+    'react-dom',
+    '@moonup/ui',
+    '@mui/material',
+
+    // optional
+    '@fortawesome/react-fontawesome',
+    '@fortawesome/pro-regular-svg-icons'
   ],
   plugins : [
 
@@ -53,7 +75,9 @@ export default {
         '@babel/preset-react',
       ],
     }),
-    peerDeps(),
+    styles({
+      mode : 'inject',
+    }),
 
     // If we're building for production (npm run build
     // instead of npm run dev), minify

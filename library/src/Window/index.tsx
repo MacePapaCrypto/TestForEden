@@ -71,6 +71,24 @@ const MoonWindow = (props = {}) => {
     }));
   }, [props.item?.id]);
 
+  // set path
+  const setPath = useCallback((path) => {
+    // set path on desktop
+    desktop.updateTask({
+      id : props.item?.id,
+      path,
+    });
+  }, [props.item?.id]);
+
+  // set path
+  const pushPath = useCallback((path) => {
+    // set path on desktop
+    desktop.pushTaskPath({
+      id : props.item?.id,
+      path,
+    });
+  }, [props.item?.id]);
+
   // use effect
   useEffect(() => {
     // check position
@@ -151,13 +169,17 @@ const MoonWindow = (props = {}) => {
               place,
               placed,
               setPlace : savePlace,
+
+              // pathing
+              setPath,
+              pushPath,
             } }>
               <app.App
                 app={ props.item.application }
                 path={ props.item.path }
                 
-                onMoveUp={ props.onMoveUp }
-                onMoveDown={ props.onMoveDown }
+                setPath={ setPath }
+                pushPath={ pushPath }
               />
             </Context.Provider>
           ) : (

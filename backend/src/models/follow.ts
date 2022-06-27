@@ -1,5 +1,6 @@
 
 import Model, { Type } from '../base/model';
+import AppModel from './app';
 import SpaceModel from './space';
 import UserModel from './user';
 
@@ -22,6 +23,7 @@ export default class FollowModel extends Model {
 
     // load accounts
     const toModel = (
+      (modelType === 'app' && await AppModel.findById(to)) ||
       (modelType === 'user' && await UserModel.findById(to)) ||
       (modelType === 'space' && await SpaceModel.findById(to))
     );
@@ -83,6 +85,7 @@ export default class FollowModel extends Model {
 
         // load accounts
         const lockedToModel = (
+          (modelType === 'app' && await AppModel.findById(to)) ||
           (modelType === 'user' && await UserModel.findById(to)) ||
           (modelType === 'space' && await SpaceModel.findById(to))
         );
@@ -120,6 +123,7 @@ export default class FollowModel extends Model {
 
     // load accounts
     const toModel = (
+      (modelType === 'app' && await AppModel.findById(to)) ||
       (modelType === 'user' && await UserModel.findById(to)) ||
       (modelType === 'space' && await SpaceModel.findById(to))
     );
@@ -162,6 +166,7 @@ export default class FollowModel extends Model {
 
         // load accounts
         const lockedToModel = (
+          (modelType === 'app' && await AppModel.findById(to)) ||
           (modelType === 'user' && await UserModel.findById(to)) ||
           (modelType === 'space' && await SpaceModel.findById(to))
         );

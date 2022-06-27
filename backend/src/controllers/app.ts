@@ -11,6 +11,7 @@ import { StatusCodes } from 'http-status-codes';
 import MoonController, { Route } from '../base/controller';
 
 // apps
+import AppTag from '../models/appTag';
 import AppModel from '../models/app';
 import TokenModel from '../models/appToken';
 import VersionModel from '../models/appVersion';
@@ -151,6 +152,7 @@ export default class AppController extends MoonController {
     actualApp.set('icon', pkg.moon?.icon);
     actualApp.set('paths', pkg.moon?.paths || []);
     actualApp.set('space', pkg.moon?.space);
+    actualApp.set('banner', pkg.moon?.banner);
     actualApp.set('socials', pkg.moon?.socials || []);
     actualApp.set('website', pkg.moon?.website || pkg.homepage);
     actualApp.set('description', pkg.moon?.description || pkg.description);
@@ -183,6 +185,26 @@ export default class AppController extends MoonController {
     };
   }
 
+  /**
+   * task get endpoint
+   * 
+   * @returns
+   */
+  @Route('GET', '/api/v1/app/:id')
+  async getAction(req, { data, params }, next) {
+    // check id
+    if (params.id === 'list') return this.listAction(req, { data, params }, next);
+    if (params.id === 'installed') return this.installedAction(req, { data, params }, next);
+
+    // get segment
+    const app = await AppModel.findById(params.id);
+
+    // return segment
+    return {
+      result  : app ? await app.toJSON({}) : null,
+      success : !!app,
+    };
+  }
 
   /**
    * post get endpoint
@@ -191,6 +213,23 @@ export default class AppController extends MoonController {
    */
   @Route('GET', '/api/v1/app/list')
   async listAction(req, { data, params }, next) {
+    // force default apps
+    const allApps = await AppModel.findByRef('verified:true', data.limit || 12, data.sort || 'createdAt', data.direction || 'desc');
+
+    // return post
+    return {
+      result  : await Promise.all(allApps.map((app) => app.toJSON())),
+      success : true,
+    };
+  }
+
+  /**
+   * post get endpoint
+   * 
+   * @returns
+   */
+  @Route('GET', '/api/v1/app/installed')
+  async installedAction(req, { data, params }, next) {
     // force default apps
     const allApps = await AppModel.findByDefault();
 
@@ -216,15 +255,193 @@ export default class AppController extends MoonController {
    * 
    * @returns
    */
-  @Route('GET', '/api/v1/app/explore')
-  async exploreAction(req, { data, params }, next) {
+  @Route('GET', '/api/v1/tag/list')
+  async tagListAction(req, { data, params }, next) {
     // force default apps
-    const allApps = await AppModel.findByRef('verified:true');
+    const allTags = await AppTag.findByRef('published', data.limit || 10);
 
     // return post
     return {
-      result  : await Promise.all(allApps.map((app) => app.toJSON())),
+      result  : await Promise.all(allTags.map((tag) => tag.toJSON())),
       success : true,
     };
+  }
+
+  /**
+   * login route
+   */
+  @Route('GET', '/api/v1/install/:subject')
+  async installGetAction(req, { data, params }, next) {
+    // return json
+    const { subject } = params;
+
+    // check account
+    if (!req.account) return {
+      success : false,
+      message : 'Authentication Required',
+    };
+
+    // lower account
+    const lowerAccount = req.account?.toLowerCase();
+
+    // is following
+    const isInstalled = await AppModel.isInstalled(lowerAccount, subject);
+
+    // return
+    return {
+      result  : isInstalled ? await isInstalled.toJSON() : false,
+      success : true,
+    }
+  }
+
+  /**
+   * login route
+   */
+  @Route('POST', '/api/v1/install/:subject')
+  async installAction(req, { data, params }, next) {
+    // return json
+    const { subject } = params;
+
+    // check account
+    if (!req.account) return {
+      success : false,
+      message : 'Authentication Required',
+    };
+
+    // load app
+    const actualApp = await AppModel.findById(subject);
+
+    // check app
+    if (!actualApp) return {
+      success : false,
+      message : 'App not found',
+    };
+
+    // check app
+    if (actualApp.get('default')) return {
+      success : false,
+      message : 'App already installed',
+    };
+
+    // lower account
+    const lowerAccount = req.account?.toLowerCase();
+
+    // is following
+    const [newInstall, newCount] = await AppModel.addInstall(lowerAccount, subject);
+
+    // return
+    return {
+      result : {
+        count   : newCount,
+        install : newInstall ? await newInstall.toJSON() : false,
+      },
+      success : true,
+    }
+  }
+
+  /**
+   * login route
+   */
+  @Route('POST', '/api/v1/consent/:subject')
+  async consentAction(req, { data, params }, next) {
+    // return json
+    const { subject } = params;
+
+    // check account
+    if (!req.account) return {
+      success : false,
+      message : 'Authentication Required',
+    };
+
+    // load app
+    const actualApp = await AppModel.findById(subject);
+
+    // check app
+    if (!actualApp) return {
+      success : false,
+      message : 'App not found',
+    };
+
+    // check app
+    if (actualApp.get('default')) return {
+      success : false,
+      message : 'App already installed',
+    };
+
+    // lower account
+    const lowerAccount = req.account?.toLowerCase();
+
+    // is following
+    const isInstalled = await AppModel.isInstalled(lowerAccount, subject);
+
+    // check if is installed
+    if (!isInstalled) return {
+      success : false,
+      message : 'App not installed',
+    };
+
+    // set concent
+    isInstalled.set('consent', new Date());
+
+    // return
+    return {
+      result  : await isInstalled.toJSON(),
+      success : true,
+    };
+  }
+
+  /**
+   * login route
+   */
+  @Route('DELETE', '/api/v1/install/:subject')
+  async uninstallAction(req, { data, params }, next) {
+    // return json
+    const { subject } = params;
+
+    // check account
+    if (!req.account) return {
+      success : false,
+      message : 'Authentication Required',
+    };
+
+    // load app
+    const actualApp = await AppModel.findById(subject);
+
+    // check app
+    if (!actualApp) return {
+      success : false,
+      message : 'App not found',
+    };
+
+    // check app
+    if (actualApp.get('default')) return {
+      success : false,
+      message : 'App already installed',
+    };
+
+    // lower account
+    const lowerAccount = req.account?.toLowerCase();
+
+    // is following
+    const isInstalled = await AppModel.isInstalled(lowerAccount, subject);
+
+    // new count
+    let newCount = 0;
+
+    // check following
+    if (isInstalled) {
+      // count
+      const [, removeCount] = await isInstalled.remove();
+      newCount = removeCount;
+    }
+
+    // return
+    return {
+      result : {
+        count   : newCount,
+        install : null,
+      },
+      success : true,
+    }
   }
 }

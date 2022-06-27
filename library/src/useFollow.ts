@@ -33,8 +33,6 @@ const useFollow = (subject, type = 'space') => {
     // load
     const backendFollow = await socket.get(`/follow/${id}`);
 
-    console.log('test', id, backendFollow);
-
     // set post
     setFollow(backendFollow);
     setLoading(false);
@@ -126,9 +124,14 @@ const useFollow = (subject, type = 'space') => {
     const id = subject?.id || subject;
 
     // update
-    if (id) {
-      loadFollow();
-    }
+    if (!id) return;
+
+    // reset counts
+    setFollowers(subject?.count?.followers || 0);
+    setFollowing(subject?.count?.following || 0);
+
+    // load follow
+    loadFollow();
 
     // add listener
     socket.socket.on('follow', emitFollow);
@@ -141,7 +144,7 @@ const useFollow = (subject, type = 'space') => {
   }, [subject?.id || subject, type, auth.loading]);
 
   // return posts
-  const actualFollow = {
+  const MoonFollow = {
     load   : loadFollow,
     create : addFollow,
     remove : removeFollow,
@@ -153,10 +156,10 @@ const useFollow = (subject, type = 'space') => {
   };
 
   // window
-  window.NFTFollow = actualFollow;
+  window.MoonFollow = MoonFollow;
 
   // return post
-  return actualFollow;
+  return MoonFollow;
 };
 
 // export default

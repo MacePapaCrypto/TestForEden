@@ -25,6 +25,7 @@ export default {
       sourcemap : true,
       globals : {
         react : 'React',
+        '@mui/lab' : 'MuiLab',
         'react-dom' : 'ReactDOM',
         '@moonup/ui' : 'MoonUi',
         '@mui/material' : 'Mui',
@@ -37,6 +38,7 @@ export default {
   ],
   external : [
     'react',
+    '@mui/lab',
     'react-dom',
     '@moonup/ui',
     '@mui/material',

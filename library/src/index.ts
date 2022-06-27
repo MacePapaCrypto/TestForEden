@@ -28,11 +28,13 @@ import useSocket from './useSocket';
 import useSpaces from './useSpaces';
 import useFollow from './useFollow';
 import useMember from './useMember';
+import useInstall from './useInstall';
 import useDesktop from './useDesktop';
 
 // desktop ui
-import App from './App';
+import App from './App/index';
 import Task from './Task/index';
+import Button from './Button/index';
 import Window from './Window/index';
 import Desktop from './Desktop/index';
 import TaskBar from './Task/Bar';
@@ -57,6 +59,7 @@ export {
   // desktop ui
   App,
   Task,
+  Button,
   Window,
   Desktop,
   TaskBar,
@@ -87,6 +90,7 @@ export {
   useSpaces,
   useFollow,
   useMember,
+  useInstall,
   useDesktop,
 
   // nft ui
@@ -101,4 +105,4 @@ export {
   PostList,
   PostCreate,
   PostTyping,
-}
+};

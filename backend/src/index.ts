@@ -4,6 +4,7 @@ import fs from 'fs-extra';
 import cors from 'cors';
 import polka from 'polka';
 import Events from 'events';
+import proMid from 'express-prometheus-middleware';
 import winston from 'winston';
 import Trouter from 'trouter';
 import bodyParser from 'http-body-parser';
@@ -110,6 +111,15 @@ class NFTBackend extends Events {
 
     // listen
     this.app = polka();
+
+    // use
+    this.app.use(proMid({
+      metricsPath            : '/metrics',
+      requestLengthBuckets   : [512, 1024, 5120, 10240, 51200, 102400],
+      responseLengthBuckets  : [512, 1024, 5120, 10240, 51200, 102400],
+      collectDefaultMetrics  : true,
+      requestDurationBuckets : [0.1, 0.5, 1, 1.5],
+    }));
 
     // use cors
     this.app.use(cors({
