@@ -1,6 +1,7 @@
 import json from '@rollup/plugin-json';
 import babel from '@rollup/plugin-babel';
 import styles from 'rollup-plugin-styles';
+import replace from '@rollup/plugin-replace';
 import resolve from '@rollup/plugin-node-resolve';
 import commonjs from '@rollup/plugin-commonjs';
 import { terser } from 'rollup-plugin-terser';
@@ -58,6 +59,10 @@ export default {
       browser        : true,
       preferBuiltins : true,
       extensions,
+    }),
+    replace({
+      'process.nextTick'     : 'setImmediate',
+      'process.env.NODE_ENV' : JSON.stringify(production ? 'production' : 'development'),
     }),
     commonjs({
       include : [

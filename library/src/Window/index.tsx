@@ -1,8 +1,13 @@
 
 // react
 import { Rnd } from 'react-rnd';
+import { ErrorBoundary } from 'react-error-boundary';
 import { Box, CircularProgress, Paper, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+
+// font awesome icon
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faExclamationTriangle } from '@fortawesome/pro-regular-svg-icons';
 
 // local
 import Bar from './Bar';
@@ -160,28 +165,34 @@ const MoonWindow = (props = {}) => {
           </>
         ) : (
           app.App ? (
-            <Context.Provider value={ {
-              item       : props.item,
-              onMoveUp   : props.onMoveUp,
-              onMoveDown : props.onMoveDown,
+            <ErrorBoundary FallbackComponent={ (
+              <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+                <FontAwesomeIcon icon={ faExclamationTriangle } size="xl" />
+              </Box>
+            ) }>
+              <Context.Provider value={ {
+                item       : props.item,
+                onMoveUp   : props.onMoveUp,
+                onMoveDown : props.onMoveDown,
 
-              // save place
-              place,
-              placed,
-              setPlace : savePlace,
+                // save place
+                place,
+                placed,
+                setPlace : savePlace,
 
-              // pathing
-              setPath,
-              pushPath,
-            } }>
-              <app.App
-                app={ props.item.application }
-                path={ props.item.path }
-                
-                setPath={ setPath }
-                pushPath={ pushPath }
-              />
-            </Context.Provider>
+                // pathing
+                setPath,
+                pushPath,
+              } }>
+                <app.App
+                  app={ props.item.application }
+                  path={ props.item.path }
+                  
+                  setPath={ setPath }
+                  pushPath={ pushPath }
+                />
+              </Context.Provider>
+            </ErrorBoundary>
           ) : (
             <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
               App Removed
