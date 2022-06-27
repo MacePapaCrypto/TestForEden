@@ -20,6 +20,10 @@ const MoonAppSideBar = (props = {}) => {
         width       : subspaceWidth,
         height      : '100%',
         borderRight : `.1rem solid ${theme.palette.divider}`,
+
+        '&:empty' : {
+          display : 'none',
+        }
       } }>
         { props.children }
       </Box>

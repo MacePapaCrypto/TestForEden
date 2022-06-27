@@ -172,6 +172,7 @@ const MoonWindow = (props = {}) => {
             ) }>
               <Context.Provider value={ {
                 item       : props.item,
+                path       : props.item.path,
                 onMoveUp   : props.onMoveUp,
                 onMoveDown : props.onMoveDown,
 

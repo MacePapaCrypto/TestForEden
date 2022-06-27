@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Stack, Tooltip, Typography, CircularProgress, useTheme } from '@mui/material';
 
 // socket
-import { useSocket, useFollow, useDesktop, useInstall, ScrollBar, Button } from '@moonup/ui';
+import { useSocket, useFollow, useDesktop, useParams, useInstall, ScrollBar, Button } from '@moonup/ui';
 
 // font awesome icon
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,6 +16,9 @@ import { faHexagonCheck } from '@fortawesome/pro-regular-svg-icons';
  * @returns 
  */
 const AppStoreApp = (props = {}) => {
+  // use params
+  const { id } = useParams();
+
   // load item
   const [item, setItem] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +38,7 @@ const AppStoreApp = (props = {}) => {
     setLoading(true);
 
     // load app
-    const app = await socket.get(`/app/${props.id}`);
+    const app = await socket.get(`/app/${id}`);
 
     // set item
     setItem(app);
@@ -48,7 +51,7 @@ const AppStoreApp = (props = {}) => {
   useEffect(() => {
     // load item
     loadApp();
-  }, [props.id]);
+  }, [id]);
 
   // banner height
   const bannerHeight = 240;

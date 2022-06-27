@@ -1,16 +1,17 @@
 
 // import react app
-import { Box } from '@mui/material';
 import React, { useEffect, useState } from 'react';
+import { Box } from '@mui/material';
 
 // import
-import { App, useSpaces, useDesktop } from '@moonup/ui';
+import { App, Route, useSpaces } from '@moonup/ui';
 
 // import local
 import List from './Space/List';
 import Feed from './Space/Feed';
-import Create from './Space/Create';
+import Create from './Create';
 import SideBar from './Space/SideBar';
+import ExploreSideBar from './ExploreSideBar';
 import SubSpaceCreate from './Space/SubSpaceCreate';
 
 /**
@@ -19,13 +20,8 @@ import SubSpaceCreate from './Space/SubSpaceCreate';
  * @param props
  */
 const SpaceApp = (props = {}) => {
-  // use posts
-  const desktop = useDesktop();
-
   // action
   const [space, action] = props.path.split('/');
-
-  console.log('test ssssssssssssssss', space, action, props.path);
 
   // spaces
   const subSpaces = useSpaces({
@@ -91,58 +87,108 @@ const SpaceApp = (props = {}) => {
       name="App Name"
       description="App Description"
 
-      menu={ false ? (
-        <SideBar
-          item={ props.item }
-          feed={ feed }
-          space={ null }
-          onFeed={ saveFeed }
-          subSpace={ subSpace }
-          subSpaces={ subSpaces }
-          setSubSpace={ saveSubspace }
-          bringToFront={ props.bringToFront }
-        />
-      ) : null }
+      menu={ (
+        <>
+          <Route path="/">
+            <ExploreSideBar { ...props } />
+          </Route>
+          <Route path="/mooning">
+            <ExploreSideBar { ...props } />
+          </Route>
+          <Route path="/latest">
+            <ExploreSideBar { ...props } />
+          </Route>
+          <Route path="/following">
+            <ExploreSideBar { ...props } />
+          </Route>
+        </>
+      ) }
 
       ready={ true }
       default={ defaultProps }
     >
-      <>
-        { (space === 'create') ? (
-          <Create
-            onClose={ props.onClose }
-            bringToFront={ props.bringToFront }
-          />
-        ) : (['mooning', 'latest', 'account'].includes(space)) ? (
-          <List
-            feed={ space }
-            onClose={ props.onClose }
-            bringToFront={ props.bringToFront }
-          />
-        ) : (!null) ? (
-          <Box>
-            Route not found
-          </Box>
-        ) : (action === 'create') ? (
-          <SubSpaceCreate
-            space={ null }
-            onClose={ props.onClose }
-            bringToFront={ props.bringToFront }
-          />
-        ) : (
-          <Box flex={ 1 }>
-            <Feed
-              feed={ feed }
-              space={ null }
-              onFeed={ saveFeed }
-              subSpace={ subSpace }
-              subSpaces={ subSpaces }
-              setSubSpace={ saveSubspace }
-              bringToFront={ props.bringToFront }
-            />
-          </Box>
-        ) }
-      </>
+      <Route path="/">
+        <Box>
+          HOME
+        </Box>
+      </Route>
+      <Route path="/mooning">
+        <List
+          feed="mooning"
+          onClose={ props.onClose }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+      <Route path="/latest">
+        <List
+          feed="latest"
+          onClose={ props.onClose }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+      <Route path="/following">
+        <List
+          feed="following"
+          onClose={ props.onClose }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+
+      <Route path="/create">
+        <Create
+          onClose={ props.onClose }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+
+      <Route path="/space/:space/create">
+        <SubSpaceCreate
+          space={ null }
+          onClose={ props.onClose }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+
+      <Route path="/space/:space">
+        <Feed
+          feed="hot"
+          space={ null }
+          onFeed={ saveFeed }
+          subSpaces={ subSpaces }
+          setSubSpace={ saveSubspace }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+      <Route path="/space/:space/hot">
+        <Feed
+          feed="hot"
+          space={ null }
+          onFeed={ saveFeed }
+          subSpaces={ subSpaces }
+          setSubSpace={ saveSubspace }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+      <Route path="/space/:space/latest">
+        <Feed
+          feed="latest"
+          space={ null }
+          onFeed={ saveFeed }
+          subSpaces={ subSpaces }
+          setSubSpace={ saveSubspace }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
+      <Route path="/space/:space/mooning">
+        <Feed
+          feed="mooning"
+          space={ null }
+          onFeed={ saveFeed }
+          subSpaces={ subSpaces }
+          setSubSpace={ saveSubspace }
+          bringToFront={ props.bringToFront }
+        />
+      </Route>
     </App>
   );
 };

@@ -23,6 +23,7 @@ import useFeed from './useFeed';
 import usePost from './usePost';
 import useAuth from './useAuth';
 import usePosts from './usePosts';
+import useParams from './useParams';
 import useTyping from './useTyping';
 import useSocket from './useSocket';
 import useSpaces from './useSpaces';
@@ -34,6 +35,7 @@ import useDesktop from './useDesktop';
 // desktop ui
 import App from './App/index';
 import Task from './Task/index';
+import Route from './Route/index';
 import Button from './Button/index';
 import Window from './Window/index';
 import Desktop from './Desktop/index';
@@ -59,6 +61,7 @@ export {
   // desktop ui
   App,
   Task,
+  Route,
   Button,
   Window,
   Desktop,
@@ -88,6 +91,7 @@ export {
   useTyping,
   useSocket,
   useSpaces,
+  useParams,
   useFollow,
   useMember,
   useInstall,

@@ -1,7 +1,7 @@
 
 // import react app
 import React from 'react';
-import { App, ScrollBar } from '@moonup/ui';
+import { App, ScrollBar, Route } from '@moonup/ui';
 import { Box, Stack, Chip, Divider, useTheme, MenuList, MenuItem, ListItemIcon, ListItemText, TextField } from '@mui/material';
 
 // import css
@@ -89,65 +89,63 @@ const SpaceApp = (props = {}) => {
       ready={ true }
       default={ defaultProps }
     >
-      { props.path === '/' && (
-        <>
-          <Box sx={ {
-            padding      : 2,
-            borderBottom : `${theme.shape.borderWidth} solid ${theme.palette.divider}`,
-          } }>
-            <ScrollBar>
-              <Stack direction="row" spacing={ 1 } sx={ {
-                display    : 'inline-flex',
-                alignItems : 'center',
-              } }>
-                <TextField
-                  size="small"
-                  placeholder="Search"
-                />
-                <Divider />
-                { tag.tags.map((data) => {
-                  // return jsx
-                  return (
-                    <Chip
-                      key={ data.id }
-                      label={ data.name }
-                    />
-                  );
-                }) }
-              </Stack>
-            </ScrollBar>
-          </Box>
-          <Box flex={ 1 } display="flex">
-            <ScrollBar isFlex>
-              <Items name="Featured Apps" onSelect={ onSelect } />
-              <Items name="Most Followed Apps" size="small" sort="count.followers" onSelect={ onSelect } />
-              <Items name="Most Installed Apps" size="small" sort="count.installs" onSelect={ onSelect } />
-            </ScrollBar>
-          </Box>
-        </>
-      ) }
+      <Route path="/">
+        <Box sx={ {
+          padding      : 2,
+          borderBottom : `${theme.shape.borderWidth} solid ${theme.palette.divider}`,
+        } }>
+          <ScrollBar>
+            <Stack direction="row" spacing={ 1 } sx={ {
+              display    : 'inline-flex',
+              alignItems : 'center',
+            } }>
+              <TextField
+                size="small"
+                placeholder="Search"
+              />
+              <Divider />
+              { tag.tags.map((data) => {
+                // return jsx
+                return (
+                  <Chip
+                    key={ data.id }
+                    label={ data.name }
+                  />
+                );
+              }) }
+            </Stack>
+          </ScrollBar>
+        </Box>
+        <Box flex={ 1 } display="flex">
+          <ScrollBar isFlex>
+            <Items name="Featured Apps" onSelect={ onSelect } />
+            <Items name="Most Followed Apps" size="small" sort="count.followers" onSelect={ onSelect } />
+            <Items name="Most Installed Apps" size="small" sort="count.installs" onSelect={ onSelect } />
+          </ScrollBar>
+        </Box>
+      </Route>
 
-      { props.path === '/latest' && (
+      <Route path="/latest">
         <Box>
           Latest
         </Box>
-      ) }
+      </Route>
 
-      { props.path === '/following' && (
+      <Route path="/following">
         <Box>
-          Following
+        Following
         </Box>
-      ) }
+      </Route>
 
-      { props.path === '/installed' && (
+      <Route path="/installed">
         <Box>
-          Installed
+        Installed
         </Box>
-      ) }
+      </Route>
 
-      { props.path.startsWith('/app/') && (
-        <AppStoreApp id={ props.path.split('/')[2] } />
-      ) }
+      <Route path="/app/:id">
+        <AppStoreApp />
+      </Route>
     </App>
   );
 };

@@ -1,6 +1,6 @@
 {
   "name": "@moonup/appstore",
-  "version": "0.0.132",
+  "version": "0.0.133",
   "description": "Explore Moon web3 Applications",
   "main": "dist/index.js",
   "type": "module",
