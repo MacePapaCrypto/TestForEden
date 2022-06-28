@@ -17,7 +17,7 @@ const appLoads = {};
 // use auth hook
 const useApp = (app, path) => {
   // loading
-  const [loading, setLoading] = useState(!appCache[app.url]);
+  const [loading, setLoading] = useState(!appCache[app?.url]);
 
   // require modules
   const requireModules = {
@@ -55,6 +55,9 @@ const useApp = (app, path) => {
 
   // load app
   const loadApp = async () => {
+    // check url
+    if (!app?.url) return;
+
     // create require
     createRequire();
 
@@ -105,11 +108,11 @@ const useApp = (app, path) => {
   useEffect(() => {
     // load url
     loadApp();
-  }, [app.url]);
+  }, [app?.url]);
 
   // moon app
   const MoonApp = {
-    App : appCache[app.url],
+    App : appCache[app?.url],
     loading,
   };
 
