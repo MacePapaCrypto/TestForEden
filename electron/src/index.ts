@@ -10,11 +10,11 @@ const createWindow = () => {
     height : 600,
   });
 
-  // and load the index.html of the app.
-  mainWindow.loadFile('index.html')
-
   // Open the DevTools.
-  // mainWindow.webContents.openDevTools()
+  mainWindow.webContents.openDevTools()
+
+  // and load the index.html of the app.
+  mainWindow.loadFile(`${__dirname}/index.html`)
 }
 
 // This method will be called when Electron has finished

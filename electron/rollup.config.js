@@ -1,4 +1,5 @@
 
+import copy from 'rollup-plugin-copy';
 import babel from '@rollup/plugin-babel';
 import assets from 'rollup-plugin-copy-assets';
 import replace from '@rollup/plugin-replace';
@@ -55,6 +56,14 @@ export default {
         '@babel/preset-env',
         '@babel/preset-typescript',
         '@babel/preset-react',
+      ],
+    }),
+    copy({
+      targets : [
+        {
+          src  : 'src/index.html',
+          dest : 'dist',
+        },
       ],
     }),
 

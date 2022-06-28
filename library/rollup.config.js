@@ -24,7 +24,7 @@ export default {
     {
       file      : pkg.main,
       format    : 'esm',
-      sourcemap : true,
+      sourcemap : !production,
     },
   ],
   plugins : [
