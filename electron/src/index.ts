@@ -1,7 +1,11 @@
 
 // import
-import path from 'path';
+import useId from '@moonup/ui/src/useId';
 import { app, BrowserWindow } from 'electron';
+
+// local
+import store from './utilities/store';
+import Socket from './utilities/socket';
 
 /**
  * create moon electron class
@@ -11,9 +15,28 @@ class MoonElectron {
    * construct moon electron
    */
   constructor() {
+    // create id
+    this.store = store;
+    this.getId = useId();
 
     // run
-    this.run();
+    this.building = this.build();
+  }
+
+  /**
+   * build moon electron
+   */
+  async build() {
+    // build socket
+    await this.socket();
+  }
+
+  /**
+   * build socket connection
+   */
+  async socket() {
+    // create new socket
+    this.socket = new Socket(this);
   }
 
   /**

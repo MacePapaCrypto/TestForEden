@@ -17,7 +17,7 @@ const extensions = ['.js', '.jsx', '.ts', '.tsx'];
 export default {
   input  : 'src/index.ts',
   output : {
-    file      : 'dist/main.min.js',
+    file      : 'dist/index.min.js',
     format    : 'cjs',
     sourcemap : true,
   },
