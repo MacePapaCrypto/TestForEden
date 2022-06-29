@@ -10,8 +10,8 @@ const mainTheme = createTheme({
       primary : '#c9d1d9',
     },
     border  : {
-      active  : '#fdc07b',
-      primary : '#e0e0e0',
+      active  : '#808080',
+      primary : '#30363d',
     },
     divider : '#30363d',
     primary : {
