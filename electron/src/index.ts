@@ -1,43 +1,99 @@
 
 // import
-import useId from '@moonup/ui/src/useId';
+import SocketEmitter from '@moonup/ui/src/Socket/Emitter';
+import DesktopEmitter from '@moonup/ui/src/Desktop/Emitter';
+import { customAlphabet } from 'nanoid';
 import { app, BrowserWindow } from 'electron';
+
+// create alphabet
+const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 40);
 
 // local
 import store from './utilities/store';
-import Socket from './utilities/socket';
+import windowProvider from './providers/window';
 
 /**
  * create moon electron class
  */
 class MoonElectron {
+  // variables
+  public socket = null;
+  public desktop = null;
+
   /**
    * construct moon electron
    */
   constructor() {
     // create id
     this.store = store;
-    this.getId = useId();
 
     // run
     this.building = this.build();
   }
+
+  
+  ////////////////////////////////////////////////////////////////////////
+  //
+  // BUILD METHODS
+  //
+  ////////////////////////////////////////////////////////////////////////
 
   /**
    * build moon electron
    */
   async build() {
     // build socket
-    await this.socket();
+    await this.buildSocket();
+    await this.buildDesktop();
   }
 
   /**
    * build socket connection
    */
-  async socket() {
+  async buildSocket() {
+    // building desktop
+    console.log('BUILDING SOCKET');
+
+    // ssid
+    const ssid = store.get('ssid') || nanoid();
+
+    // set
+    store.set('ssid', ssid);
+
     // create new socket
-    this.socket = new Socket(this);
+    this.socket = new SocketEmitter({
+      ssid,
+    });
   }
+
+  /**
+   * build socket connection
+   */
+  async buildDesktop() {
+    // building desktop
+    console.log('BUILDING DESKTOP');
+
+    // create new socket
+    this.desktop = new DesktopEmitter({
+      auth : {
+        account : '0x9d4150274f0a67985A53513767EBf5988cEf45A4',
+      },
+      socket : this.socket,
+    });
+
+    // on updated
+    this.desktop.on('updated', () => {
+      // create windows
+      windowProvider.setTasks(this.desktop.state.tasks);
+    });
+  }
+
+  
+  ////////////////////////////////////////////////////////////////////////
+  //
+  // WINDOW METHODS
+  //
+  ////////////////////////////////////////////////////////////////////////
 
   /**
    * runs moon electron

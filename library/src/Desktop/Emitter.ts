@@ -15,18 +15,16 @@ export default class DesktopEmitter extends EventEmitter {
   public desktops   = [];
   public shortcuts  = [];
 
-  // getter/setter
-  private __data = {
-    loading    : null,
-    updated    : new Date(),
-    desktop    : null,
-    activeTask : null,
-  };
-
   // cache timeout
   private socket  = null;
   private timeout = 60 * 1000;
   private current = {};
+
+  // getter/setter
+  private __loading    = null;
+  private __updated    = null;
+  private __desktop    = null;
+  private __activeTask = null;
 
   /**
    * constructor
@@ -37,8 +35,8 @@ export default class DesktopEmitter extends EventEmitter {
     // run super
     super();
 
-    // set props
-    this.props(props);
+    // bind
+    this.props = this.props.bind(this);
 
     // bind desktop methods
     this.getDesktop = this.getDesktop.bind(this);
@@ -75,6 +73,9 @@ export default class DesktopEmitter extends EventEmitter {
     this.createGroup = this.createGroup.bind(this);
     this.updateGroup = this.updateGroup.bind(this);
     this.removeGroup = this.removeGroup.bind(this);
+
+    // set props
+    this.props(props);
   }
 
   /**
@@ -89,31 +90,34 @@ export default class DesktopEmitter extends EventEmitter {
     this.timeout = props.timeout || props.cache || this.timeout;
 
     // useEffect stuff
-    if (props.auth?.account !== this.current.auth?.account) {
+    if (typeof props.auth !== 'undefined' && props.auth?.account !== this.current.auth?.account) {
       // load from socket
       this.listDesktops();
   
       // on connect
-      this.socket.socket.on('task', this.emitTask);
-      this.socket.socket.on('desktop', this.emitDesktop);
-      this.socket.socket.on('connect', this.listDesktops);
-      this.socket.socket.on('shortcut', this.emitShortcut);
-      this.socket.socket.on('task+remove', this.emitTaskRemove);
-      this.socket.socket.on('desktop+remove', this.emitDesktopRemove);
-      this.socket.socket.on('shortcut+remove', this.emitShortcutRemove);
+      this.socket.on('task', this.emitTask);
+      this.socket.on('desktop', this.emitDesktop);
+      this.socket.on('connect', this.listDesktops);
+      this.socket.on('shortcut', this.emitShortcut);
+      this.socket.on('task+remove', this.emitTaskRemove);
+      this.socket.on('desktop+remove', this.emitDesktopRemove);
+      this.socket.on('shortcut+remove', this.emitShortcutRemove);
   
       // done
       return () => {
         // off connect
-        this.socket.socket.removeListener('task', this.emitTask);
-        this.socket.socket.removeListener('desktop', this.emitDesktop);
-        this.socket.socket.removeListener('connect', this.listDesktops);
-        this.socket.socket.removeListener('shortcut', this.emitShortcut);
-        this.socket.socket.removeListener('task+remove', this.emitTaskRemove);
-        this.socket.socket.removeListener('desktop+remove', this.emitDesktopRemove);
-        this.socket.socket.removeListener('shortcut+remove', this.emitShortcutRemove);
+        this.socket.off('task', this.emitTask);
+        this.socket.off('desktop', this.emitDesktop);
+        this.socket.off('connect', this.listDesktops);
+        this.socket.off('shortcut', this.emitShortcut);
+        this.socket.off('task+remove', this.emitTaskRemove);
+        this.socket.off('desktop+remove', this.emitDesktopRemove);
+        this.socket.off('shortcut+remove', this.emitShortcutRemove);
       };
     }
+
+    // set current
+    this.current = props;
   }
 
   /**
@@ -166,27 +170,29 @@ export default class DesktopEmitter extends EventEmitter {
    */
   get desktop() {
     // return got
-    return this.__data.desktop;
+    return this.__desktop;
   }
 
   /**
    * set desktop
    */
-  set desktop(id) {
-    // should load
-    const shouldLoad = id !== this.__data.desktop;
+  set desktop(desktop) {
+    // check date
+    const shouldUpdate = desktop?.id !== this.__desktop?.id;
+
+    console.log('should update', desktop?.id, this.__desktop?.id, this.desktop?.id);
 
     // set desktop
-    this.__data.desktop = id;
+    this.__desktop = desktop;
 
     // check id
-    if (shouldLoad) {
+    if (shouldUpdate) {
       // load tasks
       this.loadTasks();
       this.listShortcuts();
 
       // emit
-      this.emit('desktop', id);
+      this.emit('desktop', desktop);
     }
   }
 
@@ -195,7 +201,7 @@ export default class DesktopEmitter extends EventEmitter {
    */
   get updated() {
     // return got
-    return this.__data.updated;
+    return this.__updated;
   }
 
   /**
@@ -203,15 +209,15 @@ export default class DesktopEmitter extends EventEmitter {
    */
   set updated(updated) {
     // check date
-    const shouldUpdate = updated !== this.__data.updated;
+    const shouldUpdate = updated !== this.__updated;
 
     // set updated
-    this.__data.updated = updated;
+    this.__updated = updated;
 
     // check id
     if (shouldUpdate) {
       // emit
-      this.emit('updated', this.__data.updated);
+      this.emit('updated', this.__updated);
     }
   }
 
@@ -220,7 +226,7 @@ export default class DesktopEmitter extends EventEmitter {
    */
   get loading() {
     // return got
-    return this.__data.loading;
+    return this.__loading;
   }
 
   /**
@@ -228,15 +234,15 @@ export default class DesktopEmitter extends EventEmitter {
    */
   set loading(loading) {
     // check date
-    const shouldUpdate = loading !== this.__data.loading;
+    const shouldUpdate = loading !== this.__loading;
 
     // set updated
-    this.__data.loading = loading;
+    this.__loading = loading;
 
     // check id
     if (shouldUpdate) {
       // emit
-      this.emit('loading', this.__data.loading);
+      this.emit('loading', this.__loading);
     }
   }
 
@@ -245,7 +251,7 @@ export default class DesktopEmitter extends EventEmitter {
    */
   get activeTask() {
     // return got
-    return this.__data.activeTask;
+    return this.__activeTask;
   }
 
   /**
@@ -253,18 +259,19 @@ export default class DesktopEmitter extends EventEmitter {
    */
   set activeTask(activeTask) {
     // check date
-    const shouldUpdate = activeTask !== this.__data.activeTask;
+    const shouldUpdate = activeTask?.id !== this.__activeTask?.id;
 
     // set updated
-    this.__data.activeTask = activeTask;
+    this.__activeTask = activeTask;
 
     // check id
     if (shouldUpdate) {
       // emit
-      this.emit('activeTask', this.__data.activeTask);
+      this.emit('activeTask', this.__activeTask);
     }
   }
 
+  
   ////////////////////////////////////////////////////////////////////////
   //
   // MISC FUNCTIONALITY
@@ -348,6 +355,9 @@ export default class DesktopEmitter extends EventEmitter {
    * @returns 
    */
   async listDesktops() {
+    // check socket
+    if (!this.socket) return;
+
     // loading
     this.loading = 'desktops';
 
@@ -799,7 +809,7 @@ export default class DesktopEmitter extends EventEmitter {
     }
 
     // done loading
-    this.updated = null;
+    this.loading = null;
 
     // return shortcuts
     return loadedShortcut;
@@ -970,12 +980,12 @@ export default class DesktopEmitter extends EventEmitter {
       this.updated = new Date();
     } catch (e) {
       // loading
-      this.updated = null;
+      this.loading = null;
       throw e;
     }
 
     // set loading
-    this.updated = null;
+    this.loading = null;
 
     // return tasks
     return loadedTasks;
@@ -1216,7 +1226,7 @@ export default class DesktopEmitter extends EventEmitter {
    * @param digestBackendUpdates 
    * @returns 
    */
-  updateTasks(updates = tasks, digestBackendUpdates = false) {
+  updateTasks(updates = this.tasks, digestBackendUpdates = false) {
     // check desktop
     if (!this.desktop?.id) return;
 
@@ -1505,7 +1515,7 @@ export default class DesktopEmitter extends EventEmitter {
     }
 
     // done loading
-    this.updated = null;
+    this.loading = null;
 
     // return desktops
     return loadedGroup;

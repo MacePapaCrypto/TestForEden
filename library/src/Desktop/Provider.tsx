@@ -15,15 +15,21 @@ const MoonDesktopProvider = (props = {}) => {
   const socket = useSocket();
 
   // updated
-  const [updated, setUpdated] = useState(new Date());
+  const [updated, setUpdated] = useState(() => {
+    // return date
+    return new Date();
+  });
 
   // create emitter
-  const [emitter, setEmitter] = useState(new DesktopEmitter({
-    ...props,
-
-    auth,
-    socket,
-  }));
+  const [emitter, setEmitter] = useState(() => {
+    // return emitter
+    return new DesktopEmitter({
+      ...props,
+  
+      auth,
+      socket,
+    })
+  });
 
   // use effect
   useEffect(() => {

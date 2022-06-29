@@ -8,10 +8,12 @@ import AuthContext from './Auth/Context';
 import AuthProvider from './Auth/Provider';
 
 // socket
+import SocketEmitter from './Socket/Emitter';
 import SocketContext from './Socket/Context';
 import SocketProvider from './Socket/Provider';
 
 // task
+import DesktopEmitter from './Desktop/Emitter';
 import DesktopContext from './Desktop/Context';
 import DesktopProvider from './Desktop/Provider';
 
@@ -72,11 +74,17 @@ export {
   Link,
   ScrollBar,
 
-  // context/provider
+  // auth
   AuthContext,
   AuthProvider,
+
+  // socket
+  SocketEmitter,
   SocketContext,
   SocketProvider,
+
+  // desktop
+  DesktopEmitter,
   DesktopContext,
   DesktopProvider,
 
