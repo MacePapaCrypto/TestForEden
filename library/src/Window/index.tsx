@@ -178,7 +178,7 @@ const MoonWindow = (props = {}) => {
   );
 
   // check position
-  if (props.position === null) return windowBody;
+  if (props.isElectron) return windowBody;
 
   // return jsx
   return (

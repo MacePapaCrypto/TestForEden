@@ -34,11 +34,11 @@ const Main = (props = {}) => {
 
 	// return jsx
 	return (
-    <ThemeProvider>
-      <CssBaseline />
-      
-      <SocketProvider url="wss://nft.edenup.com">
-        <AuthProvider>
+    <SocketProvider url="wss://nft.edenup.com">
+      <AuthProvider>
+        <ThemeProvider>
+          <CssBaseline />
+          
           <BrowserRouter>
           
             <Switch>
@@ -50,9 +50,9 @@ const Main = (props = {}) => {
             </Switch>
           
           </BrowserRouter>
-        </AuthProvider>
-      </SocketProvider>
-    </ThemeProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </SocketProvider>
 	);
 };
 

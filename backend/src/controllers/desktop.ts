@@ -1,6 +1,7 @@
 
 
 // import local
+import JSON5 from 'json5';
 import NFTController, { Route } from '../base/controller';
 
 // models
@@ -1019,6 +1020,27 @@ export default class DesktopController extends NFTController {
     // load themes
     const themes = await ThemeModel.findByAccount(lowerAccount);
 
+    // check themes
+    if (!themes.length) {
+      // create new theme
+      const newTheme = new ThemeModel({
+        refs : [
+          lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
+        ],
+  
+        theme    : {},
+        account  : lowerAccount,
+        session  : lowerAccount ? null : req.ssid,
+        chosenAt : new Date(),
+      });
+
+      // save
+      await newTheme.save();
+
+      // push to themes
+      themes.push(newTheme);
+    }
+
     // subscribe
     req.subscribe(`theme+account:${lowerAccount}`, this.themeListener);
 
@@ -1053,10 +1075,10 @@ export default class DesktopController extends NFTController {
         lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
       ],
 
-      theme   : data.theme || {},
-      default : data.default,
-      account : lowerAccount,
-      session : lowerAccount ? null : req.ssid,
+      theme    : data.theme || {},
+      account  : lowerAccount,
+      session  : lowerAccount ? null : req.ssid,
+      chosenAt : data.chosen ? new Date() : null,
     });
 
     // save
@@ -1099,8 +1121,8 @@ export default class DesktopController extends NFTController {
     };
 
     // update member
-    if (typeof data.theme !== 'undefined') updateTheme.set('open', data.theme || {});
-    if (typeof data.default !== 'undefined') updateTheme.set('default', !!data.default);
+    if (typeof data.theme !== 'undefined') updateTheme.set('theme', JSON5.stringify(data.theme || {}));
+    if (typeof data.chosen !== 'undefined') updateTheme.set('chosenAt', new Date());
 
     // save
     await updateTheme.save();

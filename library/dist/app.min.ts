@@ -43,6 +43,8 @@ var MoonUi = /*#__PURE__*/Object.freeze({
   get DesktopContext () { return MoonDesktopContext; },
   get DesktopProvider () { return MoonDesktopProvider; },
   get theme () { return mainTheme; },
+  get ThemeEmitter () { return ThemeEmitter; },
+  get ThemeContext () { return MoonThemeContext; },
   get ThemeProvider () { return MoonThemeProvider; },
   get useId () { return useId; },
   get useNFTs () { return useNFTs; },
@@ -51,6 +53,7 @@ var MoonUi = /*#__PURE__*/Object.freeze({
   get useAuth () { return useAuth; },
   get useApps () { return useApps; },
   get usePosts () { return usePosts; },
+  get useThemes () { return useThemes; },
   get useTyping () { return useTyping; },
   get useSocket () { return useSocket; },
   get useSpaces () { return useSpaces; },
@@ -59103,7 +59106,9 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
       this.timeout = _props.timeout || _props.cache || this.timeout; // useEffect stuff
 
       if (typeof _props.auth !== 'undefined' && ((_props$auth = _props.auth) === null || _props$auth === void 0 ? void 0 : _props$auth.account) !== ((_this$current$auth = this.current.auth) === null || _this$current$auth === void 0 ? void 0 : _this$current$auth.account)) {
-        // load from socket
+        // set current
+        this.current = _props; // load from socket
+
         this.listDesktops(); // on connect
 
         this.socket.on('task', this.emitTask);
@@ -59130,10 +59135,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
           _this2.socket.off('shortcut+remove', _this2.emitShortcutRemove);
         };
-      } // set current
-
-
-      this.current = _props;
+      }
     }
     /**
      * get state
@@ -60932,8 +60934,8 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "emitTask",
     value: function emitTask(task) {
       var isRemove = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
-      console.log('got task emission', task); // remove
 
+      // remove
       if (isRemove) {
         // tasks
         for (var i = this.tasks.length - 1; i >= 0; i--) {
@@ -61294,9 +61296,8 @@ var MoonDesktopProvider = function MoonDesktopProvider() {
   }, props.children);
 }; // export default
 
-// react
-
-var mainTheme = createTheme({
+// create theme
+var mainTheme = {
   palette: {
     mode: 'dark',
     text: {
@@ -61343,18 +61344,916 @@ var mainTheme = createTheme({
     borderWidth: '.1rem',
     borderRadius: 4
   }
-}); // theme
+};
 
-window.theme = mainTheme; // export default
+/**
+ * theme emitter class
+ */
+
+var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
+  _inherits$2(ThemeEmitter, _EventEmitter);
+
+  var _super = _createSuper$1(ThemeEmitter);
+
+  // public variables
+  // cache timeout
+  // getter/setter
+
+  /**
+   * constructor
+   *
+   * @param props 
+   */
+  function ThemeEmitter() {
+    var _this;
+
+    var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+    _classCallCheck$2(this, ThemeEmitter);
+
+    // run super
+    _this = _super.call(this); // bind
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "themes", []);
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "shortcuts", []);
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "socket", null);
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "timeout", 60 * 1000);
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "current", {});
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "__theme", null);
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "__loading", null);
+
+    _defineProperty$4(_assertThisInitialized$1(_this), "__updated", null);
+
+    _this.props = _this.props.bind(_assertThisInitialized$1(_this));
+    _this.getTheme = _this.getTheme.bind(_assertThisInitialized$1(_this));
+    _this.emitTheme = _this.emitTheme.bind(_assertThisInitialized$1(_this));
+    _this.listThemes = _this.listThemes.bind(_assertThisInitialized$1(_this));
+    _this.chooseTheme = _this.chooseTheme.bind(_assertThisInitialized$1(_this));
+    _this.updateTheme = _this.updateTheme.bind(_assertThisInitialized$1(_this));
+    _this.createTheme = _this.createTheme.bind(_assertThisInitialized$1(_this));
+    _this.deleteTheme = _this.deleteTheme.bind(_assertThisInitialized$1(_this));
+    _this.emitThemeRemove = _this.emitThemeRemove.bind(_assertThisInitialized$1(_this)); // set props
+
+    _this.props(props);
+
+    return _this;
+  }
+  /**
+   * set props
+   *
+   * @param props 
+   */
+
+
+  _createClass$2(ThemeEmitter, [{
+    key: "props",
+    value: function props() {
+      var _props$auth,
+          _this$current$auth,
+          _this2 = this;
+
+      var _props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+
+      // set cache timeout
+      this.auth = _props.auth || this.auth;
+      this.socket = _props.socket || this.socket;
+      this.timeout = _props.timeout || _props.cache || this.timeout; // useEffect stuff
+
+      if (typeof _props.auth !== 'undefined' && ((_props$auth = _props.auth) === null || _props$auth === void 0 ? void 0 : _props$auth.account) !== ((_this$current$auth = this.current.auth) === null || _this$current$auth === void 0 ? void 0 : _this$current$auth.account)) {
+        // set current
+        this.current = _props; // load from socket
+
+        this.listThemes(); // on connect
+
+        this.socket.on('theme', this.emitTheme);
+        this.socket.on('connect', this.listThemes);
+        this.socket.on('theme+remove', this.emitThemeRemove); // done
+
+        return function () {
+          // off connect
+          _this2.socket.off('theme', _this2.emitTheme);
+
+          _this2.socket.off('connect', _this2.listThemes);
+
+          _this2.socket.off('theme+remove', _this2.emitThemeRemove);
+        };
+      } // set current
+
+
+      this.current = _props;
+    }
+    /**
+     * get state
+     */
+
+  }, {
+    key: "state",
+    get: function get() {
+      // return state
+      return {
+        get: this.getTheme,
+        list: this.listThemes,
+        choose: this.chooseTheme,
+        update: this.updateTheme,
+        create: this.createTheme,
+        "delete": this.deleteTheme,
+        theme: this.theme,
+        themes: this.themes
+      };
+    }
+    /**
+     * get theme
+     */
+
+  }, {
+    key: "theme",
+    get: function get() {
+      // return got
+      return this.__theme;
+    }
+    /**
+     * set theme
+     */
+    ,
+    set: function set(theme) {
+      var _this$__theme;
+
+      // check date
+      var shouldUpdate = (theme === null || theme === void 0 ? void 0 : theme.id) !== ((_this$__theme = this.__theme) === null || _this$__theme === void 0 ? void 0 : _this$__theme.id); // set theme
+
+      this.__theme = theme; // check id
+
+      if (shouldUpdate) {
+        // emit
+        this.emit('theme', theme);
+      }
+    }
+    /**
+     * get theme
+     */
+
+  }, {
+    key: "updated",
+    get: function get() {
+      // return got
+      return this.__updated;
+    }
+    /**
+     * set updated
+     */
+    ,
+    set: function set(updated) {
+      // check date
+      var shouldUpdate = updated !== this.__updated; // set updated
+
+      this.__updated = updated; // check id
+
+      if (shouldUpdate) {
+        // emit
+        this.emit('updated', this.__updated);
+      }
+    }
+    /**
+     * get theme
+     */
+
+  }, {
+    key: "loading",
+    get: function get() {
+      // return got
+      return this.__loading;
+    }
+    /**
+     * set updated
+     */
+    ,
+    set: function set(loading) {
+      // check date
+      var shouldUpdate = loading !== this.__loading; // set updated
+
+      this.__loading = loading; // check id
+
+      if (shouldUpdate) {
+        // emit
+        this.emit('loading', this.__loading);
+      }
+    } ////////////////////////////////////////////////////////////////////////
+    //
+    // DESKTOP FUNCTIONALITY
+    //
+    ////////////////////////////////////////////////////////////////////////
+
+    /**
+     * get theme
+     *
+     * @param id 
+     * @returns 
+     */
+
+  }, {
+    key: "getTheme",
+    value: function () {
+      var _getTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
+        var found, backendTheme;
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                if (id) {
+                  _context.next = 2;
+                  break;
+                }
+
+                return _context.abrupt("return");
+
+              case 2:
+                // check found
+                found = this.themes.find(function (s) {
+                  return s.id === id;
+                }); // check found
+
+                if (!found) {
+                  _context.next = 5;
+                  break;
+                }
+
+                return _context.abrupt("return", found);
+
+              case 5:
+                _context.next = 7;
+                return this.socket.get("/theme/".concat(id));
+
+              case 7:
+                backendTheme = _context.sent;
+                return _context.abrupt("return", backendTheme);
+
+              case 9:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee, this);
+      }));
+
+      function getTheme(_x) {
+        return _getTheme.apply(this, arguments);
+      }
+
+      return getTheme;
+    }()
+    /**
+     * list themes
+     *
+     * @returns 
+     */
+
+  }, {
+    key: "listThemes",
+    value: function () {
+      var _listThemes = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+        var _this$auth,
+            _this3 = this;
+
+        var loadedThemes, _loop, i, defaultTheme;
+
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+          while (1) {
+            switch (_context2.prev = _context2.next) {
+              case 0:
+                if (!(!this.socket || !((_this$auth = this.auth) !== null && _this$auth !== void 0 && _this$auth.account))) {
+                  _context2.next = 2;
+                  break;
+                }
+
+                return _context2.abrupt("return");
+
+              case 2:
+                // loading
+                this.loading = 'themes'; // loaded
+
+                loadedThemes = []; // try/catch
+
+                _context2.prev = 4;
+                _context2.next = 7;
+                return this.socket.get('/theme/list');
+
+              case 7:
+                loadedThemes = _context2.sent;
+
+                _loop = function _loop(i) {
+                  // check if theme
+                  if (!loadedThemes.find(function (s) {
+                    return s.id === _this3.themes[i].id;
+                  })) {
+                    // removed
+                    _this3.themes.splice(i, 1);
+                  }
+                };
+
+                // themes
+                for (i = this.themes.length - 1; i >= 0; i--) {
+                  _loop(i);
+                } // replace all info
+
+
+                loadedThemes.forEach(function (theme) {
+                  // local
+                  var localTheme = _this3.themes.find(function (s) {
+                    return s.id === theme.id;
+                  }); // check local theme
+
+
+                  if (!localTheme) return _this3.themes.push(theme); // update info
+
+                  Object.keys(theme).forEach(function (key) {
+                    // theme key
+                    localTheme[key] = theme[key];
+                  });
+                }); // set themes
+
+                this.updated = new Date();
+                _context2.next = 18;
+                break;
+
+              case 14:
+                _context2.prev = 14;
+                _context2.t0 = _context2["catch"](4);
+                // loading
+                this.loading = null;
+                throw _context2.t0;
+
+              case 18:
+                // set loading
+                this.loading = null; // check themes
+
+                if (!this.theme) {
+                  // sort and set default
+                  defaultTheme = loadedThemes.sort(function (a, b) {
+                    // aC
+                    var aC = new Date(a.chosenAt || 0);
+                    var bC = new Date(b.chosenAt || 0); // return
+
+                    if (aC > bC) return -1;
+                    if (aC < bC) return 1;
+                    return 0;
+                  })[0]; // set default
+
+                  this.theme = defaultTheme;
+                } // return themes
+
+
+                return _context2.abrupt("return", loadedThemes);
+
+              case 21:
+              case "end":
+                return _context2.stop();
+            }
+          }
+        }, _callee2, this, [[4, 14]]);
+      }));
+
+      function listThemes() {
+        return _listThemes.apply(this, arguments);
+      }
+
+      return listThemes;
+    }()
+    /**
+     * create theme
+     *
+     * @param param0 
+     * @returns 
+     */
+
+  }, {
+    key: "createTheme",
+    value: function () {
+      var _createTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(_ref) {
+        var theme, chosen, createdTheme;
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+          while (1) {
+            switch (_context3.prev = _context3.next) {
+              case 0:
+                theme = _ref.theme, chosen = _ref.chosen;
+                // set loading
+                this.loading = 'create'; // loaded
+
+                createdTheme = {}; // try/catch
+
+                _context3.prev = 3;
+                _context3.next = 6;
+                return this.socket.post('/theme', {
+                  theme: theme,
+                  chosen: chosen
+                }, this.timeout);
+
+              case 6:
+                createdTheme = _context3.sent;
+                // set themes
+                this.updateTheme(createdTheme, false);
+                _context3.next = 14;
+                break;
+
+              case 10:
+                _context3.prev = 10;
+                _context3.t0 = _context3["catch"](3);
+                // loading
+                this.loading = null;
+                throw _context3.t0;
+
+              case 14:
+                // done loading
+                this.loading = null; // return themes
+
+                return _context3.abrupt("return", createdTheme);
+
+              case 16:
+              case "end":
+                return _context3.stop();
+            }
+          }
+        }, _callee3, this, [[3, 10]]);
+      }));
+
+      function createTheme(_x2) {
+        return _createTheme.apply(this, arguments);
+      }
+
+      return createTheme;
+    }()
+    /**
+     * update theme
+     *
+     * @param param0 
+     * @param save 
+     * @returns 
+     */
+
+  }, {
+    key: "chooseTheme",
+    value: function chooseTheme(_ref2) {
+      var id = _ref2.id;
+      // update theme
+      var localTheme = this.themes.find(function (s) {
+        return s.id === id;
+      }); // update theme
+
+      this.theme = localTheme; // update theme
+
+      return this.updateTheme({
+        id: id,
+        chosen: true
+      });
+    }
+    /**
+     * update theme
+     *
+     * @param param0 
+     * @param save 
+     * @returns 
+     */
+
+  }, {
+    key: "updateTheme",
+    value: function () {
+      var _updateTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(_ref3) {
+        var _this$theme;
+
+        var id,
+            theme,
+            chosen,
+            save,
+            localTheme,
+            loadedTheme,
+            _args4 = arguments;
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+          while (1) {
+            switch (_context4.prev = _context4.next) {
+              case 0:
+                id = _ref3.id, theme = _ref3.theme, chosen = _ref3.chosen;
+                save = _args4.length > 1 && _args4[1] !== undefined ? _args4[1] : true;
+
+                // set loading
+                if (save) {
+                  // loading
+                  this.loading = id;
+                } // update theme
+
+
+                localTheme = this.themes.find(function (s) {
+                  return s.id === id;
+                }); // check local theme
+
+                if (!localTheme) {
+                  // set theme
+                  localTheme = {
+                    id: id,
+                    theme: theme,
+                    chosenAt: chosen ? new Date() : null
+                  }; // push
+
+                  this.themes.push(localTheme);
+                } // keys
+
+
+                if (typeof theme !== 'undefined') localTheme.theme = theme;
+                if (typeof chosen !== 'undefined') localTheme.chosenAt = chosen ? new Date() : null; // check theme
+
+                if (localTheme && new Date(localTheme.chosenAt || 0) > new Date(((_this$theme = this.theme) === null || _this$theme === void 0 ? void 0 : _this$theme.chosenAt) || 0)) {
+                  // set theme
+                  this.theme = localTheme;
+                } // update
+
+
+                if (save) {
+                  _context4.next = 12;
+                  break;
+                }
+
+                return _context4.abrupt("return", this.updated = new Date());
+
+              case 12:
+                // update in place
+                this.updated = new Date();
+
+              case 13:
+                // loaded
+                loadedTheme = localTheme; // try/catch
+
+                _context4.prev = 14;
+                _context4.next = 17;
+                return this.socket.patch("/theme/".concat(id), {
+                  theme: theme,
+                  chosen: chosen
+                });
+
+              case 17:
+                loadedTheme = _context4.sent;
+                // loop
+                Object.keys(loadedTheme).forEach(function (key) {
+                  // add to loaded
+                  localTheme[key] = loadedTheme[key];
+                }); // set themes
+
+                this.updated = new Date();
+                _context4.next = 25;
+                break;
+
+              case 22:
+                _context4.prev = 22;
+                _context4.t0 = _context4["catch"](14);
+                throw _context4.t0;
+
+              case 25:
+                // done loading
+                this.loading = null; // return themes
+
+                return _context4.abrupt("return", loadedTheme);
+
+              case 27:
+              case "end":
+                return _context4.stop();
+            }
+          }
+        }, _callee4, this, [[14, 22]]);
+      }));
+
+      function updateTheme(_x3) {
+        return _updateTheme.apply(this, arguments);
+      }
+
+      return updateTheme;
+    }()
+    /**
+     * delete theme
+     *
+     * @param param0 
+     * @returns 
+     */
+
+  }, {
+    key: "deleteTheme",
+    value: function () {
+      var _deleteTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(_ref4) {
+        var id, i;
+        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+          while (1) {
+            switch (_context5.prev = _context5.next) {
+              case 0:
+                id = _ref4.id;
+                // set loading
+                this.loading = id; // try/catch
+
+                _context5.prev = 2;
+                _context5.next = 5;
+                return this.socket["delete"]("/theme/".concat(id));
+
+              case 5:
+                // themes
+                for (i = this.themes.length - 1; i >= 0; i--) {
+                  // check if theme
+                  if (id === this.themes[i].id) {
+                    // removed
+                    this.themes.splice(i, 1);
+                  }
+                } // set themes
+
+
+                this.updated = new Date();
+                _context5.next = 12;
+                break;
+
+              case 9:
+                _context5.prev = 9;
+                _context5.t0 = _context5["catch"](2);
+                throw _context5.t0;
+
+              case 12:
+                // done loading
+                this.loading = null; // return themes
+
+                return _context5.abrupt("return", true);
+
+              case 14:
+              case "end":
+                return _context5.stop();
+            }
+          }
+        }, _callee5, this, [[2, 9]]);
+      }));
+
+      function deleteTheme(_x4) {
+        return _deleteTheme.apply(this, arguments);
+      }
+
+      return deleteTheme;
+    }()
+    /**
+     * emit theme update
+     *
+     * @param theme 
+     * @param isRemove 
+     */
+
+  }, {
+    key: "emitTheme",
+    value: function emitTheme(theme) {
+      var isRemove = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
+
+      // remove
+      if (isRemove) {
+        // themes
+        for (var i = this.themes.length - 1; i >= 0; i--) {
+          // check if theme
+          if (theme.id === this.themes[i].id) {
+            // removed
+            this.themes.splice(i, 1);
+          }
+        } // update
+
+
+        this.updated = new Date();
+      } else {
+        // update
+        this.updateTheme(theme, false);
+      }
+    }
+    /**
+     * emit theme
+     *
+     * @param theme 
+     * @returns 
+     */
+
+  }, {
+    key: "emitThemeRemove",
+    value: function emitThemeRemove(theme) {
+      // emit theme
+      return this.emitTheme(theme);
+    }
+  }]);
+
+  return ThemeEmitter;
+}(EventEmitter);
 
 // socketio client
 
+var MoonThemeContext = /*#__PURE__*/createContext(null); // connect to url
+
+var isMergeableObject = function isMergeableObject(value) {
+	return isNonNullObject(value)
+		&& !isSpecial(value)
+};
+
+function isNonNullObject(value) {
+	return !!value && typeof value === 'object'
+}
+
+function isSpecial(value) {
+	var stringValue = Object.prototype.toString.call(value);
+
+	return stringValue === '[object RegExp]'
+		|| stringValue === '[object Date]'
+		|| isReactElement(value)
+}
+
+// see https://github.com/facebook/react/blob/b5ac963fb791d1298e7f396236383bc955f916c1/src/isomorphic/classic/element/ReactElement.js#L21-L25
+var canUseSymbol = typeof Symbol === 'function' && Symbol.for;
+var REACT_ELEMENT_TYPE = canUseSymbol ? Symbol.for('react.element') : 0xeac7;
+
+function isReactElement(value) {
+	return value.$$typeof === REACT_ELEMENT_TYPE
+}
+
+function emptyTarget(val) {
+	return Array.isArray(val) ? [] : {}
+}
+
+function cloneUnlessOtherwiseSpecified(value, options) {
+	return (options.clone !== false && options.isMergeableObject(value))
+		? deepmerge(emptyTarget(value), value, options)
+		: value
+}
+
+function defaultArrayMerge(target, source, options) {
+	return target.concat(source).map(function(element) {
+		return cloneUnlessOtherwiseSpecified(element, options)
+	})
+}
+
+function getMergeFunction(key, options) {
+	if (!options.customMerge) {
+		return deepmerge
+	}
+	var customMerge = options.customMerge(key);
+	return typeof customMerge === 'function' ? customMerge : deepmerge
+}
+
+function getEnumerableOwnPropertySymbols(target) {
+	return Object.getOwnPropertySymbols
+		? Object.getOwnPropertySymbols(target).filter(function(symbol) {
+			return target.propertyIsEnumerable(symbol)
+		})
+		: []
+}
+
+function getKeys(target) {
+	return Object.keys(target).concat(getEnumerableOwnPropertySymbols(target))
+}
+
+function propertyIsOnObject(object, property) {
+	try {
+		return property in object
+	} catch(_) {
+		return false
+	}
+}
+
+// Protects from prototype poisoning and unexpected merging up the prototype chain.
+function propertyIsUnsafe(target, key) {
+	return propertyIsOnObject(target, key) // Properties are safe to merge if they don't exist in the target yet,
+		&& !(Object.hasOwnProperty.call(target, key) // unsafe if they exist up the prototype chain,
+			&& Object.propertyIsEnumerable.call(target, key)) // and also unsafe if they're nonenumerable.
+}
+
+function mergeObject(target, source, options) {
+	var destination = {};
+	if (options.isMergeableObject(target)) {
+		getKeys(target).forEach(function(key) {
+			destination[key] = cloneUnlessOtherwiseSpecified(target[key], options);
+		});
+	}
+	getKeys(source).forEach(function(key) {
+		if (propertyIsUnsafe(target, key)) {
+			return
+		}
+
+		if (propertyIsOnObject(target, key) && options.isMergeableObject(source[key])) {
+			destination[key] = getMergeFunction(key, options)(target[key], source[key], options);
+		} else {
+			destination[key] = cloneUnlessOtherwiseSpecified(source[key], options);
+		}
+	});
+	return destination
+}
+
+function deepmerge(target, source, options) {
+	options = options || {};
+	options.arrayMerge = options.arrayMerge || defaultArrayMerge;
+	options.isMergeableObject = options.isMergeableObject || isMergeableObject;
+	// cloneUnlessOtherwiseSpecified is added to `options` so that custom arrayMerge()
+	// implementations can use it. The caller may not replace it.
+	options.cloneUnlessOtherwiseSpecified = cloneUnlessOtherwiseSpecified;
+
+	var sourceIsArray = Array.isArray(source);
+	var targetIsArray = Array.isArray(target);
+	var sourceAndTargetTypesMatch = sourceIsArray === targetIsArray;
+
+	if (!sourceAndTargetTypesMatch) {
+		return cloneUnlessOtherwiseSpecified(source, options)
+	} else if (sourceIsArray) {
+		return options.arrayMerge(target, source, options)
+	} else {
+		return mergeObject(target, source, options)
+	}
+}
+
+deepmerge.all = function deepmergeAll(array, options) {
+	if (!Array.isArray(array)) {
+		throw new Error('first argument should be an array')
+	}
+
+	return array.reduce(function(prev, next) {
+		return deepmerge(prev, next, options)
+	}, {})
+};
+
+var deepmerge_1 = deepmerge;
+
+var cjs = deepmerge_1;
+
 var MoonThemeProvider = function MoonThemeProvider() {
+  var _emitter$state2, _emitter$state2$theme;
+
   var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // return jsx
+
+  // updated
+  var _useState = useState(null),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      theme = _useState2[0],
+      setTheme = _useState2[1];
+
+  var _useState3 = useState(new Date()),
+      _useState4 = _slicedToArray$1(_useState3, 2);
+      _useState4[0];
+      var setUpdated = _useState4[1]; // socket/auth
+
+
+  var auth = useAuth();
+  var socket = useSocket(); // create emitter
+
+  var _useState5 = useState(function () {
+    // return emitter
+    return window.themeEmitter || new ThemeEmitter({
+      auth: auth,
+      socket: socket
+    });
+  }),
+      _useState6 = _slicedToArray$1(_useState5, 1),
+      emitter = _useState6[0]; // use effect
+
+
+  useEffect(function () {
+    var _emitter$state, _emitter$state$theme;
+
+    // real theme
+    var realTheme = cjs(mainTheme || {}, ((_emitter$state = emitter.state) === null || _emitter$state === void 0 ? void 0 : (_emitter$state$theme = _emitter$state.theme) === null || _emitter$state$theme === void 0 ? void 0 : _emitter$state$theme.theme) || {});
+    console.log('real theme', realTheme); // check theme
+
+    setTheme(createTheme(realTheme));
+  }, [JSON.stringify((_emitter$state2 = emitter.state) === null || _emitter$state2 === void 0 ? void 0 : (_emitter$state2$theme = _emitter$state2.theme) === null || _emitter$state2$theme === void 0 ? void 0 : _emitter$state2$theme.theme)]); // use effect
+
+  useEffect(function () {
+    // check emitter
+    if (!emitter) return; // on updated
+
+    var onUpdated = function onUpdated() {
+      return setUpdated(new Date());
+    }; // add listener
+
+
+    emitter.on('updated', onUpdated); // return done
+
+    return function () {
+      // remove listener
+      emitter.removeListener('updated', onUpdated);
+    };
+  }, [emitter]); // use effect
+
+  useEffect(function () {
+    // do props
+    emitter.props({
+      auth: auth,
+      socket: socket
+    });
+  }, [auth === null || auth === void 0 ? void 0 : auth.account]); // main theme
+
+  var actualTheme = theme || createTheme(mainTheme); // moon theme
+
+  window.MoonTheme = actualTheme;
+  window.MoonThemes = emitter === null || emitter === void 0 ? void 0 : emitter.state; // return jsx
+
   return /*#__PURE__*/React__default.createElement(ThemeProvider, {
-    theme: mainTheme
-  }, props.children);
+    theme: actualTheme
+  }, /*#__PURE__*/React__default.createElement(MoonThemeContext.Provider, {
+    value: emitter === null || emitter === void 0 ? void 0 : emitter.state
+  }, props.children));
 }; // export default
 
 var moment$1 = {exports: {}};
@@ -68436,6 +69335,15 @@ var usePost = function usePost(propsPost) {
   return actualPost;
 }; // export default
 
+// import auth context
+
+var useThemes = function useThemes() {
+  // use context
+  var themes = useContext(MoonDesktopContext); // return auth
+
+  return themes;
+}; // export default
+
 // socketio client
 
 var MoonAppContext$1 = /*#__PURE__*/createContext({}); // connect to url
@@ -71888,7 +72796,7 @@ var MoonWindow = function MoonWindow() {
     justifyContent: "center"
   }, "App Removed")); // check position
 
-  if (props.position === null) return windowBody; // return jsx
+  if (props.isElectron) return windowBody; // return jsx
 
   return /*#__PURE__*/React__default.createElement(Rnd, {
     ref: dragRef,
@@ -74953,138 +75861,6 @@ function ieOnEnd (script, cb) {
     cb(null, script); // there is no way to catch loading errors in IE8
   };
 }
-
-var isMergeableObject = function isMergeableObject(value) {
-	return isNonNullObject(value)
-		&& !isSpecial(value)
-};
-
-function isNonNullObject(value) {
-	return !!value && typeof value === 'object'
-}
-
-function isSpecial(value) {
-	var stringValue = Object.prototype.toString.call(value);
-
-	return stringValue === '[object RegExp]'
-		|| stringValue === '[object Date]'
-		|| isReactElement(value)
-}
-
-// see https://github.com/facebook/react/blob/b5ac963fb791d1298e7f396236383bc955f916c1/src/isomorphic/classic/element/ReactElement.js#L21-L25
-var canUseSymbol = typeof Symbol === 'function' && Symbol.for;
-var REACT_ELEMENT_TYPE = canUseSymbol ? Symbol.for('react.element') : 0xeac7;
-
-function isReactElement(value) {
-	return value.$$typeof === REACT_ELEMENT_TYPE
-}
-
-function emptyTarget(val) {
-	return Array.isArray(val) ? [] : {}
-}
-
-function cloneUnlessOtherwiseSpecified(value, options) {
-	return (options.clone !== false && options.isMergeableObject(value))
-		? deepmerge(emptyTarget(value), value, options)
-		: value
-}
-
-function defaultArrayMerge(target, source, options) {
-	return target.concat(source).map(function(element) {
-		return cloneUnlessOtherwiseSpecified(element, options)
-	})
-}
-
-function getMergeFunction(key, options) {
-	if (!options.customMerge) {
-		return deepmerge
-	}
-	var customMerge = options.customMerge(key);
-	return typeof customMerge === 'function' ? customMerge : deepmerge
-}
-
-function getEnumerableOwnPropertySymbols(target) {
-	return Object.getOwnPropertySymbols
-		? Object.getOwnPropertySymbols(target).filter(function(symbol) {
-			return target.propertyIsEnumerable(symbol)
-		})
-		: []
-}
-
-function getKeys(target) {
-	return Object.keys(target).concat(getEnumerableOwnPropertySymbols(target))
-}
-
-function propertyIsOnObject(object, property) {
-	try {
-		return property in object
-	} catch(_) {
-		return false
-	}
-}
-
-// Protects from prototype poisoning and unexpected merging up the prototype chain.
-function propertyIsUnsafe(target, key) {
-	return propertyIsOnObject(target, key) // Properties are safe to merge if they don't exist in the target yet,
-		&& !(Object.hasOwnProperty.call(target, key) // unsafe if they exist up the prototype chain,
-			&& Object.propertyIsEnumerable.call(target, key)) // and also unsafe if they're nonenumerable.
-}
-
-function mergeObject(target, source, options) {
-	var destination = {};
-	if (options.isMergeableObject(target)) {
-		getKeys(target).forEach(function(key) {
-			destination[key] = cloneUnlessOtherwiseSpecified(target[key], options);
-		});
-	}
-	getKeys(source).forEach(function(key) {
-		if (propertyIsUnsafe(target, key)) {
-			return
-		}
-
-		if (propertyIsOnObject(target, key) && options.isMergeableObject(source[key])) {
-			destination[key] = getMergeFunction(key, options)(target[key], source[key], options);
-		} else {
-			destination[key] = cloneUnlessOtherwiseSpecified(source[key], options);
-		}
-	});
-	return destination
-}
-
-function deepmerge(target, source, options) {
-	options = options || {};
-	options.arrayMerge = options.arrayMerge || defaultArrayMerge;
-	options.isMergeableObject = options.isMergeableObject || isMergeableObject;
-	// cloneUnlessOtherwiseSpecified is added to `options` so that custom arrayMerge()
-	// implementations can use it. The caller may not replace it.
-	options.cloneUnlessOtherwiseSpecified = cloneUnlessOtherwiseSpecified;
-
-	var sourceIsArray = Array.isArray(source);
-	var targetIsArray = Array.isArray(target);
-	var sourceAndTargetTypesMatch = sourceIsArray === targetIsArray;
-
-	if (!sourceAndTargetTypesMatch) {
-		return cloneUnlessOtherwiseSpecified(source, options)
-	} else if (sourceIsArray) {
-		return options.arrayMerge(target, source, options)
-	} else {
-		return mergeObject(target, source, options)
-	}
-}
-
-deepmerge.all = function deepmergeAll(array, options) {
-	if (!Array.isArray(array)) {
-		throw new Error('first argument should be an array')
-	}
-
-	return array.reduce(function(prev, next) {
-		return deepmerge(prev, next, options)
-	}, {})
-};
-
-var deepmerge_1 = deepmerge;
-
-var cjs = deepmerge_1;
 
 Object.defineProperty(utils, "__esModule", {
   value: true
@@ -102769,5 +103545,5 @@ var MoonPost = function MoonPost() {
 
 // import local
 
-export { MoonApp as App, MoonAuthContext as AuthContext, MoonAuthEmitter as AuthEmitter, MoonAuthWrap as AuthProvider, LoadingButton$1 as Button, MoonDesktop as Desktop, MoonDesktopContext as DesktopContext, DesktopEmitter, MoonDesktopProvider as DesktopProvider, Link, MoonNFTAvatar as NFTAvatar, MoonNFTContract as NFTContract, MoonNFTImage as NFTImage, MoonNFTList as NFTList, MoonNFTPicker as NFTPicker, MoonPost as Post, MoonPostCreate as PostCreate, MoonPostList as PostList, MoonPostTyping as PostTyping, MoonRoute as Route, NFTScrollBar as ScrollBar, MoonSocketContext as SocketContext, MoonSocketEmitter as SocketEmitter, MoonSocketProvider as SocketProvider, MoonTask as Task, MoonTaskBar as TaskBar, MoonThemeProvider as ThemeProvider, MoonWindow as Window, MoonWindowBar as WindowBar, mainTheme as theme, useApps, useAuth, useDesktop, useFeed, useFollow, useId, useInstall, useMember, useNFTs, useParams, usePost, usePosts, useSocket, useSpaces, useTyping };
+export { MoonApp as App, MoonAuthContext as AuthContext, MoonAuthEmitter as AuthEmitter, MoonAuthWrap as AuthProvider, LoadingButton$1 as Button, MoonDesktop as Desktop, MoonDesktopContext as DesktopContext, DesktopEmitter, MoonDesktopProvider as DesktopProvider, Link, MoonNFTAvatar as NFTAvatar, MoonNFTContract as NFTContract, MoonNFTImage as NFTImage, MoonNFTList as NFTList, MoonNFTPicker as NFTPicker, MoonPost as Post, MoonPostCreate as PostCreate, MoonPostList as PostList, MoonPostTyping as PostTyping, MoonRoute as Route, NFTScrollBar as ScrollBar, MoonSocketContext as SocketContext, MoonSocketEmitter as SocketEmitter, MoonSocketProvider as SocketProvider, MoonTask as Task, MoonTaskBar as TaskBar, MoonThemeContext as ThemeContext, ThemeEmitter, MoonThemeProvider as ThemeProvider, MoonWindow as Window, MoonWindowBar as WindowBar, mainTheme as theme, useApps, useAuth, useDesktop, useFeed, useFollow, useId, useInstall, useMember, useNFTs, useParams, usePost, usePosts, useSocket, useSpaces, useThemes, useTyping };
 //# sourceMappingURL=app.min.ts.map

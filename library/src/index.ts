@@ -20,6 +20,8 @@ import DesktopProvider from './Desktop/Provider';
 
 // theme
 import theme from './Theme/index';
+import ThemeEmitter from './Theme/Emitter';
+import ThemeContext from './Theme/Context';
 import ThemeProvider from './Theme/Provider';
 
 // hooks
@@ -30,6 +32,7 @@ import useFeed from './useFeed';
 import usePost from './usePost';
 import useAuth from './useAuth';
 import usePosts from './usePosts';
+import useThemes from './useThemes';
 import useParams from './useParams';
 import useTyping from './useTyping';
 import useSocket from './useSocket';
@@ -96,6 +99,8 @@ export {
 
   // theme
   theme,
+  ThemeEmitter,
+  ThemeContext,
   ThemeProvider,
 
   // hooks
@@ -106,6 +111,7 @@ export {
   useAuth,
   useApps,
   usePosts,
+  useThemes,
   useTyping,
   useSocket,
   useSpaces,

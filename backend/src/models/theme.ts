@@ -1,4 +1,5 @@
 
+import JSON5 from 'json5';
 import Model, { Type } from '../base/model';
 import DesktopModel from './desktop';
 
@@ -42,6 +43,26 @@ export default class ThemeModel extends Model {
   static findByAccount(account, ...args) {
     // find by ref
     return ThemeModel.findByRef(`account:${account}`.toLowerCase(), ...args);
+  }
+
+  /**
+   * sanitise
+   *
+   * @param cache 
+   */
+  async toJSON() {
+    // sanitised
+    const sanitised = await super.toJSON();
+    
+    // check theme
+    try {
+      sanitised.theme = JSON5.parse(sanitised.theme);
+    } catch (e) {
+      sanitised.theme = {};
+    }
+    
+    // return sanitised
+    return sanitised;
   }
 
 }

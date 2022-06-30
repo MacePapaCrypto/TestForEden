@@ -91,6 +91,9 @@ export default class DesktopEmitter extends EventEmitter {
 
     // useEffect stuff
     if (typeof props.auth !== 'undefined' && props.auth?.account !== this.current.auth?.account) {
+      // set current
+      this.current = props;
+
       // load from socket
       this.listDesktops();
   
@@ -115,9 +118,6 @@ export default class DesktopEmitter extends EventEmitter {
         this.socket.off('shortcut+remove', this.emitShortcutRemove);
       };
     }
-
-    // set current
-    this.current = props;
   }
 
   /**
@@ -1317,7 +1317,6 @@ export default class DesktopEmitter extends EventEmitter {
    * @param isRemove 
    */
   emitTask(task, isRemove = false) {
-    console.log('got task emission', task);
     // remove
     if (isRemove) {
       // tasks

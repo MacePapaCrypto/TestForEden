@@ -1,9 +1,6 @@
 
-// react
-import { createTheme } from '@mui/material';
-
 // create theme
-const mainTheme = createTheme({
+export default {
   palette : {
     mode    : 'dark',
     text    : {
@@ -50,10 +47,4 @@ const mainTheme = createTheme({
     borderWidth  : '.1rem',
     borderRadius : 4,
   }
-});
-
-// theme
-window.theme = mainTheme;
-
-// export default
-export default mainTheme;
+};
