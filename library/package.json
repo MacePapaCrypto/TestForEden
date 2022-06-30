@@ -1,6 +1,6 @@
 {
   "name": "@moonup/ui",
-  "version": "0.0.8",
+  "version": "0.0.10",
   "description": "",
   "main": "dist/app.min.js",
   "type": "module",

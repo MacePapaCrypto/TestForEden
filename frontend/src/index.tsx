@@ -9,16 +9,13 @@ import React, { useEffect } from 'react';
 
 // import react
 import { createRoot } from 'react-dom/client';
-import { ThemeProvider, CssBaseline } from '@mui/material';
-import { AuthProvider, SocketProvider } from '@moonup/ui';
+import { CssBaseline } from '@mui/material';
+import { AuthProvider, SocketProvider, ThemeProvider } from '@moonup/ui';
 import {
   Route,
   Switch,
   BrowserRouter,
 } from 'react-router-dom';
-
-// themes
-import mainTheme from './themes/main';
 
 // layouts
 import MainLayout from './layouts/main';
@@ -37,7 +34,7 @@ const Main = (props = {}) => {
 
 	// return jsx
 	return (
-    <ThemeProvider theme={ mainTheme }>
+    <ThemeProvider>
       <CssBaseline />
       
       <SocketProvider url="wss://nft.edenup.com">

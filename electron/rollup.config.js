@@ -61,7 +61,7 @@ export default {
     copy({
       targets : [
         {
-          src  : 'src/index.html',
+          src  : 'src/app.html',
           dest : 'dist',
         },
       ],

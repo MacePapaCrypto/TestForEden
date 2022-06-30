@@ -1,22 +1,28 @@
 
+// app root
+global.appRoot = __dirname;
+
 // import
+import AuthEmitter from '@moonup/ui/src/Auth/Emitter';
 import SocketEmitter from '@moonup/ui/src/Socket/Emitter';
 import DesktopEmitter from '@moonup/ui/src/Desktop/Emitter';
 import { customAlphabet } from 'nanoid';
-import { app, BrowserWindow } from 'electron';
 
 // create alphabet
 const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 40);
 
 // local
 import store from './utilities/store';
-import windowProvider from './providers/window';
+import TaskController from './controllers/task';
+import AuthController from './controllers/auth';
+import SocketController from './controllers/socket';
 
 /**
  * create moon electron class
  */
 class MoonElectron {
   // variables
+  public auth = null;
   public socket = null;
   public desktop = null;
 
@@ -44,6 +50,7 @@ class MoonElectron {
   async build() {
     // build socket
     await this.buildSocket();
+    await this.buildAuth();
     await this.buildDesktop();
   }
 
@@ -64,6 +71,29 @@ class MoonElectron {
     this.socket = new SocketEmitter({
       ssid,
     });
+
+    // socket controller
+    const socketController = new SocketController(this.socket);
+  }
+
+  /**
+   * build auth
+   */
+  async buildAuth() {
+    // building desktop
+    console.log('BUILDING AUTH');
+
+    // ssid
+    const acid = store.get('acid');
+
+    // create new socket
+    this.auth = new AuthEmitter({
+      socket  : this.socket?.state,
+      account : acid,
+    });
+
+    // create task controller
+    const authController = new AuthController(this.auth);
   }
 
   /**
@@ -75,55 +105,12 @@ class MoonElectron {
 
     // create new socket
     this.desktop = new DesktopEmitter({
-      auth : {
-        account : '0x9d4150274f0a67985A53513767EBf5988cEf45A4',
-      },
-      socket : this.socket,
+      auth   : this.auth?.state,
+      socket : this.socket?.state,
     });
 
-    // on updated
-    this.desktop.on('updated', () => {
-      // create windows
-      windowProvider.setTasks(this.desktop.state.tasks);
-    });
-  }
-
-  
-  ////////////////////////////////////////////////////////////////////////
-  //
-  // WINDOW METHODS
-  //
-  ////////////////////////////////////////////////////////////////////////
-
-  /**
-   * runs moon electron
-   */
-  async run() {
-    // await app ready
-    await app.whenReady();
-
-    // on all closed
-    app.on('window-all-closed', () => {
-      // quit app
-      if (process.platform !== 'darwin') app.quit();
-    });
-
-    // Create the browser window.
-    const mainWindow = new BrowserWindow({
-      width  : 800,
-      height : 600,
-  
-      webPreferences : {
-        nodeIntegration  : true,
-        contextIsolation : false,
-      },
-    });
-  
-    // Open the DevTools.
-    mainWindow.webContents.openDevTools()
-  
-    // and load the index.html of the app.
-    mainWindow.loadFile(`${__dirname}/index.html`)
+    // create task controller
+    const taskController = new TaskController(this.desktop);
   }
 }
 

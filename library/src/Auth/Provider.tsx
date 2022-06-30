@@ -50,7 +50,7 @@ const MoonAuthProvider = (props = {}) => {
   // create emitter
   const [emitter] = useState(() => {
     // return emitter
-    return new AuthEmitter({
+    return window.authEmitter || new AuthEmitter({
       ...props,
   
       socket,

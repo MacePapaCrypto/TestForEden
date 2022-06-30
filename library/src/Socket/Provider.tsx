@@ -22,11 +22,14 @@ const MoonSocketProvider = (props = {}) => {
   const [updated, setUpdated] = useState(new Date());
 
   // create emitter
-  const [emitter, setEmitter] = useState(new SocketEmitter({
-    ...props,
-
-    ssid,
-  }));
+  const [emitter, setEmitter] = useState(() => {
+    // return emitter
+    return window.socketEmitter || new SocketEmitter({
+      ...props,
+  
+      ssid,
+    });
+  });
 
   // use effect
   useEffect(() => {

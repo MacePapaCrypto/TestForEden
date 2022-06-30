@@ -4,6 +4,7 @@ import Link from './Link';
 import ScrollBar from './ScrollBar';
 
 // auth
+import AuthEmitter from './Auth/Emitter';
 import AuthContext from './Auth/Context';
 import AuthProvider from './Auth/Provider';
 
@@ -16,6 +17,10 @@ import SocketProvider from './Socket/Provider';
 import DesktopEmitter from './Desktop/Emitter';
 import DesktopContext from './Desktop/Context';
 import DesktopProvider from './Desktop/Provider';
+
+// theme
+import theme from './Theme/index';
+import ThemeProvider from './Theme/Provider';
 
 // hooks
 import useId from './useId';
@@ -75,6 +80,7 @@ export {
   ScrollBar,
 
   // auth
+  AuthEmitter,
   AuthContext,
   AuthProvider,
 
@@ -87,6 +93,10 @@ export {
   DesktopEmitter,
   DesktopContext,
   DesktopProvider,
+
+  // theme
+  theme,
+  ThemeProvider,
 
   // hooks
   useId,

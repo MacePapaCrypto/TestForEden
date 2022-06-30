@@ -440,6 +440,17 @@ export default class DesktopController extends NFTController {
   ////////////////////////////////////////////////////////////////////
 
   /**
+   * listen for post
+   *
+   * @param socket 
+   * @param post 
+   */
+  async taskListener(socket, task) {
+    // send post to socket
+    socket.emit('task', task);
+  }
+
+  /**
    * segment get endpoint
    * 
    * @returns
@@ -541,6 +552,9 @@ export default class DesktopController extends NFTController {
       // push
       tasks.push(...defaultTasks);
     }
+
+    // subscribe
+    req.subscribe(`task+desktop:${desktopId}`, this.taskListener);
 
     // sanitised
     const sanitised = [
@@ -652,7 +666,7 @@ export default class DesktopController extends NFTController {
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
     // check account
-    if (!lowerAccount) return {
+    if (false && !lowerAccount) return {
       message : 'Account Required',
       success : false,
     };
@@ -664,7 +678,7 @@ export default class DesktopController extends NFTController {
     const updateTask = await TaskModel.findById(params.id);
 
     // actual updates
-    if (!updateTask || updateTask.get('account') !== lowerAccount) {
+    if (false && (!updateTask || updateTask.get('account') !== lowerAccount)) {
       // unlock
       unlock();
 

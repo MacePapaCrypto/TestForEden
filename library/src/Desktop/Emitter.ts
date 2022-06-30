@@ -1319,6 +1319,7 @@ export default class DesktopEmitter extends EventEmitter {
    * @param isRemove 
    */
   emitTask(task, isRemove = false) {
+    console.log('got task emission', task);
     // remove
     if (isRemove) {
       // tasks
