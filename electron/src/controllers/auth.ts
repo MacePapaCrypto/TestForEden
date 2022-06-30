@@ -11,16 +11,20 @@ import emitterUtility from '../utilities/emitter';
 export default class AuthController {
   // variables
   public store   = null;
-  public windows = new Map();
+  public windows = null;
 
   /**
    * construct task controller
    *
    * @param store 
    */
-  constructor(store) {
+  constructor(store, windows) {
     // set store
-    this.store = store;
+    this.store   = store;
+    this.windows = windows;
+
+    // globalize
+    global.authEmitter = this.store;
 
     // add listener
     this.store.on('user', console.log);
@@ -39,22 +43,7 @@ export default class AuthController {
     // on desktop ipc
     ipcMain.on('build', (event) => {
       // sender send
-      emitterUtility.bind('authEmitter', this.store, event.sender);
-    });
-
-    // on callback
-    ipcMain.on('authEmitter:callback', async (event, key, id, args) => {
-      // try/catch
-      try {
-        // log
-        const result = await this.store.state[key](...args);
-
-        // resolve
-        event.sender.send(id, { result });
-      } catch (error) {
-        // resolve
-        event.sender.send(id, { error });
-      }
+      event.sender.send('global', 'authEmitter');
     });
   }
 

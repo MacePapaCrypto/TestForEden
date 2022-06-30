@@ -5,6 +5,7 @@ import NFTController, { Route } from '../base/controller';
 
 // models
 import TaskModel from '../models/task';
+import ThemeModel from '../models/theme';
 import DesktopModel from '../models/desktop';
 import ShortcutModel from '../models/shortcut';
 import TaskGroupModel from '../models/taskGroup';
@@ -973,6 +974,175 @@ export default class DesktopController extends NFTController {
 
     // save
     await updateGroup.remove();
+
+    // return
+    return {
+      result  : true,
+      success : true,
+    };
+  }
+
+
+  ////////////////////////////////////////////////////////////////////
+  //
+  //  THEMES
+  //
+  ////////////////////////////////////////////////////////////////////
+
+  /**
+   * listen for post
+   *
+   * @param socket 
+   * @param post 
+   */
+  async themeListener(socket, theme) {
+    // send post to socket
+    socket.emit('theme', theme);
+  }
+
+  /**
+   * segment get endpoint
+   * 
+   * @returns
+   */
+  @Route('GET', '/api/v1/theme/list')
+  async themeListAction(req, { data, params }, next) {
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // check desktop id
+    if (!lowerAccount) return {
+      success : false,
+      message : 'Authentication Required',
+    };
+    
+    // load themes
+    const themes = await ThemeModel.findByAccount(lowerAccount);
+
+    // subscribe
+    req.subscribe(`theme+account:${lowerAccount}`, this.themeListener);
+
+    // return
+    return {
+      result  : await Promise.all(themes.map((t) => t.toJSON())),
+      success : true,
+    };
+  }
+
+  /**
+   * group action
+   *
+   * @param req 
+   * @param param1 
+   * @param next 
+   */
+  @Route('POST', '/api/v1/theme')
+  async themeCreateAction(req, { data, params }, next) {
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // check desktop id
+    if (!lowerAccount) return {
+      success : false,
+      message : 'Authentication Required',
+    };
+
+    // create group model
+    const newTheme = new ThemeModel({
+      refs : [
+        lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
+      ],
+
+      theme   : data.theme || {},
+      default : data.default,
+      account : lowerAccount,
+      session : lowerAccount ? null : req.ssid,
+    });
+
+    // save
+    await newTheme.save();
+
+    // sanitised
+    const sanitisedTheme = await newTheme.toJSON();
+
+    // return
+    return {
+      result  : sanitisedTheme,
+      success : true,
+    };
+  }
+
+  /**
+   * segment get endpoint
+   * 
+   * @returns
+   */
+  @Route('PATCH', '/api/v1/theme/:id')
+  async themeUpdateAction(req, { data, params }, next) {
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // check account
+    if (!lowerAccount) return {
+      message : 'Authentication Required',
+      success : false,
+    };
+
+    // load actual segment
+    const updateTheme = await ThemeModel.findById(params.id);
+
+    // check account
+    // @todo proper acl
+    if (!updateTheme || updateTheme.get('account').toLowerCase() !== lowerAccount) return {
+      message : 'Permission Denied',
+      success : false,
+    };
+
+    // update member
+    if (typeof data.theme !== 'undefined') updateTheme.set('open', data.theme || {});
+    if (typeof data.default !== 'undefined') updateTheme.set('default', !!data.default);
+
+    // save
+    await updateTheme.save();
+
+    // sanitised
+    const sanitisedTheme = await updateTheme.toJSON();
+
+    // return
+    return {
+      result  : sanitisedTheme,
+      success : true,
+    };
+  }
+
+  /**
+   * segment get endpoint
+   * 
+   * @returns
+   */
+  @Route('DELETE', '/api/v1/theme/:id')
+  async themeRemoveAction(req, { data, params }, next) {
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // check account
+    if (!lowerAccount) return {
+      message : 'Authentication Required',
+      success : false,
+    };
+
+    // load actual segment
+    const updateTheme = await ThemeModel.findById(params.id);
+
+    // check account
+    // @todo proper acl
+    if (!updateTheme || updateTheme.get('account').toLowerCase() !== lowerAccount) return {
+      message : 'Permission Denied',
+      success : false,
+    };
+
+    // save
+    await updateTheme.remove();
 
     // return
     return {

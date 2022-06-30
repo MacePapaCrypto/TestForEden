@@ -23,7 +23,7 @@ export default {
   output : [
     {
       file      : pkg.main,
-      format    : 'esm',
+      format    : 'es',
       sourcemap : !production,
     },
   ],

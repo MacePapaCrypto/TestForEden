@@ -73,6 +73,7 @@ const MoonApp = (props = {}) => {
         onDelete={ () => desktop.deleteTask(task.item) }
         onMoveUp={ task.onMoveUp }
         onMoveDown={ task.onMoveDown }
+        isElectron={ task.isElectron }
       />
       <Box flex={ 1 } display="flex" flexDirection="row">
         { !!props.menu && (

@@ -24,6 +24,7 @@ class MoonElectron {
   // variables
   public auth = null;
   public socket = null;
+  public windows = new Map();
   public desktop = null;
 
   /**
@@ -73,7 +74,7 @@ class MoonElectron {
     });
 
     // socket controller
-    const socketController = new SocketController(this.socket);
+    const socketController = new SocketController(this.socket, this.windows);
   }
 
   /**
@@ -93,7 +94,7 @@ class MoonElectron {
     });
 
     // create task controller
-    const authController = new AuthController(this.auth);
+    const authController = new AuthController(this.auth, this.windows);
   }
 
   /**
@@ -110,7 +111,7 @@ class MoonElectron {
     });
 
     // create task controller
-    const taskController = new TaskController(this.desktop);
+    const taskController = new TaskController(this.desktop, this.windows);
   }
 }
 

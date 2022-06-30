@@ -180,8 +180,6 @@ export default class DesktopEmitter extends EventEmitter {
     // check date
     const shouldUpdate = desktop?.id !== this.__desktop?.id;
 
-    console.log('should update', desktop?.id, this.__desktop?.id, this.desktop?.id);
-
     // set desktop
     this.__desktop = desktop;
 

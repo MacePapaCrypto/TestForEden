@@ -109,6 +109,77 @@ const MoonWindow = (props = {}) => {
     savePlace(newPlace);
   }, [props.position]);
 
+  // window body
+  const windowBody = (
+    <Paper sx={ {
+      width         : '100%',
+      height        : '100%',
+      display       : 'flex',
+      borderWidth   : props.isElectron ? 0 : theme.shape.borderWidth,
+      borderStyle   : 'solid',
+      borderColor   : desktop.activeTask === props.item.id ? theme.palette.border.active : theme.palette.border.primary,
+      borderRadius  : 2,
+      flexDirection : 'column',
+    } } ref={ windowRef } elevation={ 2 } onMouseDown={ bringToFront }>
+      { app.loading ? (
+        <>
+          <Bar
+            name={ `Loading ${props.item.application?.name}` }
+            active={ desktop.activeTask === props.item.id }
+
+            onDelete={ () => desktop.deleteTask(props.item) }
+            onMoveUp={ props.onMoveUp }
+            isElectron={ props.isElectron }
+            onMoveDown={ props.onMoveDown }
+          />
+          <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+            <CircularProgress />
+          </Box>
+        </>
+      ) : (
+        app.App ? (
+          <ErrorBoundary FallbackComponent={ (
+            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+              <FontAwesomeIcon icon={ faExclamationTriangle } size="xl" />
+            </Box>
+          ) }>
+            <Context.Provider value={ {
+              item       : props.item,
+              path       : props.item.path,
+              onMoveUp   : props.onMoveUp,
+              isElectron : props.isElectron,
+              onMoveDown : props.onMoveDown,
+
+              // save place
+              place,
+              placed,
+              setPlace : savePlace,
+
+              // pathing
+              setPath,
+              pushPath,
+            } }>
+              <app.App
+                app={ props.item.application }
+                path={ props.item.path }
+                
+                setPath={ setPath }
+                pushPath={ pushPath }
+              />
+            </Context.Provider>
+          </ErrorBoundary>
+        ) : (
+          <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+            App Removed
+          </Box>
+        )
+      ) }
+    </Paper>
+  );
+
+  // check position
+  if (props.position === null) return windowBody;
+
   // return jsx
   return (
     <Rnd
@@ -139,68 +210,7 @@ const MoonWindow = (props = {}) => {
 
       dragHandleClassName="window-handle"
     >
-      <Paper sx={ {
-        width         : '100%',
-        height        : '100%',
-        display       : 'flex',
-        borderWidth   : theme.shape.borderWidth,
-        borderStyle   : 'solid',
-        borderColor   : desktop.activeTask === props.item.id ? theme.palette.border.active : theme.palette.border.primary,
-        borderRadius  : 2,
-        flexDirection : 'column',
-      } } ref={ windowRef } elevation={ 2 } onMouseDown={ bringToFront }>
-        { app.loading ? (
-          <>
-            <Bar
-              name={ `Loading ${props.item.application?.name}` }
-              active={ desktop.activeTask === props.item.id }
-
-              onDelete={ () => desktop.deleteTask(props.item) }
-              onMoveUp={ props.onMoveUp }
-              onMoveDown={ props.onMoveDown }
-            />
-            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-              <CircularProgress />
-            </Box>
-          </>
-        ) : (
-          app.App ? (
-            <ErrorBoundary FallbackComponent={ (
-              <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-                <FontAwesomeIcon icon={ faExclamationTriangle } size="xl" />
-              </Box>
-            ) }>
-              <Context.Provider value={ {
-                item       : props.item,
-                path       : props.item.path,
-                onMoveUp   : props.onMoveUp,
-                onMoveDown : props.onMoveDown,
-
-                // save place
-                place,
-                placed,
-                setPlace : savePlace,
-
-                // pathing
-                setPath,
-                pushPath,
-              } }>
-                <app.App
-                  app={ props.item.application }
-                  path={ props.item.path }
-                  
-                  setPath={ setPath }
-                  pushPath={ pushPath }
-                />
-              </Context.Provider>
-            </ErrorBoundary>
-          ) : (
-            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-              App Removed
-            </Box>
-          )
-        ) }
-      </Paper>
+      { windowBody }
     </Rnd>
   );
 };

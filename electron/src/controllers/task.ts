@@ -1,8 +1,6 @@
 // import
+import path from 'path';
 import { ipcMain, BrowserWindow } from 'electron';
-
-// emitter utility
-import emitterUtility from '../utilities/emitter';
 
 /**
  * window provider
@@ -10,16 +8,21 @@ import emitterUtility from '../utilities/emitter';
 export default class TaskController {
   // variables
   public store   = null;
-  public windows = new Map();
+  public tasks   = new Map();
+  public windows = null;
 
   /**
    * construct task controller
    *
    * @param store 
    */
-  constructor(store) {
+  constructor(store, windows) {
     // set store
-    this.store = store;
+    this.store   = store;
+    this.windows = windows;
+
+    // sender send
+    global.desktopEmitter = this.store;
 
     // add listeners
     this.store.on('updated', () => {
@@ -41,23 +44,9 @@ export default class TaskController {
 
     // on desktop ipc
     ipcMain.on('build', (event) => {
-      // sender send
-      emitterUtility.bind('desktopEmitter', this.store, event.sender);
-    });
-
-    // on callback
-    ipcMain.on('desktopEmitter:callback', async (event, key, id, args) => {
-      // try/catch
-      try {
-        // log
-        const result = await this.store.state[key](...args);
-
-        // resolve
-        event.sender.send(id, { result });
-      } catch (error) {
-        // resolve
-        event.sender.send(id, { error });
-      }
+      // send global
+      event.sender.send('task', this.tasks.get(event.sender.id));
+      event.sender.send('global', 'desktopEmitter');
     });
   }
 
@@ -87,12 +76,11 @@ export default class TaskController {
         width  : parseInt((`${task.position.width || '100px'}`.replace('px', ''))),
         height : parseInt((`${task.position.height || '100px'}`.replace('px', ''))),
 
-
         webPreferences : {
-          preload : `${global.appRoot}/../app.js`,
-        },
-
-        titleBarOverlay : false,
+          nodeIntegration    : true,
+          contextIsolation   : false,
+          enableRemoteModule : true,
+        }
       }));
 
       // ready to show
@@ -102,7 +90,7 @@ export default class TaskController {
       });
 
       // load html
-      this.windows.get(task.id).loadFile(`${global.appRoot}/app.html`);
+      this.windows.get(task.id).loadFile(`${path.dirname(global.appRoot)}/app.html`);
 
       // set position
       this.windows.get(task.id).setPosition(parseInt(task.position.x), parseInt(task.position.y));
@@ -131,6 +119,9 @@ export default class TaskController {
         });
       });
     }
+
+    // set to tasks
+    this.tasks.set(this.windows.get(task.id).id, task);
 
     // update position
     this.windows.get(task.id).setPosition(parseInt(task.position.x), parseInt(task.position.y), true);

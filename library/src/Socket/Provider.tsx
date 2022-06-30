@@ -25,8 +25,7 @@ const MoonSocketProvider = (props = {}) => {
   const [emitter, setEmitter] = useState(() => {
     // return emitter
     return window.socketEmitter || new SocketEmitter({
-      ...props,
-  
+      url : props.url,
       ssid,
     });
   });
@@ -34,25 +33,17 @@ const MoonSocketProvider = (props = {}) => {
   // use effect
   useEffect(() => {
     // do props
-    emitter.props({ props });
+    emitter.props({
+      url : props.url,
+      ssid,
+    });
   }, [props]);
 
   // use effect
   useEffect(() => {
     // check emitter
     if (!emitter) return;
-
-    // create listener
-    const onUpdated = () => setUpdated(new Date());
-
-    // add listener
-    emitter.on('updated', onUpdated);
-
-    // return
-    return () => {
-      // return done
-      emitter.removeListener('updated', onUpdated);
-    };
+    
   }, [emitter]);
 
   // to window

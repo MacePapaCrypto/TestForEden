@@ -1,6 +1,6 @@
 
 // production app
-const production = process.env.NODE_ENV === 'production';
+const production = false && process.env.NODE_ENV === 'production';
 
 // production
 if (!production) {
@@ -30,13 +30,13 @@ if (!production) {
     include : ['*/**'],
     presets : [
       '@babel/preset-env',
-      '@babel/preset-react',
       '@babel/preset-typescript',
+      '@babel/preset-react',
     ],
   });
 
   // require index
-  require('./src/app.ts');
+  require('./src/app.tsx');
 } else {
   require('./dist/app.min.js');
 }

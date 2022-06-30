@@ -24,8 +24,6 @@ const MoonDesktopProvider = (props = {}) => {
   const [emitter, setEmitter] = useState(() => {
     // return emitter
     return window.desktopEmitter || new DesktopEmitter({
-      ...props,
-  
       auth,
       socket,
     });
@@ -34,13 +32,10 @@ const MoonDesktopProvider = (props = {}) => {
   // use effect
   useEffect(() => {
     // do props
-    emitter.props({ props, auth });
-  }, [props]);
-
-  // use effect
-  useEffect(() => {
-    // do props
-    emitter.props({ auth });
+    emitter.props({
+      auth,
+      socket,
+    });
   }, [auth?.account]);
 
   // use effect

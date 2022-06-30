@@ -45,7 +45,12 @@ const MoonWindowBar = (props = {}) => {
           },
           '&:focus' : {
             cursor : 'grabbing',
-          }
+          },
+
+          ...(props.isElectron ? {
+            userSelect      : 'none',
+            WebkitAppRegion : 'drag',
+          } : {})
         } } className="window-handle" onMouseDown={ props.onMoveDown } onMouseUp={ props.onMoveUp } onContextMenu={ (e) => e.preventDefault() }>
           { props.name }
         </Stack>
