@@ -8648,7 +8648,7 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
 
     _defineProperty$4(_assertThisInitialized$1(_this), "current", {});
 
-    _defineProperty$4(_assertThisInitialized$1(_this), "challenge", function (nonce) {
+    _defineProperty$4(_assertThisInitialized$1(_this), "challenge", function (nonce, account) {
       return {
         message: '',
         signature: ''
@@ -8685,13 +8685,7 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
       this.socket = _props.socket || this.socket;
       this.library = _props.library || this.library;
       this.account = _props.account || this.account;
-      this.challenge = _props.challenge || this.challenge; // check should auth backend
-
-      if (this.account && !this.user) {
-        // authenticate account
-        this.loadUser();
-      } // set current
-
+      this.challenge = _props.challenge || this.challenge; // set current
 
       this.current = _props;
     } ////////////////////////////////////////////////////////////////////////
@@ -8763,7 +8757,9 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
 
       if (shouldUpdate) {
         // emit
-        this.emit('account', this.__account);
+        this.emit('account', this.__account); // authenticate account
+
+        this.loadUser();
       }
     }
     /**
@@ -8792,8 +8788,8 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
         // emit
         this.emit('user', this.__user); // auth backend on restart
 
-        this.socket.removeListener('user', this.emitUser);
-        this.socket.removeListener('connect', this.loadUser); // check user
+        this.socket.off('user', this.emitUser);
+        this.socket.off('connect', this.loadUser); // check user
 
         if (user) {
           // auth backend on restart
@@ -8874,7 +8870,7 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
 
               case 12:
                 _context.next = 14;
-                return this.challenge(authReq.nonce);
+                return this.challenge(authReq.nonce, this.account);
 
               case 14:
                 _yield$this$challenge = _context.sent;
@@ -8893,6 +8889,9 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
                 if (result) {
                   // user
                   this.user = result;
+                } else {
+                  // logout
+                  this.logout();
                 } // done loading
 
 
@@ -8903,10 +8902,11 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
               case 25:
                 _context.prev = 25;
                 _context.t0 = _context["catch"](2);
-                // logout
+                console.log('test', _context.t0); // logout
+
                 this.logout();
 
-              case 28:
+              case 29:
               case "end":
                 return _context.stop();
             }
@@ -55181,7 +55181,6 @@ var MoonAuthProvider = function MoonAuthProvider() {
 
   // highest order
   var _useEthers = useEthers(),
-      library = _useEthers.library,
       activateBrowserWallet = _useEthers.activateBrowserWallet,
       deactivate = _useEthers.deactivate,
       account = _useEthers.account; // socket
@@ -55196,7 +55195,78 @@ var MoonAuthProvider = function MoonAuthProvider() {
     return new Date();
   }),
       _useState2 = _slicedToArray$1(_useState, 2),
-      setUpdated = _useState2[1]; // create emitter
+      setUpdated = _useState2[1];
+  /**
+   * login
+   */
+
+
+  var login = function login() {
+    console.log('do login'); // activate wallet
+
+    return activateBrowserWallet();
+  };
+  /**
+   * logout function
+   */
+
+
+  var logout = function logout() {
+    var _localStorage2;
+
+    console.log('do logout'); // session id
+
+    (_localStorage2 = localStorage) === null || _localStorage2 === void 0 ? void 0 : _localStorage2.removeItem('acid');
+    deactivate();
+  };
+  /**
+   * challenge function
+   */
+
+
+  var challenge = /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(nonce, account) {
+      var signer, message, signature;
+      return regeneratorRuntime.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              // get provider
+              signer = new Web3Provider$1(window.ethereum).getSigner();
+              console.log('test', account); // create message
+
+              message = new siwe.SiweMessage({
+                nonce: nonce,
+                domain: domain,
+                uri: origin,
+                chainId: Mainnet.chainId,
+                address: account,
+                version: '1',
+                statement: 'Sign in to NFT'
+              }); // send async
+
+              _context.next = 5;
+              return signer.signMessage(message.prepareMessage());
+
+            case 5:
+              signature = _context.sent;
+              return _context.abrupt("return", {
+                message: message,
+                signature: signature
+              });
+
+            case 7:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee);
+    }));
+
+    return function challenge(_x, _x2) {
+      return _ref.apply(this, arguments);
+    };
+  }(); // create emitter
 
 
   var _useState3 = useState(function () {
@@ -55210,75 +55280,7 @@ var MoonAuthProvider = function MoonAuthProvider() {
     });
   }),
       _useState4 = _slicedToArray$1(_useState3, 1),
-      emitter = _useState4[0];
-  /**
-   * login
-   */
-
-
-  var login = function login() {
-    // activate wallet
-    activateBrowserWallet();
-  };
-  /**
-   * logout function
-   */
-
-
-  var logout = function logout() {
-    var _localStorage2;
-
-    // session id
-    (_localStorage2 = localStorage) === null || _localStorage2 === void 0 ? void 0 : _localStorage2.removeItem('acid');
-    deactivate();
-  };
-  /**
-   * challenge function
-   */
-
-
-  var challenge = /*#__PURE__*/function () {
-    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(nonce) {
-      var signer, message, signature;
-      return regeneratorRuntime.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              // get provider
-              signer = library.getSigner(); // create message
-
-              message = new siwe.SiweMessage({
-                nonce: nonce,
-                domain: domain,
-                uri: origin,
-                chainId: '1',
-                address: account,
-                version: '1',
-                statement: 'Sign in to NFT'
-              }); // send async
-
-              _context.next = 4;
-              return signer.signMessage(message.prepareMessage());
-
-            case 4:
-              signature = _context.sent;
-              return _context.abrupt("return", {
-                message: message,
-                signature: signature
-              });
-
-            case 6:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-
-    return function challenge(_x) {
-      return _ref.apply(this, arguments);
-    };
-  }(); // use effect
+      emitter = _useState4[0]; // use effect
 
 
   useEffect(function () {
@@ -62213,8 +62215,12 @@ var MoonThemeProvider = function MoonThemeProvider() {
     var _emitter$state, _emitter$state$theme;
 
     // real theme
-    var realTheme = cjs(mainTheme || {}, ((_emitter$state = emitter.state) === null || _emitter$state === void 0 ? void 0 : (_emitter$state$theme = _emitter$state.theme) === null || _emitter$state$theme === void 0 ? void 0 : _emitter$state$theme.theme) || {});
-    console.log('real theme', realTheme); // check theme
+    var realTheme = cjs(mainTheme || {}, ((_emitter$state = emitter.state) === null || _emitter$state === void 0 ? void 0 : (_emitter$state$theme = _emitter$state.theme) === null || _emitter$state$theme === void 0 ? void 0 : _emitter$state$theme.theme) || {}); // remove broken
+
+    Object.keys(realTheme.palette || {}).forEach(function (key) {
+      // check value
+      if (!Object.keys(realTheme.palette[key]).length) delete realTheme.palette[key];
+    }); // check theme
 
     setTheme(createTheme(realTheme));
   }, [JSON.stringify((_emitter$state2 = emitter.state) === null || _emitter$state2 === void 0 ? void 0 : (_emitter$state2$theme = _emitter$state2.theme) === null || _emitter$state2$theme === void 0 ? void 0 : _emitter$state2$theme.theme)]); // use effect
@@ -62228,10 +62234,14 @@ var MoonThemeProvider = function MoonThemeProvider() {
     }; // add listener
 
 
+    emitter.on('theme', onUpdated);
+    emitter.on('loading', onUpdated);
     emitter.on('updated', onUpdated); // return done
 
     return function () {
       // remove listener
+      emitter.removeListener('theme', onUpdated);
+      emitter.removeListener('loading', onUpdated);
       emitter.removeListener('updated', onUpdated);
     };
   }, [emitter]); // use effect
@@ -69339,7 +69349,7 @@ var usePost = function usePost(propsPost) {
 
 var useThemes = function useThemes() {
   // use context
-  var themes = useContext(MoonDesktopContext); // return auth
+  var themes = useContext(MoonThemeContext); // return auth
 
   return themes;
 }; // export default
@@ -70000,28 +70010,28 @@ var useFollow = function useFollow(subject) {
               if (!id) id = (subject === null || subject === void 0 ? void 0 : subject.id) || subject; // check id
 
               if (id) {
-                _context.next = 4;
+                _context.next = 5;
                 break;
               }
 
               return _context.abrupt("return");
 
-            case 4:
+            case 5:
               if (auth.account) {
-                _context.next = 6;
+                _context.next = 7;
                 break;
               }
 
               return _context.abrupt("return");
 
-            case 6:
+            case 7:
               // loading
               setLoading(true); // load
 
-              _context.next = 9;
+              _context.next = 10;
               return socket.get("/follow/".concat(id));
 
-            case 9:
+            case 10:
               backendFollow = _context.sent;
               // set post
               setFollow(backendFollow);
@@ -70029,7 +70039,7 @@ var useFollow = function useFollow(subject) {
 
               return _context.abrupt("return", backendFollow);
 
-            case 13:
+            case 14:
             case "end":
               return _context.stop();
           }
@@ -70826,7 +70836,7 @@ var MoonAppSideBar = function MoonAppSideBar() {
       py: theme.spacing(2),
       width: subspaceWidth,
       height: '100%',
-      borderRight: ".1rem solid ".concat(theme.palette.divider),
+      borderRight: ".1rem solid ".concat(theme.palette.border.primary),
       '&:empty': {
         display: 'none'
       }
@@ -72831,2967 +72841,7 @@ var MoonWindow = function MoonWindow() {
   }, windowBody);
 }; // export default
 
-/**
- * moon desktop shortcut
- *
- * @param props 
- */
-
-var MoonDesktopShortcut = function MoonDesktopShortcut() {
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // use theme
-  var theme = useTheme(); // state
-
-  var _useState = useState(false),
-      _useState2 = _slicedToArray$1(_useState, 2),
-      active = _useState2[0],
-      setActive = _useState2[1];
-
-  var _useState3 = useState(false),
-      _useState4 = _slicedToArray$1(_useState3, 2),
-      leftDown = _useState4[0],
-      setLeftDown = _useState4[1];
-
-  var _useState5 = useState(false),
-      _useState6 = _slicedToArray$1(_useState5, 2),
-      rightDown = _useState6[0],
-      setRightDown = _useState6[1];
-
-  var _useState7 = useState(false),
-      _useState8 = _slicedToArray$1(_useState7, 2),
-      largeGrid = _useState8[0],
-      setLargeGrid = _useState8[1]; // large grid size
-
-
-  var shortcutSize = 80;
-  var largeGridSize = 20; // position
-
-  var _useState9 = useState({
-    x: 0,
-    y: 0,
-    width: shortcutSize,
-    height: shortcutSize
-  }),
-      _useState10 = _slicedToArray$1(_useState9, 2),
-      place = _useState10[0],
-      setPlace = _useState10[1]; // check mouse down
-
-
-  var onMouseDown = function onMouseDown(e) {
-    // set down
-    if (e.button === 0) {
-      setLeftDown(true);
-    } else if (e.button === 2) {
-      setRightDown(true);
-    }
-  }; // on mouse up
-
-
-  var onMouseUp = function onMouseUp(e) {
-    // set down
-    if (e.button === 0) {
-      setLeftDown(false);
-    } else if (e.button === 2) {
-      setRightDown(false);
-    }
-  }; // use effect
-
-
-  useEffect(function () {
-    // set
-    if (leftDown && rightDown) {
-      setLargeGrid(true);
-    } else {
-      setTimeout(function () {
-        return setLargeGrid(false);
-      }, 200);
-    }
-  }, [leftDown, rightDown]); // const body
-
-  var body = /*#__PURE__*/React__default.createElement(ClickAwayListener, {
-    onClickAway: function onClickAway() {
-      return setActive(false);
-    }
-  }, /*#__PURE__*/React__default.createElement(Tooltip, {
-    title: props.item.name || 'N/A'
-  }, /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      flex: 1,
-      width: shortcutSize,
-      height: shortcutSize,
-      cursor: 'pointer',
-      border: active ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : "".concat(theme.shape.borderWidth, " solid rgba(255, 255, 255, 0)"),
-      display: 'flex',
-      maxWidth: shortcutSize,
-      maxHeight: shortcutSize,
-      background: active ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0)',
-      borderRadius: "".concat(theme.shape.borderRadius, "px"),
-      flexDirection: 'column',
-      '&:hover': {
-        border: active ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : "".concat(theme.shape.borderWidth, " solid rgba(255, 255, 255, 0.25)"),
-        background: active ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.125)'
-      }
-    },
-    onClick: function onClick(e) {
-      return active ? props.onClick(e) : setActive(true);
-    }
-  }, /*#__PURE__*/React__default.createElement(Box, {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    display: "flex"
-  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-    icon: faMoon,
-    size: "2x"
-  })), /*#__PURE__*/React__default.createElement(Box, {
-    px: 1,
-    flex: 0,
-    width: "100%"
-  }, /*#__PURE__*/React__default.createElement(Box, {
-    textAlign: "center",
-    whiteSpace: "nowrap",
-    overflow: "hidden",
-    textOverflow: "ellipsis"
-  }, props.item.name || 'N/A'))))); // disable dragging
-
-  if (props.disableDragging) return body; // return jsx
-
-  return /*#__PURE__*/React__default.createElement(Rnd, {
-    size: {
-      width: place.width,
-      height: place.height
-    },
-    bounds: "parent",
-    position: {
-      x: place.x,
-      y: place.y
-    },
-    onDragStop: function onDragStop(e, d) {
-      return setPlace(_objectSpread2$1(_objectSpread2$1({}, place), {}, {
-        x: d.x,
-        y: d.y
-      }));
-    },
-    dragGrid: largeGrid ? [largeGridSize, largeGridSize] : [1, 1],
-    onMouseUp: onMouseUp,
-    onMouseDown: onMouseDown,
-    enableResizing: false
-  }, body);
-}; // export default
-
-/**
- * moon desktop
- *
- * @param props 
- */
-
-var MoonDesktop = function MoonDesktop() {
-  // tasks
-  var theme = useTheme();
-  var desktop = useDesktop(); // state
-
-  var _useState = useState([0, 0]),
-      _useState2 = _slicedToArray$1(_useState, 2),
-      XY = _useState2[0],
-      setXY = _useState2[1];
-
-  var _useState3 = useState([0, 0]),
-      _useState4 = _slicedToArray$1(_useState3, 2),
-      HW = _useState4[0],
-      setHW = _useState4[1];
-
-  var _useState5 = useState(null),
-      _useState6 = _slicedToArray$1(_useState5, 2),
-      place = _useState6[0],
-      setPlace = _useState6[1];
-
-  var _useState7 = useState(false),
-      _useState8 = _slicedToArray$1(_useState7, 2),
-      useGrid = _useState8[0],
-      setUseGrid = _useState8[1];
-
-  var _useState9 = useState(null),
-      _useState10 = _slicedToArray$1(_useState9, 2),
-      resizing = _useState10[0],
-      setResizing = _useState10[1];
-
-  var _useState11 = useState(false),
-      _useState12 = _slicedToArray$1(_useState11, 2),
-      leftDown = _useState12[0],
-      setLeftDown = _useState12[1];
-
-  var _useState13 = useState(false),
-      _useState14 = _slicedToArray$1(_useState13, 2),
-      rightDown = _useState14[0],
-      setRightDown = _useState14[1]; // grid size
-
-
-  var _useState15 = useState([20, 12]),
-      _useState16 = _slicedToArray$1(_useState15, 2),
-      gridSize = _useState16[0];
-      _useState16[1]; // bring to front
-
-
-  var onBringToFront = function onBringToFront(id) {
-    // bring task to front
-    desktop.bringTaskToFront({
-      id: id
-    });
-  }; // check mouse down
-
-
-  var _onMoveDown = useCallback(function (item, e) {
-    // set resizing
-    setResizing(item); // set down
-
-    if (e.button === 0) {
-      // left down
-      setLeftDown(true); // if right down
-
-      if (rightDown) {
-        // set menu
-        setUseGrid(true);
-      }
-    } else if (e.button === 2) {
-      // right down
-      setRightDown(true); // if right down
-
-      if (leftDown) {
-        // set menu
-        setUseGrid(true);
-      }
-    }
-  }, [leftDown, rightDown]); // includes size
-
-
-  var includesSize = useCallback(function (row, col) {
-    // true xy
-    var trueXY = [XY[0] < HW[0] ? XY[0] : HW[0], XY[1] < HW[1] ? XY[1] : HW[1]];
-    var trueHW = [XY[0] > HW[0] ? XY[0] : HW[0], XY[1] > HW[1] ? XY[1] : HW[1]]; // return jsx
-
-    return row >= trueXY[0] && row <= trueHW[0] && col >= trueXY[1] && col <= trueHW[1];
-  }, [].concat(_toConsumableArray$1(XY), _toConsumableArray$1(HW))); // on mouse up
-
-  var _onMoveUp = useCallback(function (item, e) {
-    // set down
-    if (e.button === 0) {
-      setPlace(null);
-      setUseGrid(false);
-      setLeftDown(false);
-    } else if (e.button === 2) {
-      setRightDown(false);
-    }
-  }, []); // value
-
-
-  var cols = [];
-  var rows = []; // loop
-
-  for (var i = 0; i < gridSize[0]; i++) {
-    cols.push(i);
-  }
-
-  for (var _i = 0; _i < gridSize[1]; _i++) {
-    rows.push(_i);
-  } // use effect
-
-
-  useEffect(function () {
-    // check size
-    if (!resizing) return; // get first block size
-
-    var boxWidth = document.getElementById('desktop').clientWidth / gridSize[0];
-    var boxHeight = document.getElementById('desktop').clientHeight / gridSize[1]; // spacer
-
-    var spacer = parseInt(theme.spacing(.5).replace('px', '')); // size
-
-    var top = XY[0] < HW[0] ? XY[0] : HW[0];
-    var left = XY[1] < HW[1] ? XY[1] : HW[1];
-    var right = XY[1] > HW[1] ? XY[1] : HW[1];
-    var bottom = XY[0] > HW[0] ? XY[0] : HW[0]; // min width/height
-
-    var minWidth = boxWidth * 2;
-    var minHeight = boxHeight * 2; // new width
-
-    var newWidth = (right - left + 1) * boxWidth;
-    var newHeight = (bottom - top + 1) * boxHeight; // create new size
-
-    var newPosition = {
-      x: left * boxWidth + spacer,
-      y: top * boxHeight + spacer,
-      width: (newWidth < minWidth ? minWidth : newWidth) - spacer * 2,
-      height: (newHeight < minHeight ? minHeight : newHeight) - spacer * 2
-    }; // set position
-
-    setPlace(newPosition);
-  }, [].concat(_toConsumableArray$1(XY), _toConsumableArray$1(HW))); // return jsx
-
-  return /*#__PURE__*/React__default.createElement(Box, {
-    id: "desktop",
-    sx: {
-      flex: 1,
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      overflow: 'hidden',
-      position: 'relative',
-      alignItems: 'center',
-      backgroundSize: "20px 20px",
-      backgroundImage: "radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px), radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px)",
-      backgroundPosition: "0 0,10px 10px"
-    }
-  }, /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      mx: 'auto',
-      px: 4,
-      py: 2,
-      display: 'flex',
-      alignItems: 'center',
-      background: theme.palette.background["default"],
-      justifyContent: 'center'
-    }
-  }, /*#__PURE__*/React__default.createElement(Typography, {
-    variant: "h2"
-  }, "WELCOME TO MOON")), !!useGrid && /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      top: 0,
-      left: 0,
-      flex: 1,
-      width: '100%',
-      height: '100%',
-      zIndex: 100,
-      display: 'flex',
-      position: 'absolute',
-      flexDirection: 'column'
-    }
-  }, rows.map(function (row) {
-    // return jsx
-    return /*#__PURE__*/React__default.createElement(Box, {
-      key: "row-".concat(row),
-      display: "flex",
-      flex: 1,
-      flexDirection: "row"
-    }, cols.map(function (col) {
-      // return jsx
-      return /*#__PURE__*/React__default.createElement(Box, {
-        sx: _objectSpread2$1({
-          flex: 1,
-          border: "".concat(theme.shape.borderWidth, " solid rgba(255, 255, 255, 0.25)"),
-          height: '100%'
-        }, rightDown ? {
-          '&:hover': {
-            background: "rgba(255, 255, 255, 0.1)"
-          }
-        } : includesSize(row, col) ? {
-          background: "rgba(255, 255, 255, 0.1)"
-        } : {}),
-        id: row === 0 && col === 0 ? 'size-box' : undefined,
-        key: "col-".concat(row, "-").concat(col),
-        onMouseUp: function onMouseUp(e) {
-          return _onMoveUp(resizing, e);
-        },
-        onMouseDown: function onMouseDown(e) {
-          return _onMoveDown(resizing, e);
-        },
-        onMouseOver: function onMouseOver(e) {
-          return rightDown ? [setXY([row, col]), setHW([row, col])] : setHW([row, col]);
-        },
-        onContextMenu: function onContextMenu(e) {
-          return e.preventDefault();
-        }
-      });
-    }));
-  })), desktop.shortcuts.map(function (item, i) {
-    // return window
-    return /*#__PURE__*/React__default.createElement(MoonDesktopShortcut, {
-      key: "shortcut-".concat(item.id),
-      item: item
-    });
-  }), desktop.tasks.map(function (item, i) {
-    // return window
-    return /*#__PURE__*/React__default.createElement(MoonWindow, {
-      key: "window-".concat(item.id),
-      item: item,
-      desktop: desktop,
-      canDrag: !useGrid,
-      position: (resizing === null || resizing === void 0 ? void 0 : resizing.id) === item.id ? place : undefined,
-      onMoveUp: function onMoveUp(e) {
-        return _onMoveUp(item, e);
-      },
-      onMoveDown: function onMoveDown(e) {
-        return _onMoveDown(item, e);
-      },
-      bringToFront: function bringToFront(id) {
-        return onBringToFront(id || item.id);
-      }
-    });
-  }));
-}; // export default
-
-var isObj$1 = value => {
-	const type = typeof value;
-	return value !== null && (type === 'object' || type === 'function');
-};
-
-const isObj = isObj$1;
-
-const disallowedKeys = new Set([
-	'__proto__',
-	'prototype',
-	'constructor'
-]);
-
-const isValidPath = pathSegments => !pathSegments.some(segment => disallowedKeys.has(segment));
-
-function getPathSegments(path) {
-	const pathArray = path.split('.');
-	const parts = [];
-
-	for (let i = 0; i < pathArray.length; i++) {
-		let p = pathArray[i];
-
-		while (p[p.length - 1] === '\\' && pathArray[i + 1] !== undefined) {
-			p = p.slice(0, -1) + '.';
-			p += pathArray[++i];
-		}
-
-		parts.push(p);
-	}
-
-	if (!isValidPath(parts)) {
-		return [];
-	}
-
-	return parts;
-}
-
-var dotProp = {
-	get(object, path, value) {
-		if (!isObj(object) || typeof path !== 'string') {
-			return value === undefined ? object : value;
-		}
-
-		const pathArray = getPathSegments(path);
-		if (pathArray.length === 0) {
-			return;
-		}
-
-		for (let i = 0; i < pathArray.length; i++) {
-			object = object[pathArray[i]];
-
-			if (object === undefined || object === null) {
-				// `object` is either `undefined` or `null` so we want to stop the loop, and
-				// if this is not the last bit of the path, and
-				// if it did't return `undefined`
-				// it would return `null` if `object` is `null`
-				// but we want `get({foo: null}, 'foo.bar')` to equal `undefined`, or the supplied value, not `null`
-				if (i !== pathArray.length - 1) {
-					return value;
-				}
-
-				break;
-			}
-		}
-
-		return object === undefined ? value : object;
-	},
-
-	set(object, path, value) {
-		if (!isObj(object) || typeof path !== 'string') {
-			return object;
-		}
-
-		const root = object;
-		const pathArray = getPathSegments(path);
-
-		for (let i = 0; i < pathArray.length; i++) {
-			const p = pathArray[i];
-
-			if (!isObj(object[p])) {
-				object[p] = {};
-			}
-
-			if (i === pathArray.length - 1) {
-				object[p] = value;
-			}
-
-			object = object[p];
-		}
-
-		return root;
-	},
-
-	delete(object, path) {
-		if (!isObj(object) || typeof path !== 'string') {
-			return false;
-		}
-
-		const pathArray = getPathSegments(path);
-
-		for (let i = 0; i < pathArray.length; i++) {
-			const p = pathArray[i];
-
-			if (i === pathArray.length - 1) {
-				delete object[p];
-				return true;
-			}
-
-			object = object[p];
-
-			if (!isObj(object)) {
-				return false;
-			}
-		}
-	},
-
-	has(object, path) {
-		if (!isObj(object) || typeof path !== 'string') {
-			return false;
-		}
-
-		const pathArray = getPathSegments(path);
-		if (pathArray.length === 0) {
-			return false;
-		}
-
-		// eslint-disable-next-line unicorn/no-for-loop
-		for (let i = 0; i < pathArray.length; i++) {
-			if (isObj(object)) {
-				if (!(pathArray[i] in object)) {
-					return false;
-				}
-
-				object = object[pathArray[i]];
-			} else {
-				return false;
-			}
-		}
-
-		return true;
-	}
-};
-
-var MoonNFTAvatar = function MoonNFTAvatar() {
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // theme
-  var theme = useTheme(); // url
-
-  var nftUrl = dotProp.get(props, 'user.avatar.image.url') || dotProp.get(props, 'item.image.image.url') || dotProp.get(props, 'item.image.url') || dotProp.get(props, 'image.url'); // check height
-
-  if (nftUrl && props.height) nftUrl = "".concat(nftUrl, "?h=").concat(props.height);
-  if (nftUrl && props.width) nftUrl = "".concat(nftUrl).concat(props.height ? '&' : '?', "h=").concat(props.height); // get title
-
-  var avatarAlt = dotProp.get(props, 'user.avatar.name') || dotProp.get(props, 'item.image.name') || dotProp.get(props, 'user.username') || dotProp.get(props, 'user.id') || 'Anonymous'; // base
-
-  var base = /*#__PURE__*/React__default.createElement(Avatar, {
-    src: nftUrl,
-    alt: avatarAlt,
-    width: props.width,
-    height: props.height,
-    variant: props.variant,
-    onClick: props.onClick,
-    sx: _objectSpread2$1({
-      width: "".concat(props.width, "px"),
-      height: "".concat(props.height || props.width, "px"),
-      bgcolor: "rgba(255,255,255,0.1)",
-      transition: "all 0.2s ease",
-      '&:hover': {
-        bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[400] : theme.palette.grey[600]
-      }
-    }, props.sx || {})
-  }, !nftUrl && (props.children || /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-    icon: faUser
-  }))); // check no tooltip
-
-  if (props.noTooltip) return base; // base
-
-  return /*#__PURE__*/React__default.createElement(Tooltip, _extends$4({
-    title: avatarAlt
-  }, props.TooltipProps || {}), base);
-}; // export default
-
 var lib$2 = {};
-
-var Ratio$1 = {};
-
-Object.defineProperty(Ratio$1, "__esModule", {
-  value: true
-});
-
-var _extends$1 = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
-
-var _createClass$1 = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-Ratio$1.omit = omit$1;
-
-var _react$1 = React__default;
-
-var _react2 = _interopRequireDefault$4(_react$1);
-
-var _propTypes$1 = propTypes$1.exports;
-
-var _propTypes2 = _interopRequireDefault$4(_propTypes$1);
-
-function _interopRequireDefault$4(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn$1(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits$1(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-// Omits "keysToOmit" from "object"
-function omit$1(object, keysToOmit) {
-  var result = {};
-
-  Object.keys(object).forEach(function (key) {
-    if (keysToOmit.indexOf(key) === -1) {
-      result[key] = object[key];
-    }
-  });
-
-  return result;
-}
-
-var PROPS_TO_OMIT = ['children', 'contentClassName', 'ratio', 'ratioClassName', 'style', 'tagName'];
-
-var CONTENT_DIV_STYLE = {
-  height: '100%',
-  left: 0,
-  position: 'absolute',
-  top: 0,
-  width: '100%'
-};
-
-var RATIO_DIV_STYLE = {
-  height: 0,
-  position: 'relative',
-  width: '100%'
-};
-
-var Ratio = function (_Component) {
-  _inherits$1(Ratio, _Component);
-
-  function Ratio() {
-    _classCallCheck$1(this, Ratio);
-
-    return _possibleConstructorReturn$1(this, (Ratio.__proto__ || Object.getPrototypeOf(Ratio)).apply(this, arguments));
-  }
-
-  _createClass$1(Ratio, [{
-    key: 'render',
-    value: function render() {
-      var _props = this.props,
-          children = _props.children,
-          className = _props.className,
-          contentClassName = _props.contentClassName,
-          ratio = _props.ratio,
-          ratioClassName = _props.ratioClassName,
-          style = _props.style,
-          tagName = _props.tagName;
-
-
-      var Tag = tagName;
-
-      var cssStyle = _extends$1({
-        display: 'block'
-      }, style);
-
-      var paddingTop = ratio === 0 ? 100 : 100 / ratio;
-
-      return _react2.default.createElement(
-        Tag,
-        _extends$1({}, omit$1(this.props, PROPS_TO_OMIT), {
-          className: 'Ratio ' + className,
-          style: cssStyle
-        }),
-        _react2.default.createElement(
-          'div',
-          {
-            className: 'Ratio-ratio ' + ratioClassName,
-            style: _extends$1({}, RATIO_DIV_STYLE, {
-              paddingTop: paddingTop + '%'
-            })
-          },
-          _react2.default.createElement(
-            'div',
-            {
-              className: 'Ratio-content ' + contentClassName,
-              style: CONTENT_DIV_STYLE
-            },
-            children
-          )
-        )
-      );
-    }
-  }]);
-
-  return Ratio;
-}(_react$1.Component);
-
-Ratio$1.default = Ratio;
-
-
-Ratio.propTypes = {
-  children: _propTypes2.default.any,
-  className: _propTypes2.default.string,
-  contentClassName: _propTypes2.default.string,
-  ratio: _propTypes2.default.number,
-  ratioClassName: _propTypes2.default.string,
-  style: _propTypes2.default.object,
-  tagName: _propTypes2.default.string
-};
-
-Ratio.defaultProps = {
-  children: null,
-  className: '',
-  contentClassName: '',
-  ratio: 1,
-  ratioClassName: '',
-  style: {},
-  tagName: 'div'
-};
-
-Object.defineProperty(lib$2, "__esModule", {
-  value: true
-});
-
-var _Ratio = Ratio$1;
-
-var _Ratio2 = _interopRequireDefault$3(_Ratio);
-
-function _interopRequireDefault$3(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var _default = lib$2.default = _Ratio2.default;
-
-var build = {exports: {}};
-
-(()=>{var e={296:(e,t,r)=>{var o=/^\s+|\s+$/g,n=/^[-+]0x[0-9a-f]+$/i,i=/^0b[01]+$/i,s=/^0o[0-7]+$/i,c=parseInt,u="object"==typeof r.g&&r.g&&r.g.Object===Object&&r.g,l="object"==typeof self&&self&&self.Object===Object&&self,a=u||l||Function("return this")(),f=Object.prototype.toString,p=Math.max,y=Math.min,d=function(){return a.Date.now()};function b(e){var t=typeof e;return !!e&&("object"==t||"function"==t)}function h(e){if("number"==typeof e)return e;if(function(e){return "symbol"==typeof e||function(e){return !!e&&"object"==typeof e}(e)&&"[object Symbol]"==f.call(e)}(e))return NaN;if(b(e)){var t="function"==typeof e.valueOf?e.valueOf():e;e=b(t)?t+"":t;}if("string"!=typeof e)return 0===e?e:+e;e=e.replace(o,"");var r=i.test(e);return r||s.test(e)?c(e.slice(2),r?2:8):n.test(e)?NaN:+e}e.exports=function(e,t,r){var o,n,i,s,c,u,l=0,a=!1,f=!1,v=!0;if("function"!=typeof e)throw new TypeError("Expected a function");function m(t){var r=o,i=n;return o=n=void 0,l=t,s=e.apply(i,r)}function O(e){return l=e,c=setTimeout(g,t),a?m(e):s}function w(e){var r=e-u;return void 0===u||r>=t||r<0||f&&e-l>=i}function g(){var e=d();if(w(e))return P(e);c=setTimeout(g,function(e){var r=t-(e-u);return f?y(r,i-(e-l)):r}(e));}function P(e){return c=void 0,v&&o?m(e):(o=n=void 0,s)}function T(){var e=d(),r=w(e);if(o=arguments,n=this,u=e,r){if(void 0===c)return O(u);if(f)return c=setTimeout(g,t),m(u)}return void 0===c&&(c=setTimeout(g,t)),s}return t=h(t)||0,b(r)&&(a=!!r.leading,i=(f="maxWait"in r)?p(h(r.maxWait)||0,t):i,v="trailing"in r?!!r.trailing:v),T.cancel=function(){void 0!==c&&clearTimeout(c),l=0,o=u=n=c=void 0;},T.flush=function(){return void 0===c?s:P(d())},T};},96:(e,t,r)=>{var o="Expected a function",n=/^\s+|\s+$/g,i=/^[-+]0x[0-9a-f]+$/i,s=/^0b[01]+$/i,c=/^0o[0-7]+$/i,u=parseInt,l="object"==typeof r.g&&r.g&&r.g.Object===Object&&r.g,a="object"==typeof self&&self&&self.Object===Object&&self,f=l||a||Function("return this")(),p=Object.prototype.toString,y=Math.max,d=Math.min,b=function(){return f.Date.now()};function h(e){var t=typeof e;return !!e&&("object"==t||"function"==t)}function v(e){if("number"==typeof e)return e;if(function(e){return "symbol"==typeof e||function(e){return !!e&&"object"==typeof e}(e)&&"[object Symbol]"==p.call(e)}(e))return NaN;if(h(e)){var t="function"==typeof e.valueOf?e.valueOf():e;e=h(t)?t+"":t;}if("string"!=typeof e)return 0===e?e:+e;e=e.replace(n,"");var r=s.test(e);return r||c.test(e)?u(e.slice(2),r?2:8):i.test(e)?NaN:+e}e.exports=function(e,t,r){var n=!0,i=!0;if("function"!=typeof e)throw new TypeError(o);return h(r)&&(n="leading"in r?!!r.leading:n,i="trailing"in r?!!r.trailing:i),function(e,t,r){var n,i,s,c,u,l,a=0,f=!1,p=!1,m=!0;if("function"!=typeof e)throw new TypeError(o);function O(t){var r=n,o=i;return n=i=void 0,a=t,c=e.apply(o,r)}function w(e){return a=e,u=setTimeout(P,t),f?O(e):c}function g(e){var r=e-l;return void 0===l||r>=t||r<0||p&&e-a>=s}function P(){var e=b();if(g(e))return T(e);u=setTimeout(P,function(e){var r=t-(e-l);return p?d(r,s-(e-a)):r}(e));}function T(e){return u=void 0,m&&n?O(e):(n=i=void 0,c)}function j(){var e=b(),r=g(e);if(n=arguments,i=this,l=e,r){if(void 0===u)return w(l);if(p)return u=setTimeout(P,t),O(l)}return void 0===u&&(u=setTimeout(P,t)),c}return t=v(t)||0,h(r)&&(f=!!r.leading,s=(p="maxWait"in r)?y(v(r.maxWait)||0,t):s,m="trailing"in r?!!r.trailing:m),j.cancel=function(){void 0!==u&&clearTimeout(u),a=0,n=l=i=u=void 0;},j.flush=function(){return void 0===u?c:T(b())},j}(e,t,{leading:n,maxWait:t,trailing:i})};},703:(e,t,r)=>{var o=r(414);function n(){}function i(){}i.resetWarningCache=n,e.exports=function(){function e(e,t,r,n,i,s){if(s!==o){var c=new Error("Calling PropTypes validators directly is not supported by the `prop-types` package. Use PropTypes.checkPropTypes() to call them. Read more at http://fb.me/use-check-prop-types");throw c.name="Invariant Violation",c}}function t(){return e}e.isRequired=e;var r={array:e,bool:e,func:e,number:e,object:e,string:e,symbol:e,any:e,arrayOf:t,element:e,elementType:e,instanceOf:t,node:e,objectOf:t,oneOf:t,oneOfType:t,shape:t,exact:t,checkPropTypes:i,resetWarningCache:n};return r.PropTypes=r,r};},697:(e,t,r)=>{e.exports=r(703)();},414:e=>{e.exports="SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED";}},t={};function r(o){var n=t[o];if(void 0!==n)return n.exports;var i=t[o]={exports:{}};return e[o](i,i.exports,r),i.exports}r.n=e=>{var t=e&&e.__esModule?()=>e.default:()=>e;return r.d(t,{a:t}),t},r.d=(e,t)=>{for(var o in t)r.o(t,o)&&!r.o(e,o)&&Object.defineProperty(e,o,{enumerable:!0,get:t[o]});},r.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(e){if("object"==typeof window)return window}}(),r.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),r.r=e=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0});};var o={};(()=>{r.r(o),r.d(o,{LazyLoadComponent:()=>J,LazyLoadImage:()=>ie,trackWindowScroll:()=>C});const e=React__default;var t=r.n(e),n=r(697);const i=ReactDOM;var s=r.n(i);function c(){return "undefined"!=typeof window&&"IntersectionObserver"in window&&"isIntersecting"in window.IntersectionObserverEntry.prototype}function u(e){return (u="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function l(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var o=Object.getOwnPropertySymbols(e);t&&(o=o.filter((function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable}))),r.push.apply(r,o);}return r}function a(e,t,r){return t in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}function f(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function p(e,t){return (p=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function y(e,t){if(t&&("object"===u(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e)}function d(e){return (d=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var b=function(e){e.forEach((function(e){e.isIntersecting&&e.target.onVisible();}));},h={},v=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&p(e,t);}(v,e);var r,o,n,i,u=(n=v,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=d(n);if(i){var r=d(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return y(this,e)});function v(e){var t;if(function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,v),(t=u.call(this,e)).supportsObserver=!e.scrollPosition&&e.useIntersectionObserver&&c(),t.supportsObserver){var r=e.threshold;t.observer=function(e){return h[e]=h[e]||new IntersectionObserver(b,{rootMargin:e+"px"}),h[e]}(r);}return t}return r=v,(o=[{key:"componentDidMount",value:function(){this.placeholder&&this.observer&&(this.placeholder.onVisible=this.props.onVisible,this.observer.observe(this.placeholder)),this.supportsObserver||this.updateVisibility();}},{key:"componentWillUnmount",value:function(){this.observer&&this.observer.unobserve(this.placeholder);}},{key:"componentDidUpdate",value:function(){this.supportsObserver||this.updateVisibility();}},{key:"getPlaceholderBoundingBox",value:function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:this.props.scrollPosition,t=this.placeholder.getBoundingClientRect(),r=s().findDOMNode(this.placeholder).style,o={left:parseInt(r.getPropertyValue("margin-left"),10)||0,top:parseInt(r.getPropertyValue("margin-top"),10)||0};return {bottom:e.y+t.bottom+o.top,left:e.x+t.left+o.left,right:e.x+t.right+o.left,top:e.y+t.top+o.top}}},{key:"isPlaceholderInViewport",value:function(){if("undefined"==typeof window||!this.placeholder)return !1;var e=this.props,t=e.scrollPosition,r=e.threshold,o=this.getPlaceholderBoundingBox(t),n=t.y+window.innerHeight,i=t.x,s=t.x+window.innerWidth,c=t.y;return Boolean(c-r<=o.bottom&&n+r>=o.top&&i-r<=o.right&&s+r>=o.left)}},{key:"updateVisibility",value:function(){this.isPlaceholderInViewport()&&this.props.onVisible();}},{key:"render",value:function(){var e=this,r=this.props,o=r.className,n=r.height,i=r.placeholder,s=r.style,c=r.width;if(i&&"function"!=typeof i.type)return t().cloneElement(i,{ref:function(t){return e.placeholder=t}});var u=function(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?l(Object(r),!0).forEach((function(t){a(e,t,r[t]);})):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):l(Object(r)).forEach((function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t));}));}return e}({display:"inline-block"},s);return void 0!==c&&(u.width=c),void 0!==n&&(u.height=n),t().createElement("span",{className:o,ref:function(t){return e.placeholder=t},style:u},i)}}])&&f(r.prototype,o),v}(t().Component);v.propTypes={onVisible:n.PropTypes.func.isRequired,className:n.PropTypes.string,height:n.PropTypes.oneOfType([n.PropTypes.number,n.PropTypes.string]),placeholder:n.PropTypes.element,threshold:n.PropTypes.number,useIntersectionObserver:n.PropTypes.bool,scrollPosition:n.PropTypes.shape({x:n.PropTypes.number.isRequired,y:n.PropTypes.number.isRequired}),width:n.PropTypes.oneOfType([n.PropTypes.number,n.PropTypes.string])},v.defaultProps={className:"",placeholder:null,threshold:100,useIntersectionObserver:!0};const m=v;var O=r(296),w=r.n(O),g=r(96),P=r.n(g),T=function(e){var t=getComputedStyle(e,null);return t.getPropertyValue("overflow")+t.getPropertyValue("overflow-y")+t.getPropertyValue("overflow-x")};const j=function(e){if(!(e instanceof HTMLElement))return window;for(var t=e;t&&t instanceof HTMLElement;){if(/(scroll|auto)/.test(T(t)))return t;t=t.parentNode;}return window};function S(e){return (S="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}var E=["delayMethod","delayTime"];function _(){return (_=Object.assign||function(e){for(var t=1;t<arguments.length;t++){var r=arguments[t];for(var o in r)Object.prototype.hasOwnProperty.call(r,o)&&(e[o]=r[o]);}return e}).apply(this,arguments)}function I(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function L(e,t){return (L=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function x(e,t){if(t&&("object"===S(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return R(e)}function R(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}function k(e){return (k=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var D=function(){return "undefined"==typeof window?0:window.scrollX||window.pageXOffset},N=function(){return "undefined"==typeof window?0:window.scrollY||window.pageYOffset};const C=function(e){var r=function(r){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&L(e,t);}(a,r);var o,n,i,u,l=(i=a,u=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=k(i);if(u){var r=k(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return x(this,e)});function a(e){var r;if(function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,a),(r=l.call(this,e)).useIntersectionObserver=e.useIntersectionObserver&&c(),r.useIntersectionObserver)return x(r);var o=r.onChangeScroll.bind(R(r));return "debounce"===e.delayMethod?r.delayedScroll=w()(o,e.delayTime):"throttle"===e.delayMethod&&(r.delayedScroll=P()(o,e.delayTime)),r.state={scrollPosition:{x:D(),y:N()}},r.baseComponentRef=t().createRef(),r}return o=a,(n=[{key:"componentDidMount",value:function(){this.addListeners();}},{key:"componentWillUnmount",value:function(){this.removeListeners();}},{key:"componentDidUpdate",value:function(){"undefined"==typeof window||this.useIntersectionObserver||j(s().findDOMNode(this.baseComponentRef.current))!==this.scrollElement&&(this.removeListeners(),this.addListeners());}},{key:"addListeners",value:function(){"undefined"==typeof window||this.useIntersectionObserver||(this.scrollElement=j(s().findDOMNode(this.baseComponentRef.current)),this.scrollElement.addEventListener("scroll",this.delayedScroll,{passive:!0}),window.addEventListener("resize",this.delayedScroll,{passive:!0}),this.scrollElement!==window&&window.addEventListener("scroll",this.delayedScroll,{passive:!0}));}},{key:"removeListeners",value:function(){"undefined"==typeof window||this.useIntersectionObserver||(this.scrollElement.removeEventListener("scroll",this.delayedScroll),window.removeEventListener("resize",this.delayedScroll),this.scrollElement!==window&&window.removeEventListener("scroll",this.delayedScroll));}},{key:"onChangeScroll",value:function(){this.useIntersectionObserver||this.setState({scrollPosition:{x:D(),y:N()}});}},{key:"render",value:function(){var r=this.props,o=(r.delayMethod,r.delayTime,function(e,t){if(null==e)return {};var r,o,n=function(e,t){if(null==e)return {};var r,o,n={},i=Object.keys(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||(n[r]=e[r]);return n}(e,t);if(Object.getOwnPropertySymbols){var i=Object.getOwnPropertySymbols(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||Object.prototype.propertyIsEnumerable.call(e,r)&&(n[r]=e[r]);}return n}(r,E)),n=this.useIntersectionObserver?null:this.state.scrollPosition;return t().createElement(e,_({forwardRef:this.baseComponentRef,scrollPosition:n},o))}}])&&I(o.prototype,n),a}(t().Component);return r.propTypes={delayMethod:n.PropTypes.oneOf(["debounce","throttle"]),delayTime:n.PropTypes.number,useIntersectionObserver:n.PropTypes.bool},r.defaultProps={delayMethod:"throttle",delayTime:300,useIntersectionObserver:!0},r};function M(e){return (M="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function B(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function V(e,t){return (V=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function W(e,t){if(t&&("object"===M(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e)}function z(e){return (z=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var $=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&V(e,t);}(c,e);var r,o,n,i,s=(n=c,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=z(n);if(i){var r=z(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return W(this,e)});function c(e){return function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,c),s.call(this,e)}return r=c,(o=[{key:"render",value:function(){return t().createElement(m,this.props)}}])&&B(r.prototype,o),c}(t().Component);const U=C($);function q(e){return (q="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function F(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function H(e,t){return (H=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function Y(e,t){if(t&&("object"===q(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return X(e)}function X(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}function A(e){return (A=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var G=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&H(e,t);}(u,e);var r,o,n,i,s=(n=u,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=A(n);if(i){var r=A(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return Y(this,e)});function u(e){var t;!function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,u),t=s.call(this,e);var r=e.afterLoad,o=e.beforeLoad,n=e.scrollPosition,i=e.visibleByDefault;return t.state={visible:i},i&&(o(),r()),t.onVisible=t.onVisible.bind(X(t)),t.isScrollTracked=Boolean(n&&Number.isFinite(n.x)&&n.x>=0&&Number.isFinite(n.y)&&n.y>=0),t}return r=u,(o=[{key:"componentDidUpdate",value:function(e,t){t.visible!==this.state.visible&&this.props.afterLoad();}},{key:"onVisible",value:function(){this.props.beforeLoad(),this.setState({visible:!0});}},{key:"render",value:function(){if(this.state.visible)return this.props.children;var e=this.props,r=e.className,o=e.delayMethod,n=e.delayTime,i=e.height,s=e.placeholder,u=e.scrollPosition,l=e.style,a=e.threshold,f=e.useIntersectionObserver,p=e.width;return this.isScrollTracked||f&&c()?t().createElement(m,{className:r,height:i,onVisible:this.onVisible,placeholder:s,scrollPosition:u,style:l,threshold:a,useIntersectionObserver:f,width:p}):t().createElement(U,{className:r,delayMethod:o,delayTime:n,height:i,onVisible:this.onVisible,placeholder:s,style:l,threshold:a,width:p})}}])&&F(r.prototype,o),u}(t().Component);G.propTypes={afterLoad:n.PropTypes.func,beforeLoad:n.PropTypes.func,useIntersectionObserver:n.PropTypes.bool,visibleByDefault:n.PropTypes.bool},G.defaultProps={afterLoad:function(){return {}},beforeLoad:function(){return {}},useIntersectionObserver:!0,visibleByDefault:!1};const J=G;function K(e){return (K="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}var Q=["afterLoad","beforeLoad","delayMethod","delayTime","effect","placeholder","placeholderSrc","scrollPosition","threshold","useIntersectionObserver","visibleByDefault","wrapperClassName","wrapperProps"];function Z(){return (Z=Object.assign||function(e){for(var t=1;t<arguments.length;t++){var r=arguments[t];for(var o in r)Object.prototype.hasOwnProperty.call(r,o)&&(e[o]=r[o]);}return e}).apply(this,arguments)}function ee(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function te(e,t){return (te=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function re(e,t){if(t&&("object"===K(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e)}function oe(e){return (oe=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var ne=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&te(e,t);}(c,e);var r,o,n,i,s=(n=c,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=oe(n);if(i){var r=oe(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return re(this,e)});function c(e){var t;return function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,c),(t=s.call(this,e)).state={loaded:!1},t}return r=c,(o=[{key:"onImageLoad",value:function(){var e=this;return this.state.loaded?null:function(){e.props.afterLoad(),e.setState({loaded:!0});}}},{key:"getImg",value:function(){var e=this.props,r=(e.afterLoad,e.beforeLoad,e.delayMethod,e.delayTime,e.effect,e.placeholder,e.placeholderSrc,e.scrollPosition,e.threshold,e.useIntersectionObserver,e.visibleByDefault,e.wrapperClassName,e.wrapperProps,function(e,t){if(null==e)return {};var r,o,n=function(e,t){if(null==e)return {};var r,o,n={},i=Object.keys(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||(n[r]=e[r]);return n}(e,t);if(Object.getOwnPropertySymbols){var i=Object.getOwnPropertySymbols(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||Object.prototype.propertyIsEnumerable.call(e,r)&&(n[r]=e[r]);}return n}(e,Q));return t().createElement("img",Z({onLoad:this.onImageLoad()},r))}},{key:"getLazyLoadImage",value:function(){var e=this.props,r=e.beforeLoad,o=e.className,n=e.delayMethod,i=e.delayTime,s=e.height,c=e.placeholder,u=e.scrollPosition,l=e.style,a=e.threshold,f=e.useIntersectionObserver,p=e.visibleByDefault,y=e.width;return t().createElement(J,{beforeLoad:r,className:o,delayMethod:n,delayTime:i,height:s,placeholder:c,scrollPosition:u,style:l,threshold:a,useIntersectionObserver:f,visibleByDefault:p,width:y},this.getImg())}},{key:"getWrappedLazyLoadImage",value:function(e){var r=this.props,o=r.effect,n=r.height,i=r.placeholderSrc,s=r.width,c=r.wrapperClassName,u=r.wrapperProps,l=this.state.loaded,a=l?" lazy-load-image-loaded":"";return t().createElement("span",Z({className:c+" lazy-load-image-background "+o+a,style:{backgroundImage:l||!i?"":"url(".concat(i,")"),backgroundSize:l||!i?"":"100% 100%",color:"transparent",display:"inline-block",height:n,width:s}},u),e)}},{key:"render",value:function(){var e=this.props,t=e.effect,r=e.placeholderSrc,o=e.visibleByDefault,n=e.wrapperClassName,i=e.wrapperProps,s=this.getLazyLoadImage();return (t||r)&&!o||n||i?this.getWrappedLazyLoadImage(s):s}}])&&ee(r.prototype,o),c}(t().Component);ne.propTypes={afterLoad:n.PropTypes.func,beforeLoad:n.PropTypes.func,delayMethod:n.PropTypes.string,delayTime:n.PropTypes.number,effect:n.PropTypes.string,placeholderSrc:n.PropTypes.string,threshold:n.PropTypes.number,useIntersectionObserver:n.PropTypes.bool,visibleByDefault:n.PropTypes.bool,wrapperClassName:n.PropTypes.string,wrapperProps:n.PropTypes.object},ne.defaultProps={afterLoad:function(){return {}},beforeLoad:function(){return {}},delayMethod:"throttle",delayTime:300,effect:"",placeholderSrc:null,threshold:100,useIntersectionObserver:!0,visibleByDefault:!1,wrapperClassName:""};const ie=ne;})(),build.exports=o;})();
-
-var MoonNFTImage = function MoonNFTImage() {
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // theme
-  var theme = useTheme(); // state
-
-  var _useState = useState(false),
-      _useState2 = _slicedToArray$1(_useState, 2),
-      error = _useState2[0],
-      setError = _useState2[1]; // url
-
-
-  var nftUrl = dotProp.get(props, 'item.image.url'); // check height
-
-  if (props.height) nftUrl = "".concat(nftUrl, "?h=").concat(props.height);
-  if (props.width) nftUrl = "".concat(nftUrl).concat(props.height ? '&' : '?', "w=").concat(props.width); // base
-
-  var base = /*#__PURE__*/React__default.createElement(Box, {
-    ref: props.ref,
-    sx: {
-      '& img': _objectSpread2$1(_objectSpread2$1({
-        width: 'auto',
-        height: 'auto'
-      }, props.variant === 'rounded' ? {
-        borderRadius: "".concat(theme.shape.borderRadius, "px")
-      } : {}), props.sx || {})
-    }
-  }, error ? /*#__PURE__*/React__default.createElement(Avatar, {
-    width: props.width,
-    height: props.height,
-    variant: props.variant,
-    onClick: props.onClick,
-    sx: _objectSpread2$1({
-      width: "".concat(props.width, "px"),
-      color: "rgba(255, 255, 255, 0.25)",
-      height: "".concat(props.height || props.width, "px"),
-      bgcolor: "rgba(255,255,255,0.1)",
-      transition: "all 0.2s ease",
-      '&:hover': {
-        bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[400] : theme.palette.grey[600]
-      }
-    }, props.sx || {})
-  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-    icon: faImageSlash
-  })) : /*#__PURE__*/React__default.createElement(build.exports.LazyLoadImage, {
-    src: nftUrl,
-    alt: props.item.name,
-    width: props.width,
-    height: props.height,
-    onClick: props.onClick,
-    onError: function onError() {
-      return setError(true);
-    },
-    placeholder: /*#__PURE__*/React__default.createElement(_default, {
-      ratio: (props.width || 100) / (props.height || props.width || 100)
-    }, props.placeholder || /*#__PURE__*/React__default.createElement(Skeleton, {
-      variant: props.variant || 'rounded',
-      sx: {
-        width: '100%!important',
-        height: '100%!important',
-        minHeight: '100%'
-      }
-    }))
-  })); // tooltip
-
-  if (props.noTooltip) return base; // return jsx
-
-  return /*#__PURE__*/React__default.createElement(Tooltip, {
-    title: props.item.name || 'N/A'
-  }, base);
-}; // export default
-
-var MoonNFTPicker = function MoonNFTPicker() {
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // theme
-  var theme = useTheme();
-  var socket = useSocket();
-
-  var _useState = useState([]),
-      _useState2 = _slicedToArray$1(_useState, 2),
-      images = _useState2[0],
-      setImages = _useState2[1];
-
-  var _useState3 = useState(''),
-      _useState4 = _slicedToArray$1(_useState3, 2),
-      search = _useState4[0],
-      setSearch = _useState4[1];
-
-  var _useState5 = useState(true),
-      _useState6 = _slicedToArray$1(_useState5, 2),
-      loading = _useState6[0],
-      setLoading = _useState6[1]; // width
-
-
-  var NFTWidth = theme.spacing(10).replace('px', ''); // load images
-
-  var loadImages = /*#__PURE__*/function () {
-    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
-      var loadedImages;
-      return regeneratorRuntime.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              // loading
-              setLoading(true); // images
-
-              _context.next = 3;
-              return socket.get('/nft/list', {
-                include: 'contract'
-              });
-
-            case 3:
-              loadedImages = _context.sent;
-              // load from api
-              setImages(loadedImages.data);
-              setLoading(false);
-
-            case 6:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-
-    return function loadImages() {
-      return _ref.apply(this, arguments);
-    };
-  }(); // get searched
-
-
-  var getSearched = function getSearched() {
-    // check search
-    if (!search || !search.trim().length) return images; // get tags
-
-    var tags = search.split(' ').map(function (t) {
-      return t.length ? t.toLowerCase() : null;
-    }).filter(function (t) {
-      return t;
-    }); // filter by tags
-
-    return _toConsumableArray$1(images).filter(function (image) {
-      // find in images
-      return !tags.find(function (t) {
-        var _image$value, _image$contract, _image$contract2;
-
-        // doesn't include a tag
-        return !"".concat(((_image$value = image.value) === null || _image$value === void 0 ? void 0 : _image$value.name) || image.name, " ").concat((_image$contract = image.contract) === null || _image$contract === void 0 ? void 0 : _image$contract.id, " ").concat(image.id, " ").concat((_image$contract2 = image.contract) === null || _image$contract2 === void 0 ? void 0 : _image$contract2.name).toLowerCase().includes(t);
-      });
-    });
-  }; // get contracts
-
-
-  var getContracts = function getContracts() {
-    // return from images
-    return getSearched().reduce(function (accum, image) {
-      // find contract
-      if (accum.find(function (c) {
-        var _image$contract3;
-
-        return c.id === ((_image$contract3 = image.contract) === null || _image$contract3 === void 0 ? void 0 : _image$contract3.id);
-      })) return accum; // push image contract
-
-      accum.push(image.contract); // return accum
-
-      return accum;
-    }, []);
-  }; // get images
-
-
-  var getImages = function getImages(contract) {
-    // filtered images
-    return getSearched().filter(function (image) {
-      var _image$contract4;
-
-      return ((_image$contract4 = image.contract) === null || _image$contract4 === void 0 ? void 0 : _image$contract4.id) === contract;
-    });
-  }; // use effect
-
-
-  useEffect(function () {
-    // load images
-    if (props.open) loadImages();
-  }, [props.account, props.open]); // return jsx
-
-  return /*#__PURE__*/React__default.createElement(Popper, {
-    style: {
-      zIndex: 1499
-    },
-    open: props.open,
-    anchorEl: props.anchorEl,
-    placement: props.placement,
-    transition: true
-  }, function (_ref2) {
-    var TransitionProps = _ref2.TransitionProps;
-    return /*#__PURE__*/React__default.createElement(Grow, _extends$4({}, TransitionProps, {
-      style: {
-        transformOrigin: props.placement === 'right-end' ? 'left bottom' : 'right bottom'
-      }
-    }), /*#__PURE__*/React__default.createElement(Paper, {
-      elevation: 2,
-      sx: {
-        border: ".1rem solid ".concat(theme.palette.grey[300]),
-        borderRadius: "".concat(theme.shape.borderRadius * 2, "px")
-      }
-    }, /*#__PURE__*/React__default.createElement(ClickAwayListener, {
-      onClickAway: props.onClose
-    }, /*#__PURE__*/React__default.createElement(Box, {
-      width: theme.spacing(40),
-      height: theme.spacing(50),
-      display: "flex"
-    }, loading ? /*#__PURE__*/React__default.createElement(Box, {
-      flex: 1,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center"
-    }, /*#__PURE__*/React__default.createElement(CircularProgress$1, null)) : /*#__PURE__*/React__default.createElement(Box, {
-      component: NFTScrollBar,
-      isFlex: true
-    }, /*#__PURE__*/React__default.createElement(Box, {
-      p: 2
-    }, /*#__PURE__*/React__default.createElement(Stack, {
-      spacing: 2
-    }, /*#__PURE__*/React__default.createElement(FormControl, {
-      sx: {
-        width: '100%'
-      },
-      variant: "outlined"
-    }, /*#__PURE__*/React__default.createElement(InputLabel, {
-      htmlFor: "nft-picker-search"
-    }, "Search"), /*#__PURE__*/React__default.createElement(OutlinedInput, {
-      id: "nft-picker-search",
-      type: "search",
-      value: search,
-      onChange: function onChange(e) {
-        return setSearch(e.target.value);
-      },
-      endAdornment: /*#__PURE__*/React__default.createElement(InputAdornment, {
-        position: "end"
-      }, /*#__PURE__*/React__default.createElement(IconButton, {
-        "aria-label": "search"
-      }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-        icon: faSearch,
-        size: "xs"
-      }))),
-      label: "Search"
-    })), getContracts().map(function (contract) {
-      // return jsx
-      return /*#__PURE__*/React__default.createElement(Box, {
-        key: "contract-".concat(contract.id),
-        sx: {
-          '& .MuiImageList-root': {
-            overflowY: 'initial'
-          },
-          '& .MuiImageListItem-root > img': {
-            cursor: 'pointer',
-            borderRadius: "".concat(theme.shape.borderRadius, "px")
-          }
-        }
-      }, /*#__PURE__*/React__default.createElement(Box, {
-        mb: 1
-      }, /*#__PURE__*/React__default.createElement(Typography, null, contract.name || 'N/A')), /*#__PURE__*/React__default.createElement(Grid, {
-        container: true,
-        spacing: 1
-      }, getImages(contract.id).map(function (image, i) {
-        // return image
-        return /*#__PURE__*/React__default.createElement(Grid, {
-          item: true,
-          xs: 3,
-          key: "image-".concat(contract.id, "-").concat(image.id || i)
-        }, /*#__PURE__*/React__default.createElement(MoonNFTImage, {
-          item: image,
-          width: NFTWidth,
-          height: NFTWidth,
-          onClick: function onClick() {
-            return props.onPick(image);
-          },
-          sx: {
-            cursor: 'pointer',
-            maxWidth: '100%',
-            borderRadius: "".concat(theme.shape.borderRadius, "px")
-          }
-        }));
-      })));
-    }))))))));
-  });
-}; // export default
-
-/**
- * create moon start menu
- *
- * @param props 
- * @returns 
- */
-
-var MoonStartMenu = function MoonStartMenu() {
-  var _app$apps$find;
-
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // theme
-  var app = useApps();
-  var auth = useAuth();
-  var theme = useTheme();
-  var socket = useSocket();
-  var desktop = useDesktop(); // ref
-
-  var subMenuRef = useRef(null);
-  var userMenuRef = useRef(null); // use state
-
-  var _useState = useState(null),
-      _useState2 = _slicedToArray$1(_useState, 2);
-      _useState2[0];
-      var setLoading = _useState2[1];
-
-  var _useState3 = useState(null),
-      _useState4 = _slicedToArray$1(_useState3, 2),
-      subMenu = _useState4[0],
-      setSubMenu = _useState4[1];
-
-  var _useState5 = useState(false),
-      _useState6 = _slicedToArray$1(_useState5, 2),
-      avatarMenu = _useState6[0],
-      setAvatarMenu = _useState6[1]; // width
-
-
-  var avatarWidth = theme.spacing(6).replace('px', '');
-  var startMenuWidth = parseInt(theme.spacing(35).replace('px', '')); // on task
-
-  var onTask = /*#__PURE__*/function () {
-    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(app, path) {
-      return regeneratorRuntime.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              // set loading
-              setLoading(true);
-              setSubMenu(null); // task
-
-              _context.next = 4;
-              return desktop.findOrCreateTask({
-                app: app,
-                path: path
-              });
-
-            case 4:
-              // loading
-              setLoading(false);
-
-            case 5:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-
-    return function onTask(_x, _x2) {
-      return _ref.apply(this, arguments);
-    };
-  }(); // on select
-
-
-  var onAvatar = /*#__PURE__*/function () {
-    var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(nft) {
-      var account;
-      return regeneratorRuntime.wrap(function _callee2$(_context2) {
-        while (1) {
-          switch (_context2.prev = _context2.next) {
-            case 0:
-              if (nft) {
-                _context2.next = 2;
-                break;
-              }
-
-              return _context2.abrupt("return");
-
-            case 2:
-              // loading
-              setAvatarMenu(false); // set nft
-
-              _context2.next = 5;
-              return socket.post("/account/update", {
-                avatar: nft.id
-              });
-
-            case 5:
-              account = _context2.sent;
-              // auth
-              auth.emitUser(account);
-
-            case 7:
-            case "end":
-              return _context2.stop();
-          }
-        }
-      }, _callee2);
-    }));
-
-    return function onAvatar(_x3) {
-      return _ref2.apply(this, arguments);
-    };
-  }(); // return jsx
-
-
-  return /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(Popper, {
-    open: !!props.open,
-    anchorEl: props.anchorEl,
-    placement: props.placement || 'top-start',
-    transition: true,
-    style: {
-      zIndex: 1498
-    }
-  }, function (_ref3) {
-    var TransitionProps = _ref3.TransitionProps;
-    return /*#__PURE__*/React__default.createElement(Grow, _extends$4({}, TransitionProps, {
-      style: {
-        transformOrigin: 'left bottom'
-      }
-    }), /*#__PURE__*/React__default.createElement(Paper, {
-      sx: {
-        mb: 1,
-        ml: 1,
-        width: startMenuWidth,
-        border: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary),
-        height: startMenuWidth * 1.5,
-        background: theme.palette.background.paper,
-        borderRadius: "".concat(theme.shape.borderRadius * 2, "px")
-      },
-      elevation: 1
-    }, /*#__PURE__*/React__default.createElement(ClickAwayListener, {
-      onClickAway: function onClickAway() {
-        return avatarMenu || subMenu ? null : props.onClose();
-      }
-    }, /*#__PURE__*/React__default.createElement(Box, {
-      height: "100%",
-      width: "100%",
-      display: "flex",
-      flexDirection: "column"
-    }, /*#__PURE__*/React__default.createElement(Stack, {
-      sx: {
-        flex: 0,
-        width: '100%',
-        display: 'flex',
-        padding: 2,
-        alignItems: 'center',
-        borderBottom: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
-      },
-      spacing: 2,
-      direction: "row"
-    }, /*#__PURE__*/React__default.createElement(Box, {
-      sx: {
-        cursor: 'pointer'
-      },
-      onClick: function onClick(e) {
-        // check auth
-        if (!auth.account) {
-          e.preventDefault();
-          return auth.login();
-        } // pop up menu
-
-
-        setAvatarMenu(true);
-      },
-      ref: userMenuRef
-    }, auth.loading ? /*#__PURE__*/React__default.createElement(Skeleton, {
-      variant: "circular",
-      width: avatarWidth,
-      height: avatarWidth,
-      sx: {
-        minHeight: "".concat(avatarWidth, "px")
-      }
-    }) : /*#__PURE__*/React__default.createElement(MoonNFTAvatar, {
-      user: auth.user,
-      width: avatarWidth,
-      height: avatarWidth,
-      sx: {
-        color: "rgba(255, 255, 255, 0.25)"
-      },
-      TooltipProps: {
-        title: auth.account ? 'My Profile' : 'Login',
-        placement: 'right'
-      }
-    })), /*#__PURE__*/React__default.createElement(Box, {
-      flex: 1,
-      flexDirection: "column",
-      alignItems: "center"
-    }, auth.account ? /*#__PURE__*/React__default.createElement(Link, {
-      to: "/a/".concat(auth.account)
-    }, /*#__PURE__*/React__default.createElement(Box, {
-      component: "span",
-      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body1), {}, {
-        color: theme.palette.text.primary,
-        fontWeight: theme.typography.fontWeightMedium
-      })
-    }, auth.account.toLowerCase() === '0x9d4150274f0a67985a53513767ebf5988cef45a4' ? 'eden' : 'not eden')) : /*#__PURE__*/React__default.createElement(Box, {
-      component: "span",
-      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body1), {}, {
-        color: theme.palette.text.primary,
-        fontWeight: theme.typography.fontWeightMedium
-      }),
-      onClick: function onClick() {
-        return auth.login();
-      }
-    }, "Anonymous"), auth.account ? /*#__PURE__*/React__default.createElement(Box, {
-      component: "a",
-      target: "_BLANK",
-      href: "https://ftmscan.com/address/".concat(auth.account),
-      color: "rgba(255, 255, 255, 0.4)",
-      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body2), {}, {
-        display: 'block',
-        textDecoration: 'none'
-      })
-    }, "".concat(auth.account.substring(0, 8))) : /*#__PURE__*/React__default.createElement(Box, {
-      color: "rgba(255, 255, 255, 0.4)",
-      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body2), {}, {
-        textDecoration: 'none'
-      })
-    }, "Anonymous")), auth.account ? /*#__PURE__*/React__default.createElement(Tooltip, {
-      title: "Logout"
-    }, /*#__PURE__*/React__default.createElement(IconButton, {
-      onClick: function onClick() {
-        return auth.logout();
-      }
-    }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-      icon: faSignOut,
-      size: "sm"
-    }))) : /*#__PURE__*/React__default.createElement(Tooltip, {
-      title: "Login"
-    }, /*#__PURE__*/React__default.createElement(IconButton, {
-      onClick: function onClick() {
-        return auth.login();
-      }
-    }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-      icon: faSignIn,
-      size: "sm"
-    })))), /*#__PURE__*/React__default.createElement(Box, {
-      sx: {
-        flex: 1
-      },
-      ref: subMenuRef
-    }, /*#__PURE__*/React__default.createElement(MenuList, null, app.apps.map(function (app) {
-      // return jsx
-      return /*#__PURE__*/React__default.createElement(MenuItem, {
-        id: "app-".concat(app.id),
-        key: "app-".concat(app.id),
-        onClick: function onClick() {
-          return setSubMenu(app.id);
-        },
-        selected: app.id === subMenu
-      }, app.name, /*#__PURE__*/React__default.createElement(Box, {
-        ml: "auto"
-      }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-        icon: faChevronRight
-      })));
-    })))))));
-  }), !!subMenu && /*#__PURE__*/React__default.createElement(Menu, {
-    open: !!subMenu,
-    onClose: function onClose() {
-      return setSubMenu(null);
-    },
-    anchorEl: subMenuRef === null || subMenuRef === void 0 ? void 0 : subMenuRef.current,
-    anchorOrigin: {
-      vertical: 'top',
-      horizontal: 'right'
-    },
-    transformOrigin: {
-      vertical: 'top',
-      horizontal: 'left'
-    },
-    MenuListProps: {
-      sx: {
-        border: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary),
-        borderRadius: "".concat(theme.shape.borderRadius, "px")
-      }
-    }
-  }, (((_app$apps$find = app.apps.find(function (app) {
-    return app.id === subMenu;
-  })) === null || _app$apps$find === void 0 ? void 0 : _app$apps$find.paths) || []).map(function (item, i) {
-    // return jsx
-    if (item === 'divider') return /*#__PURE__*/React__default.createElement(Divider, {
-      key: "sub-".concat(i)
-    }); // return menu
-
-    return /*#__PURE__*/React__default.createElement(MenuItem, {
-      key: "sub-".concat(item.path),
-      onClick: function onClick() {
-        return onTask(subMenu, item.path);
-      }
-    }, item.name);
-  })), /*#__PURE__*/React__default.createElement(MoonNFTPicker, {
-    open: !!avatarMenu,
-    title: "Select New Avatar",
-    onPick: function onPick(nft) {
-      return onAvatar(nft);
-    },
-    onClose: function onClose() {
-      return setAvatarMenu(false);
-    },
-    account: auth.account,
-    anchorEl: userMenuRef.current,
-    placement: "right-end"
-  }));
-}; // export default
-
-var MoonTaskBar = function MoonTaskBar() {
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // theme
-  var theme = useTheme();
-  var style = props.style || 'floating';
-  var desktop = useDesktop();
-  var position = props.position || 'bottom';
-
-  var _useState = useState(false),
-      _useState2 = _slicedToArray$1(_useState, 2),
-      startMenu = _useState2[0],
-      setStartMenu = _useState2[1]; // menu ref
-
-
-  var startMenuRef = useRef(null); // widths
-
-  var taskBarSize = parseInt(theme.spacing(8).replace('px', ''));
-  var taskBarItemSize = parseInt(theme.spacing(6).replace('px', '')); // is vertical
-
-  var isVertical = ['left', 'right'].includes(position); // bring to front
-
-  var _onBringToFront = function onBringToFront(id) {
-    // bring task to front
-    desktop.bringTaskToFront({
-      id: id
-    });
-  }; // get tasks
-
-
-  var getTasks = function getTasks() {
-    // return sorted tasks
-    return _toConsumableArray$1(desktop.tasks || []).sort(function (a, b) {
-      // return a,b
-      if (a.order > b.order) return 1;
-      if (a.order < b.order) return -1;
-      return 0;
-    });
-  }; // return jsx
-
-
-  return /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      width: isVertical ? taskBarSize : style === 'floating' ? "calc(100vw - ".concat(theme.spacing(2), ")") : '100vw',
-      height: isVertical ? style === 'floating' ? "calc(100vh - ".concat(theme.spacing(2), ")") : '100vh' : taskBarSize,
-      margin: style === 'floating' ? theme.spacing(1) : undefined,
-      display: 'flex'
-    },
-    ref: startMenuRef
-  }, /*#__PURE__*/React__default.createElement(Paper, {
-    sx: {
-      flex: 1,
-      display: 'flex',
-      borderRadius: style === 'fixed' ? undefined : 2
-    },
-    elevation: 1
-  }, /*#__PURE__*/React__default.createElement(Stack, {
-    direction: isVertical ? 'column' : 'row',
-    spacing: 1,
-    sx: {
-      px: isVertical ? undefined : theme.spacing(1),
-      py: isVertical ? theme.spacing(1) : undefined,
-      flex: 1,
-      border: style === 'floating' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      alignItems: isVertical ? undefined : 'center',
-      borderRadius: style === 'fixed' ? undefined : 2,
-      justifyContent: isVertical ? 'center' : undefined,
-      borderTop: style === 'fixed' && position === 'bottom' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      borderLeft: style === 'fixed' && position === 'right' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      borderRight: style === 'fixed' && position === 'left' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      borderBottom: style === 'fixed' && position === 'top' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined
-    }
-  }, /*#__PURE__*/React__default.createElement(Button, {
-    sx: {
-      mx: isVertical ? 'auto!important' : undefined,
-      width: "".concat(taskBarItemSize, "px"),
-      color: theme.palette.text.primary,
-      height: "".concat(taskBarItemSize, "px"),
-      minWidth: "".concat(taskBarItemSize, "px"),
-      background: 'transparent',
-      borderWidth: theme.shape.borderWidth,
-      borderColor: startMenu ? undefined : 'transparent'
-    },
-    variant: "outlined",
-    color: "primary",
-    onClick: function onClick(e) {
-      return setStartMenu(true);
-    }
-  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-    icon: faMoon,
-    size: "lg"
-  })), /*#__PURE__*/React__default.createElement(Box, {
-    mx: isVertical ? 'auto!important' : undefined,
-    width: isVertical ? theme.spacing(4) : undefined,
-    height: isVertical ? undefined : theme.spacing(4),
-    borderTop: isVertical ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-    borderRight: isVertical ? undefined : "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
-  }), /*#__PURE__*/React__default.createElement(Stack, {
-    direction: isVertical ? 'column' : 'row',
-    sx: {
-      px: theme.spacing(1),
-      flex: 1,
-      alignItems: 'center',
-      justifyContent: isVertical ? 'flex-start' : undefined
-    }
-  }, getTasks().map(function (task) {
-    // return jsx
-    return /*#__PURE__*/React__default.createElement(MoonTask, {
-      key: "task-".concat(task.id),
-      item: task,
-      onBringToFront: function onBringToFront() {
-        return _onBringToFront(task.id);
-      }
-    });
-  })), /*#__PURE__*/React__default.createElement(Box, {
-    mx: isVertical ? 'auto!important' : undefined,
-    width: isVertical ? theme.spacing(4) : undefined,
-    height: isVertical ? undefined : theme.spacing(4),
-    borderTop: isVertical ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-    borderRight: isVertical ? undefined : "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
-  }), /*#__PURE__*/React__default.createElement(Button, {
-    sx: {
-      mx: isVertical ? 'auto!important' : undefined,
-      width: "".concat(taskBarItemSize, "px"),
-      color: theme.palette.text.primary,
-      height: "".concat(taskBarItemSize, "px"),
-      minWidth: "".concat(taskBarItemSize, "px"),
-      background: 'transparent'
-    },
-    variant: "text"
-  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-    icon: faBell,
-    size: "lg"
-  }))))), /*#__PURE__*/React__default.createElement(MoonStartMenu, {
-    open: !!startMenu,
-    anchorEl: startMenuRef.current,
-    placement: "top-start",
-    onClose: function onClose() {
-      return setStartMenu(false);
-    }
-  }));
-}; // export default
-
-// import dependencies
-
-var MoonNFTList = function MoonNFTList() {
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // use theme
-  var theme = useTheme(); // width/height
-
-  var NFTWidth = props.width || 200; // return jsx
-
-  return /*#__PURE__*/React__default.createElement(Grid, {
-    container: true,
-    spacing: 1
-  }, (props.items || []).map(function (item) {
-    // return item
-    return /*#__PURE__*/React__default.createElement(Grid, {
-      item: true,
-      xs: 3,
-      key: item.id
-    }, /*#__PURE__*/React__default.createElement(MoonNFTImage, {
-      item: item,
-      width: NFTWidth,
-      height: NFTWidth,
-      onClick: function onClick() {
-        return props.onPick && props.onPick(item);
-      },
-      sx: {
-        cursor: 'pointer',
-        maxWidth: '100%',
-        borderRadius: "".concat(theme.shape.borderRadius, "px")
-      }
-    }));
-  }));
-}; // export default
-
-function _setPrototypeOf$1(o, p) {
-  _setPrototypeOf$1 = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
-    o.__proto__ = p;
-    return o;
-  };
-
-  return _setPrototypeOf$1(o, p);
-}
-
-function _inheritsLoose(subClass, superClass) {
-  subClass.prototype = Object.create(superClass.prototype);
-  subClass.prototype.constructor = subClass;
-  _setPrototypeOf$1(subClass, superClass);
-}
-
-/**
- * A collection of shims that provide minimal functionality of the ES6 collections.
- *
- * These implementations are not meant to be used outside of the ResizeObserver
- * modules as they cover only a limited range of use cases.
- */
-/* eslint-disable require-jsdoc, valid-jsdoc */
-var MapShim = (function () {
-    if (typeof Map !== 'undefined') {
-        return Map;
-    }
-    /**
-     * Returns index in provided array that matches the specified key.
-     *
-     * @param {Array<Array>} arr
-     * @param {*} key
-     * @returns {number}
-     */
-    function getIndex(arr, key) {
-        var result = -1;
-        arr.some(function (entry, index) {
-            if (entry[0] === key) {
-                result = index;
-                return true;
-            }
-            return false;
-        });
-        return result;
-    }
-    return /** @class */ (function () {
-        function class_1() {
-            this.__entries__ = [];
-        }
-        Object.defineProperty(class_1.prototype, "size", {
-            /**
-             * @returns {boolean}
-             */
-            get: function () {
-                return this.__entries__.length;
-            },
-            enumerable: true,
-            configurable: true
-        });
-        /**
-         * @param {*} key
-         * @returns {*}
-         */
-        class_1.prototype.get = function (key) {
-            var index = getIndex(this.__entries__, key);
-            var entry = this.__entries__[index];
-            return entry && entry[1];
-        };
-        /**
-         * @param {*} key
-         * @param {*} value
-         * @returns {void}
-         */
-        class_1.prototype.set = function (key, value) {
-            var index = getIndex(this.__entries__, key);
-            if (~index) {
-                this.__entries__[index][1] = value;
-            }
-            else {
-                this.__entries__.push([key, value]);
-            }
-        };
-        /**
-         * @param {*} key
-         * @returns {void}
-         */
-        class_1.prototype.delete = function (key) {
-            var entries = this.__entries__;
-            var index = getIndex(entries, key);
-            if (~index) {
-                entries.splice(index, 1);
-            }
-        };
-        /**
-         * @param {*} key
-         * @returns {void}
-         */
-        class_1.prototype.has = function (key) {
-            return !!~getIndex(this.__entries__, key);
-        };
-        /**
-         * @returns {void}
-         */
-        class_1.prototype.clear = function () {
-            this.__entries__.splice(0);
-        };
-        /**
-         * @param {Function} callback
-         * @param {*} [ctx=null]
-         * @returns {void}
-         */
-        class_1.prototype.forEach = function (callback, ctx) {
-            if (ctx === void 0) { ctx = null; }
-            for (var _i = 0, _a = this.__entries__; _i < _a.length; _i++) {
-                var entry = _a[_i];
-                callback.call(ctx, entry[1], entry[0]);
-            }
-        };
-        return class_1;
-    }());
-})();
-
-/**
- * Detects whether window and document objects are available in current environment.
- */
-var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && window.document === document;
-
-// Returns global object of a current environment.
-var global$1 = (function () {
-    if (typeof global !== 'undefined' && global.Math === Math) {
-        return global;
-    }
-    if (typeof self !== 'undefined' && self.Math === Math) {
-        return self;
-    }
-    if (typeof window !== 'undefined' && window.Math === Math) {
-        return window;
-    }
-    // eslint-disable-next-line no-new-func
-    return Function('return this')();
-})();
-
-/**
- * A shim for the requestAnimationFrame which falls back to the setTimeout if
- * first one is not supported.
- *
- * @returns {number} Requests' identifier.
- */
-var requestAnimationFrame$1 = (function () {
-    if (typeof requestAnimationFrame === 'function') {
-        // It's required to use a bounded function because IE sometimes throws
-        // an "Invalid calling object" error if rAF is invoked without the global
-        // object on the left hand side.
-        return requestAnimationFrame.bind(global$1);
-    }
-    return function (callback) { return setTimeout(function () { return callback(Date.now()); }, 1000 / 60); };
-})();
-
-// Defines minimum timeout before adding a trailing call.
-var trailingTimeout = 2;
-/**
- * Creates a wrapper function which ensures that provided callback will be
- * invoked only once during the specified delay period.
- *
- * @param {Function} callback - Function to be invoked after the delay period.
- * @param {number} delay - Delay after which to invoke callback.
- * @returns {Function}
- */
-function throttle$1 (callback, delay) {
-    var leadingCall = false, trailingCall = false, lastCallTime = 0;
-    /**
-     * Invokes the original callback function and schedules new invocation if
-     * the "proxy" was called during current request.
-     *
-     * @returns {void}
-     */
-    function resolvePending() {
-        if (leadingCall) {
-            leadingCall = false;
-            callback();
-        }
-        if (trailingCall) {
-            proxy();
-        }
-    }
-    /**
-     * Callback invoked after the specified delay. It will further postpone
-     * invocation of the original function delegating it to the
-     * requestAnimationFrame.
-     *
-     * @returns {void}
-     */
-    function timeoutCallback() {
-        requestAnimationFrame$1(resolvePending);
-    }
-    /**
-     * Schedules invocation of the original function.
-     *
-     * @returns {void}
-     */
-    function proxy() {
-        var timeStamp = Date.now();
-        if (leadingCall) {
-            // Reject immediately following calls.
-            if (timeStamp - lastCallTime < trailingTimeout) {
-                return;
-            }
-            // Schedule new call to be in invoked when the pending one is resolved.
-            // This is important for "transitions" which never actually start
-            // immediately so there is a chance that we might miss one if change
-            // happens amids the pending invocation.
-            trailingCall = true;
-        }
-        else {
-            leadingCall = true;
-            trailingCall = false;
-            setTimeout(timeoutCallback, delay);
-        }
-        lastCallTime = timeStamp;
-    }
-    return proxy;
-}
-
-// Minimum delay before invoking the update of observers.
-var REFRESH_DELAY = 20;
-// A list of substrings of CSS properties used to find transition events that
-// might affect dimensions of observed elements.
-var transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
-// Check if MutationObserver is available.
-var mutationObserverSupported = typeof MutationObserver !== 'undefined';
-/**
- * Singleton controller class which handles updates of ResizeObserver instances.
- */
-var ResizeObserverController = /** @class */ (function () {
-    /**
-     * Creates a new instance of ResizeObserverController.
-     *
-     * @private
-     */
-    function ResizeObserverController() {
-        /**
-         * Indicates whether DOM listeners have been added.
-         *
-         * @private {boolean}
-         */
-        this.connected_ = false;
-        /**
-         * Tells that controller has subscribed for Mutation Events.
-         *
-         * @private {boolean}
-         */
-        this.mutationEventsAdded_ = false;
-        /**
-         * Keeps reference to the instance of MutationObserver.
-         *
-         * @private {MutationObserver}
-         */
-        this.mutationsObserver_ = null;
-        /**
-         * A list of connected observers.
-         *
-         * @private {Array<ResizeObserverSPI>}
-         */
-        this.observers_ = [];
-        this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
-        this.refresh = throttle$1(this.refresh.bind(this), REFRESH_DELAY);
-    }
-    /**
-     * Adds observer to observers list.
-     *
-     * @param {ResizeObserverSPI} observer - Observer to be added.
-     * @returns {void}
-     */
-    ResizeObserverController.prototype.addObserver = function (observer) {
-        if (!~this.observers_.indexOf(observer)) {
-            this.observers_.push(observer);
-        }
-        // Add listeners if they haven't been added yet.
-        if (!this.connected_) {
-            this.connect_();
-        }
-    };
-    /**
-     * Removes observer from observers list.
-     *
-     * @param {ResizeObserverSPI} observer - Observer to be removed.
-     * @returns {void}
-     */
-    ResizeObserverController.prototype.removeObserver = function (observer) {
-        var observers = this.observers_;
-        var index = observers.indexOf(observer);
-        // Remove observer if it's present in registry.
-        if (~index) {
-            observers.splice(index, 1);
-        }
-        // Remove listeners if controller has no connected observers.
-        if (!observers.length && this.connected_) {
-            this.disconnect_();
-        }
-    };
-    /**
-     * Invokes the update of observers. It will continue running updates insofar
-     * it detects changes.
-     *
-     * @returns {void}
-     */
-    ResizeObserverController.prototype.refresh = function () {
-        var changesDetected = this.updateObservers_();
-        // Continue running updates if changes have been detected as there might
-        // be future ones caused by CSS transitions.
-        if (changesDetected) {
-            this.refresh();
-        }
-    };
-    /**
-     * Updates every observer from observers list and notifies them of queued
-     * entries.
-     *
-     * @private
-     * @returns {boolean} Returns "true" if any observer has detected changes in
-     *      dimensions of it's elements.
-     */
-    ResizeObserverController.prototype.updateObservers_ = function () {
-        // Collect observers that have active observations.
-        var activeObservers = this.observers_.filter(function (observer) {
-            return observer.gatherActive(), observer.hasActive();
-        });
-        // Deliver notifications in a separate cycle in order to avoid any
-        // collisions between observers, e.g. when multiple instances of
-        // ResizeObserver are tracking the same element and the callback of one
-        // of them changes content dimensions of the observed target. Sometimes
-        // this may result in notifications being blocked for the rest of observers.
-        activeObservers.forEach(function (observer) { return observer.broadcastActive(); });
-        return activeObservers.length > 0;
-    };
-    /**
-     * Initializes DOM listeners.
-     *
-     * @private
-     * @returns {void}
-     */
-    ResizeObserverController.prototype.connect_ = function () {
-        // Do nothing if running in a non-browser environment or if listeners
-        // have been already added.
-        if (!isBrowser || this.connected_) {
-            return;
-        }
-        // Subscription to the "Transitionend" event is used as a workaround for
-        // delayed transitions. This way it's possible to capture at least the
-        // final state of an element.
-        document.addEventListener('transitionend', this.onTransitionEnd_);
-        window.addEventListener('resize', this.refresh);
-        if (mutationObserverSupported) {
-            this.mutationsObserver_ = new MutationObserver(this.refresh);
-            this.mutationsObserver_.observe(document, {
-                attributes: true,
-                childList: true,
-                characterData: true,
-                subtree: true
-            });
-        }
-        else {
-            document.addEventListener('DOMSubtreeModified', this.refresh);
-            this.mutationEventsAdded_ = true;
-        }
-        this.connected_ = true;
-    };
-    /**
-     * Removes DOM listeners.
-     *
-     * @private
-     * @returns {void}
-     */
-    ResizeObserverController.prototype.disconnect_ = function () {
-        // Do nothing if running in a non-browser environment or if listeners
-        // have been already removed.
-        if (!isBrowser || !this.connected_) {
-            return;
-        }
-        document.removeEventListener('transitionend', this.onTransitionEnd_);
-        window.removeEventListener('resize', this.refresh);
-        if (this.mutationsObserver_) {
-            this.mutationsObserver_.disconnect();
-        }
-        if (this.mutationEventsAdded_) {
-            document.removeEventListener('DOMSubtreeModified', this.refresh);
-        }
-        this.mutationsObserver_ = null;
-        this.mutationEventsAdded_ = false;
-        this.connected_ = false;
-    };
-    /**
-     * "Transitionend" event handler.
-     *
-     * @private
-     * @param {TransitionEvent} event
-     * @returns {void}
-     */
-    ResizeObserverController.prototype.onTransitionEnd_ = function (_a) {
-        var _b = _a.propertyName, propertyName = _b === void 0 ? '' : _b;
-        // Detect whether transition may affect dimensions of an element.
-        var isReflowProperty = transitionKeys.some(function (key) {
-            return !!~propertyName.indexOf(key);
-        });
-        if (isReflowProperty) {
-            this.refresh();
-        }
-    };
-    /**
-     * Returns instance of the ResizeObserverController.
-     *
-     * @returns {ResizeObserverController}
-     */
-    ResizeObserverController.getInstance = function () {
-        if (!this.instance_) {
-            this.instance_ = new ResizeObserverController();
-        }
-        return this.instance_;
-    };
-    /**
-     * Holds reference to the controller's instance.
-     *
-     * @private {ResizeObserverController}
-     */
-    ResizeObserverController.instance_ = null;
-    return ResizeObserverController;
-}());
-
-/**
- * Defines non-writable/enumerable properties of the provided target object.
- *
- * @param {Object} target - Object for which to define properties.
- * @param {Object} props - Properties to be defined.
- * @returns {Object} Target object.
- */
-var defineConfigurable = (function (target, props) {
-    for (var _i = 0, _a = Object.keys(props); _i < _a.length; _i++) {
-        var key = _a[_i];
-        Object.defineProperty(target, key, {
-            value: props[key],
-            enumerable: false,
-            writable: false,
-            configurable: true
-        });
-    }
-    return target;
-});
-
-/**
- * Returns the global object associated with provided element.
- *
- * @param {Object} target
- * @returns {Object}
- */
-var getWindowOf$1 = (function (target) {
-    // Assume that the element is an instance of Node, which means that it
-    // has the "ownerDocument" property from which we can retrieve a
-    // corresponding global object.
-    var ownerGlobal = target && target.ownerDocument && target.ownerDocument.defaultView;
-    // Return the local global object if it's not possible extract one from
-    // provided element.
-    return ownerGlobal || global$1;
-});
-
-// Placeholder of an empty content rectangle.
-var emptyRect = createRectInit(0, 0, 0, 0);
-/**
- * Converts provided string to a number.
- *
- * @param {number|string} value
- * @returns {number}
- */
-function toFloat(value) {
-    return parseFloat(value) || 0;
-}
-/**
- * Extracts borders size from provided styles.
- *
- * @param {CSSStyleDeclaration} styles
- * @param {...string} positions - Borders positions (top, right, ...)
- * @returns {number}
- */
-function getBordersSize(styles) {
-    var positions = [];
-    for (var _i = 1; _i < arguments.length; _i++) {
-        positions[_i - 1] = arguments[_i];
-    }
-    return positions.reduce(function (size, position) {
-        var value = styles['border-' + position + '-width'];
-        return size + toFloat(value);
-    }, 0);
-}
-/**
- * Extracts paddings sizes from provided styles.
- *
- * @param {CSSStyleDeclaration} styles
- * @returns {Object} Paddings box.
- */
-function getPaddings(styles) {
-    var positions = ['top', 'right', 'bottom', 'left'];
-    var paddings = {};
-    for (var _i = 0, positions_1 = positions; _i < positions_1.length; _i++) {
-        var position = positions_1[_i];
-        var value = styles['padding-' + position];
-        paddings[position] = toFloat(value);
-    }
-    return paddings;
-}
-/**
- * Calculates content rectangle of provided SVG element.
- *
- * @param {SVGGraphicsElement} target - Element content rectangle of which needs
- *      to be calculated.
- * @returns {DOMRectInit}
- */
-function getSVGContentRect(target) {
-    var bbox = target.getBBox();
-    return createRectInit(0, 0, bbox.width, bbox.height);
-}
-/**
- * Calculates content rectangle of provided HTMLElement.
- *
- * @param {HTMLElement} target - Element for which to calculate the content rectangle.
- * @returns {DOMRectInit}
- */
-function getHTMLElementContentRect(target) {
-    // Client width & height properties can't be
-    // used exclusively as they provide rounded values.
-    var clientWidth = target.clientWidth, clientHeight = target.clientHeight;
-    // By this condition we can catch all non-replaced inline, hidden and
-    // detached elements. Though elements with width & height properties less
-    // than 0.5 will be discarded as well.
-    //
-    // Without it we would need to implement separate methods for each of
-    // those cases and it's not possible to perform a precise and performance
-    // effective test for hidden elements. E.g. even jQuery's ':visible' filter
-    // gives wrong results for elements with width & height less than 0.5.
-    if (!clientWidth && !clientHeight) {
-        return emptyRect;
-    }
-    var styles = getWindowOf$1(target).getComputedStyle(target);
-    var paddings = getPaddings(styles);
-    var horizPad = paddings.left + paddings.right;
-    var vertPad = paddings.top + paddings.bottom;
-    // Computed styles of width & height are being used because they are the
-    // only dimensions available to JS that contain non-rounded values. It could
-    // be possible to utilize the getBoundingClientRect if only it's data wasn't
-    // affected by CSS transformations let alone paddings, borders and scroll bars.
-    var width = toFloat(styles.width), height = toFloat(styles.height);
-    // Width & height include paddings and borders when the 'border-box' box
-    // model is applied (except for IE).
-    if (styles.boxSizing === 'border-box') {
-        // Following conditions are required to handle Internet Explorer which
-        // doesn't include paddings and borders to computed CSS dimensions.
-        //
-        // We can say that if CSS dimensions + paddings are equal to the "client"
-        // properties then it's either IE, and thus we don't need to subtract
-        // anything, or an element merely doesn't have paddings/borders styles.
-        if (Math.round(width + horizPad) !== clientWidth) {
-            width -= getBordersSize(styles, 'left', 'right') + horizPad;
-        }
-        if (Math.round(height + vertPad) !== clientHeight) {
-            height -= getBordersSize(styles, 'top', 'bottom') + vertPad;
-        }
-    }
-    // Following steps can't be applied to the document's root element as its
-    // client[Width/Height] properties represent viewport area of the window.
-    // Besides, it's as well not necessary as the <html> itself neither has
-    // rendered scroll bars nor it can be clipped.
-    if (!isDocumentElement(target)) {
-        // In some browsers (only in Firefox, actually) CSS width & height
-        // include scroll bars size which can be removed at this step as scroll
-        // bars are the only difference between rounded dimensions + paddings
-        // and "client" properties, though that is not always true in Chrome.
-        var vertScrollbar = Math.round(width + horizPad) - clientWidth;
-        var horizScrollbar = Math.round(height + vertPad) - clientHeight;
-        // Chrome has a rather weird rounding of "client" properties.
-        // E.g. for an element with content width of 314.2px it sometimes gives
-        // the client width of 315px and for the width of 314.7px it may give
-        // 314px. And it doesn't happen all the time. So just ignore this delta
-        // as a non-relevant.
-        if (Math.abs(vertScrollbar) !== 1) {
-            width -= vertScrollbar;
-        }
-        if (Math.abs(horizScrollbar) !== 1) {
-            height -= horizScrollbar;
-        }
-    }
-    return createRectInit(paddings.left, paddings.top, width, height);
-}
-/**
- * Checks whether provided element is an instance of the SVGGraphicsElement.
- *
- * @param {Element} target - Element to be checked.
- * @returns {boolean}
- */
-var isSVGGraphicsElement = (function () {
-    // Some browsers, namely IE and Edge, don't have the SVGGraphicsElement
-    // interface.
-    if (typeof SVGGraphicsElement !== 'undefined') {
-        return function (target) { return target instanceof getWindowOf$1(target).SVGGraphicsElement; };
-    }
-    // If it's so, then check that element is at least an instance of the
-    // SVGElement and that it has the "getBBox" method.
-    // eslint-disable-next-line no-extra-parens
-    return function (target) { return (target instanceof getWindowOf$1(target).SVGElement &&
-        typeof target.getBBox === 'function'); };
-})();
-/**
- * Checks whether provided element is a document element (<html>).
- *
- * @param {Element} target - Element to be checked.
- * @returns {boolean}
- */
-function isDocumentElement(target) {
-    return target === getWindowOf$1(target).document.documentElement;
-}
-/**
- * Calculates an appropriate content rectangle for provided html or svg element.
- *
- * @param {Element} target - Element content rectangle of which needs to be calculated.
- * @returns {DOMRectInit}
- */
-function getContentRect$1(target) {
-    if (!isBrowser) {
-        return emptyRect;
-    }
-    if (isSVGGraphicsElement(target)) {
-        return getSVGContentRect(target);
-    }
-    return getHTMLElementContentRect(target);
-}
-/**
- * Creates rectangle with an interface of the DOMRectReadOnly.
- * Spec: https://drafts.fxtf.org/geometry/#domrectreadonly
- *
- * @param {DOMRectInit} rectInit - Object with rectangle's x/y coordinates and dimensions.
- * @returns {DOMRectReadOnly}
- */
-function createReadOnlyRect(_a) {
-    var x = _a.x, y = _a.y, width = _a.width, height = _a.height;
-    // If DOMRectReadOnly is available use it as a prototype for the rectangle.
-    var Constr = typeof DOMRectReadOnly !== 'undefined' ? DOMRectReadOnly : Object;
-    var rect = Object.create(Constr.prototype);
-    // Rectangle's properties are not writable and non-enumerable.
-    defineConfigurable(rect, {
-        x: x, y: y, width: width, height: height,
-        top: y,
-        right: x + width,
-        bottom: height + y,
-        left: x
-    });
-    return rect;
-}
-/**
- * Creates DOMRectInit object based on the provided dimensions and the x/y coordinates.
- * Spec: https://drafts.fxtf.org/geometry/#dictdef-domrectinit
- *
- * @param {number} x - X coordinate.
- * @param {number} y - Y coordinate.
- * @param {number} width - Rectangle's width.
- * @param {number} height - Rectangle's height.
- * @returns {DOMRectInit}
- */
-function createRectInit(x, y, width, height) {
-    return { x: x, y: y, width: width, height: height };
-}
-
-/**
- * Class that is responsible for computations of the content rectangle of
- * provided DOM element and for keeping track of it's changes.
- */
-var ResizeObservation = /** @class */ (function () {
-    /**
-     * Creates an instance of ResizeObservation.
-     *
-     * @param {Element} target - Element to be observed.
-     */
-    function ResizeObservation(target) {
-        /**
-         * Broadcasted width of content rectangle.
-         *
-         * @type {number}
-         */
-        this.broadcastWidth = 0;
-        /**
-         * Broadcasted height of content rectangle.
-         *
-         * @type {number}
-         */
-        this.broadcastHeight = 0;
-        /**
-         * Reference to the last observed content rectangle.
-         *
-         * @private {DOMRectInit}
-         */
-        this.contentRect_ = createRectInit(0, 0, 0, 0);
-        this.target = target;
-    }
-    /**
-     * Updates content rectangle and tells whether it's width or height properties
-     * have changed since the last broadcast.
-     *
-     * @returns {boolean}
-     */
-    ResizeObservation.prototype.isActive = function () {
-        var rect = getContentRect$1(this.target);
-        this.contentRect_ = rect;
-        return (rect.width !== this.broadcastWidth ||
-            rect.height !== this.broadcastHeight);
-    };
-    /**
-     * Updates 'broadcastWidth' and 'broadcastHeight' properties with a data
-     * from the corresponding properties of the last observed content rectangle.
-     *
-     * @returns {DOMRectInit} Last observed content rectangle.
-     */
-    ResizeObservation.prototype.broadcastRect = function () {
-        var rect = this.contentRect_;
-        this.broadcastWidth = rect.width;
-        this.broadcastHeight = rect.height;
-        return rect;
-    };
-    return ResizeObservation;
-}());
-
-var ResizeObserverEntry = /** @class */ (function () {
-    /**
-     * Creates an instance of ResizeObserverEntry.
-     *
-     * @param {Element} target - Element that is being observed.
-     * @param {DOMRectInit} rectInit - Data of the element's content rectangle.
-     */
-    function ResizeObserverEntry(target, rectInit) {
-        var contentRect = createReadOnlyRect(rectInit);
-        // According to the specification following properties are not writable
-        // and are also not enumerable in the native implementation.
-        //
-        // Property accessors are not being used as they'd require to define a
-        // private WeakMap storage which may cause memory leaks in browsers that
-        // don't support this type of collections.
-        defineConfigurable(this, { target: target, contentRect: contentRect });
-    }
-    return ResizeObserverEntry;
-}());
-
-var ResizeObserverSPI = /** @class */ (function () {
-    /**
-     * Creates a new instance of ResizeObserver.
-     *
-     * @param {ResizeObserverCallback} callback - Callback function that is invoked
-     *      when one of the observed elements changes it's content dimensions.
-     * @param {ResizeObserverController} controller - Controller instance which
-     *      is responsible for the updates of observer.
-     * @param {ResizeObserver} callbackCtx - Reference to the public
-     *      ResizeObserver instance which will be passed to callback function.
-     */
-    function ResizeObserverSPI(callback, controller, callbackCtx) {
-        /**
-         * Collection of resize observations that have detected changes in dimensions
-         * of elements.
-         *
-         * @private {Array<ResizeObservation>}
-         */
-        this.activeObservations_ = [];
-        /**
-         * Registry of the ResizeObservation instances.
-         *
-         * @private {Map<Element, ResizeObservation>}
-         */
-        this.observations_ = new MapShim();
-        if (typeof callback !== 'function') {
-            throw new TypeError('The callback provided as parameter 1 is not a function.');
-        }
-        this.callback_ = callback;
-        this.controller_ = controller;
-        this.callbackCtx_ = callbackCtx;
-    }
-    /**
-     * Starts observing provided element.
-     *
-     * @param {Element} target - Element to be observed.
-     * @returns {void}
-     */
-    ResizeObserverSPI.prototype.observe = function (target) {
-        if (!arguments.length) {
-            throw new TypeError('1 argument required, but only 0 present.');
-        }
-        // Do nothing if current environment doesn't have the Element interface.
-        if (typeof Element === 'undefined' || !(Element instanceof Object)) {
-            return;
-        }
-        if (!(target instanceof getWindowOf$1(target).Element)) {
-            throw new TypeError('parameter 1 is not of type "Element".');
-        }
-        var observations = this.observations_;
-        // Do nothing if element is already being observed.
-        if (observations.has(target)) {
-            return;
-        }
-        observations.set(target, new ResizeObservation(target));
-        this.controller_.addObserver(this);
-        // Force the update of observations.
-        this.controller_.refresh();
-    };
-    /**
-     * Stops observing provided element.
-     *
-     * @param {Element} target - Element to stop observing.
-     * @returns {void}
-     */
-    ResizeObserverSPI.prototype.unobserve = function (target) {
-        if (!arguments.length) {
-            throw new TypeError('1 argument required, but only 0 present.');
-        }
-        // Do nothing if current environment doesn't have the Element interface.
-        if (typeof Element === 'undefined' || !(Element instanceof Object)) {
-            return;
-        }
-        if (!(target instanceof getWindowOf$1(target).Element)) {
-            throw new TypeError('parameter 1 is not of type "Element".');
-        }
-        var observations = this.observations_;
-        // Do nothing if element is not being observed.
-        if (!observations.has(target)) {
-            return;
-        }
-        observations.delete(target);
-        if (!observations.size) {
-            this.controller_.removeObserver(this);
-        }
-    };
-    /**
-     * Stops observing all elements.
-     *
-     * @returns {void}
-     */
-    ResizeObserverSPI.prototype.disconnect = function () {
-        this.clearActive();
-        this.observations_.clear();
-        this.controller_.removeObserver(this);
-    };
-    /**
-     * Collects observation instances the associated element of which has changed
-     * it's content rectangle.
-     *
-     * @returns {void}
-     */
-    ResizeObserverSPI.prototype.gatherActive = function () {
-        var _this = this;
-        this.clearActive();
-        this.observations_.forEach(function (observation) {
-            if (observation.isActive()) {
-                _this.activeObservations_.push(observation);
-            }
-        });
-    };
-    /**
-     * Invokes initial callback function with a list of ResizeObserverEntry
-     * instances collected from active resize observations.
-     *
-     * @returns {void}
-     */
-    ResizeObserverSPI.prototype.broadcastActive = function () {
-        // Do nothing if observer doesn't have active observations.
-        if (!this.hasActive()) {
-            return;
-        }
-        var ctx = this.callbackCtx_;
-        // Create ResizeObserverEntry instance for every active observation.
-        var entries = this.activeObservations_.map(function (observation) {
-            return new ResizeObserverEntry(observation.target, observation.broadcastRect());
-        });
-        this.callback_.call(ctx, entries, ctx);
-        this.clearActive();
-    };
-    /**
-     * Clears the collection of active observations.
-     *
-     * @returns {void}
-     */
-    ResizeObserverSPI.prototype.clearActive = function () {
-        this.activeObservations_.splice(0);
-    };
-    /**
-     * Tells whether observer has active observations.
-     *
-     * @returns {boolean}
-     */
-    ResizeObserverSPI.prototype.hasActive = function () {
-        return this.activeObservations_.length > 0;
-    };
-    return ResizeObserverSPI;
-}());
-
-// Registry of internal observers. If WeakMap is not available use current shim
-// for the Map collection as it has all required methods and because WeakMap
-// can't be fully polyfilled anyway.
-var observers = typeof WeakMap !== 'undefined' ? new WeakMap() : new MapShim();
-/**
- * ResizeObserver API. Encapsulates the ResizeObserver SPI implementation
- * exposing only those methods and properties that are defined in the spec.
- */
-var ResizeObserver = /** @class */ (function () {
-    /**
-     * Creates a new instance of ResizeObserver.
-     *
-     * @param {ResizeObserverCallback} callback - Callback that is invoked when
-     *      dimensions of the observed elements change.
-     */
-    function ResizeObserver(callback) {
-        if (!(this instanceof ResizeObserver)) {
-            throw new TypeError('Cannot call a class as a function.');
-        }
-        if (!arguments.length) {
-            throw new TypeError('1 argument required, but only 0 present.');
-        }
-        var controller = ResizeObserverController.getInstance();
-        var observer = new ResizeObserverSPI(callback, controller, this);
-        observers.set(this, observer);
-    }
-    return ResizeObserver;
-}());
-// Expose public methods of ResizeObserver.
-[
-    'observe',
-    'unobserve',
-    'disconnect'
-].forEach(function (method) {
-    ResizeObserver.prototype[method] = function () {
-        var _a;
-        return (_a = observers.get(this))[method].apply(_a, arguments);
-    };
-});
-
-var index$1 = (function () {
-    // Export existing implementation if available.
-    if (typeof global$1.ResizeObserver !== 'undefined') {
-        return global$1.ResizeObserver;
-    }
-    return ResizeObserver;
-})();
-
-var types = ['client', 'offset', 'scroll', 'bounds', 'margin'];
-function getTypes(props) {
-  var allowedTypes = [];
-  types.forEach(function (type) {
-    if (props[type]) {
-      allowedTypes.push(type);
-    }
-  });
-  return allowedTypes;
-}
-
-function getContentRect(node, types) {
-  var calculations = {};
-
-  if (types.indexOf('client') > -1) {
-    calculations.client = {
-      top: node.clientTop,
-      left: node.clientLeft,
-      width: node.clientWidth,
-      height: node.clientHeight
-    };
-  }
-
-  if (types.indexOf('offset') > -1) {
-    calculations.offset = {
-      top: node.offsetTop,
-      left: node.offsetLeft,
-      width: node.offsetWidth,
-      height: node.offsetHeight
-    };
-  }
-
-  if (types.indexOf('scroll') > -1) {
-    calculations.scroll = {
-      top: node.scrollTop,
-      left: node.scrollLeft,
-      width: node.scrollWidth,
-      height: node.scrollHeight
-    };
-  }
-
-  if (types.indexOf('bounds') > -1) {
-    var rect = node.getBoundingClientRect();
-    calculations.bounds = {
-      top: rect.top,
-      right: rect.right,
-      bottom: rect.bottom,
-      left: rect.left,
-      width: rect.width,
-      height: rect.height
-    };
-  }
-
-  if (types.indexOf('margin') > -1) {
-    var styles = getComputedStyle(node);
-    calculations.margin = {
-      top: styles ? parseInt(styles.marginTop) : 0,
-      right: styles ? parseInt(styles.marginRight) : 0,
-      bottom: styles ? parseInt(styles.marginBottom) : 0,
-      left: styles ? parseInt(styles.marginLeft) : 0
-    };
-  }
-
-  return calculations;
-}
-
-/**
- * Returns the global window object associated with provided element.
- */
-function getWindowOf(target) {
-  // Assume that the element is an instance of Node, which means that it
-  // has the "ownerDocument" property from which we can retrieve a
-  // corresponding global object.
-  var ownerGlobal = target && target.ownerDocument && target.ownerDocument.defaultView; // Return the local window object if it's not possible extract one from
-  // provided element.
-
-  return ownerGlobal || window;
-}
-
-function withContentRect(types) {
-  return function (WrappedComponent) {
-    var _class, _temp;
-
-    return _temp = _class =
-    /*#__PURE__*/
-    function (_Component) {
-      _inheritsLoose(WithContentRect, _Component);
-
-      function WithContentRect() {
-        var _this;
-
-        for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
-          args[_key] = arguments[_key];
-        }
-
-        _this = _Component.call.apply(_Component, [this].concat(args)) || this;
-        _this.state = {
-          contentRect: {
-            entry: {},
-            client: {},
-            offset: {},
-            scroll: {},
-            bounds: {},
-            margin: {}
-          }
-        };
-        _this._animationFrameID = null;
-        _this._resizeObserver = null;
-        _this._node = null;
-        _this._window = null;
-
-        _this.measure = function (entries) {
-          var contentRect = getContentRect(_this._node, types || getTypes(_this.props));
-
-          if (entries) {
-            contentRect.entry = entries[0].contentRect;
-          }
-
-          _this._animationFrameID = _this._window.requestAnimationFrame(function () {
-            if (_this._resizeObserver !== null) {
-              _this.setState({
-                contentRect: contentRect
-              });
-
-              if (typeof _this.props.onResize === 'function') {
-                _this.props.onResize(contentRect);
-              }
-            }
-          });
-        };
-
-        _this._handleRef = function (node) {
-          if (_this._resizeObserver !== null && _this._node !== null) {
-            _this._resizeObserver.unobserve(_this._node);
-          }
-
-          _this._node = node;
-          _this._window = getWindowOf(_this._node);
-          var innerRef = _this.props.innerRef;
-
-          if (innerRef) {
-            if (typeof innerRef === 'function') {
-              innerRef(_this._node);
-            } else {
-              innerRef.current = _this._node;
-            }
-          }
-
-          if (_this._resizeObserver !== null && _this._node !== null) {
-            _this._resizeObserver.observe(_this._node);
-          }
-        };
-
-        return _this;
-      }
-
-      var _proto = WithContentRect.prototype;
-
-      _proto.componentDidMount = function componentDidMount() {
-        this._resizeObserver = this._window !== null && this._window.ResizeObserver ? new this._window.ResizeObserver(this.measure) : new index$1(this.measure);
-
-        if (this._node !== null) {
-          this._resizeObserver.observe(this._node);
-
-          if (typeof this.props.onResize === 'function') {
-            this.props.onResize(getContentRect(this._node, types || getTypes(this.props)));
-          }
-        }
-      };
-
-      _proto.componentWillUnmount = function componentWillUnmount() {
-        if (this._window !== null) {
-          this._window.cancelAnimationFrame(this._animationFrameID);
-        }
-
-        if (this._resizeObserver !== null) {
-          this._resizeObserver.disconnect();
-
-          this._resizeObserver = null;
-        }
-      };
-
-      _proto.render = function render() {
-        var _this$props = this.props;
-            _this$props.innerRef;
-            _this$props.onResize;
-            var props = _objectWithoutPropertiesLoose$2(_this$props, ["innerRef", "onResize"]);
-
-        return createElement$1(WrappedComponent, _extends$2({}, props, {
-          measureRef: this._handleRef,
-          measure: this.measure,
-          contentRect: this.state.contentRect
-        }));
-      };
-
-      return WithContentRect;
-    }(Component), _class.propTypes = {
-      client: PropTypes.bool,
-      offset: PropTypes.bool,
-      scroll: PropTypes.bool,
-      bounds: PropTypes.bool,
-      margin: PropTypes.bool,
-      innerRef: PropTypes.oneOfType([PropTypes.object, PropTypes.func]),
-      onResize: PropTypes.func
-    }, _temp;
-  };
-}
-
-var Measure = withContentRect()(function (_ref) {
-  var measure = _ref.measure,
-      measureRef = _ref.measureRef,
-      contentRect = _ref.contentRect,
-      children = _ref.children;
-  return children({
-    measure: measure,
-    measureRef: measureRef,
-    contentRect: contentRect
-  });
-});
-Measure.displayName = 'Measure';
-Measure.propTypes.children = PropTypes.func;
-
-/**
- * NFT Contract
- * @returns 
- */
-
-var MoonNFTContract = function MoonNFTContract() {
-  var _props$item, _nft$nfts, _props$item2, _props$item3, _props$item4, _props$item4$address, _props$item5, _props$item6;
-
-  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
-  // nft
-  var nft = useNFTs({
-    limit: 8,
-    contract: ((_props$item = props.item) === null || _props$item === void 0 ? void 0 : _props$item.id) || props.item
-  });
-  var theme = useTheme(); // state
-
-  var _useState = useState(0),
-      _useState2 = _slicedToArray$1(_useState, 2),
-      width = _useState2[0],
-      setWidth = _useState2[1];
-
-  var _useState3 = useState(0),
-      _useState4 = _slicedToArray$1(_useState3, 2),
-      index = _useState4[0],
-      setIndex = _useState4[1]; // avatar width
-
-
-  props.feed === 'chat' ? 40 : 50; // return jsx
-
-  return /*#__PURE__*/React__default.createElement(Card, null, !!((_nft$nfts = nft.nfts) !== null && _nft$nfts !== void 0 && _nft$nfts.length) && /*#__PURE__*/React__default.createElement(Box, {
-    px: 2,
-    pt: 2,
-    sx: {
-      '& .MuiIconButton-root': {
-        width: '40px',
-        height: '40px',
-        opacity: 0.5
-      }
-    }
-  }, /*#__PURE__*/React__default.createElement(Carousel, {
-    index: index,
-    height: width,
-    autoPlay: false,
-    onChange: function onChange(newIndex) {
-      return setIndex(newIndex);
-    },
-    PrevIcon: /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-      icon: faChevronLeft,
-      size: "xs"
-    }),
-    NextIcon: /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
-      icon: faChevronRight,
-      size: "xs"
-    }),
-    animation: "fade",
-    indicatorContainerProps: {
-      sx: {
-        left: 0,
-        right: 0,
-        zIndex: 1,
-        bottom: 0,
-        position: 'absolute'
-      }
-    },
-    navButtonsAlwaysVisible: true
-  }, nft.nfts.map(function (nft) {
-    // return jsx
-    return /*#__PURE__*/React__default.createElement(Box, {
-      key: nft.id
-    }, /*#__PURE__*/React__default.createElement(Measure, {
-      bounds: true,
-      onResize: function onResize(contentRect) {
-        // set width
-        setWidth(parseInt(contentRect.bounds.width));
-      }
-    }, function (_ref) {
-      var measureRef = _ref.measureRef;
-      return /*#__PURE__*/React__default.createElement(Box, {
-        ref: measureRef,
-        height: width
-      }, !!width && /*#__PURE__*/React__default.createElement(MoonNFTImage, {
-        item: nft,
-        width: width,
-        height: width,
-        variant: "rounded"
-      }));
-    }));
-  }))), /*#__PURE__*/React__default.createElement(CardContent, null, /*#__PURE__*/React__default.createElement(Stack, {
-    width: "100%",
-    direction: "row",
-    spacing: 2
-  }, /*#__PURE__*/React__default.createElement(Stack, null, /*#__PURE__*/React__default.createElement(Box, {
-    component: "span",
-    sx: _objectSpread2$1(_objectSpread2$1({}, props.feed === 'chat' ? theme.typography.body2 : theme.typography.body1), {}, {
-      color: theme.palette.text.primary,
-      fontWeight: theme.typography.fontWeightMedium
-    })
-  }, (_props$item2 = props.item) === null || _props$item2 === void 0 ? void 0 : _props$item2.name), /*#__PURE__*/React__default.createElement(Box, {
-    component: Link,
-    target: "_BLANK",
-    to: "/c/".concat((_props$item3 = props.item) === null || _props$item3 === void 0 ? void 0 : _props$item3.address),
-    color: "rgba(255, 255, 255, 0.4)",
-    sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body2), {}, {
-      textDecoration: 'none'
-    })
-  }, (_props$item4 = props.item) === null || _props$item4 === void 0 ? void 0 : (_props$item4$address = _props$item4.address) === null || _props$item4$address === void 0 ? void 0 : _props$item4$address.substring(0, 8))), /*#__PURE__*/React__default.createElement(Box, {
-    ml: "auto!important"
-  }, /*#__PURE__*/React__default.createElement(AvatarGroup, {
-    max: 3
-  }, /*#__PURE__*/React__default.createElement(Avatar, {
-    "aria-label": "recipe"
-  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
-    "aria-label": "recipe"
-  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
-    "aria-label": "recipe"
-  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
-    "aria-label": "recipe"
-  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
-    "aria-label": "recipe"
-  }, "R")))), !!((_props$item5 = props.item) !== null && _props$item5 !== void 0 && _props$item5.description) && /*#__PURE__*/React__default.createElement(Typography, {
-    variant: "body2",
-    color: "text.secondary"
-  }, (_props$item6 = props.item) === null || _props$item6 === void 0 ? void 0 : _props$item6.description)));
-}; // export default
-
-const ALPHABET = 'KMGTPEZY'.split('');
-const TRESHOLD = 1e3;
-
-var src = function (n, fn) {
-  n = Math.abs(n);
-  let index = 0;
-  while (n >= TRESHOLD && ++index < ALPHABET.length) n /= TRESHOLD;
-  if (fn) n = fn(n);
-  return String(index === 0 ? n : n + ALPHABET[index - 1])
-};
-
-function useIntersectionObserver(elementRef, { threshold = 0, root = null, rootMargin = '0%', freezeOnceVisible = false, }) {
-    const [entry, setEntry] = useState();
-    const frozen = entry?.isIntersecting && freezeOnceVisible;
-    const updateEntry = ([entry]) => {
-        setEntry(entry);
-    };
-    useEffect(() => {
-        const node = elementRef?.current;
-        const hasIOSupport = !!window.IntersectionObserver;
-        if (!hasIOSupport || frozen || !node)
-            return;
-        const observerParams = { threshold, root, rootMargin };
-        const observer = new IntersectionObserver(updateEntry, observerParams);
-        observer.observe(node);
-        return () => observer.disconnect();
-    }, [elementRef, JSON.stringify(threshold), root, rootMargin, frozen]);
-    return entry;
-}
-
-var useLike = function useLike(subject, propsLike) {
-  var _subject$count, _subject$count3;
-
-  var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'post';
-  // socket
-  var auth = useAuth();
-  var socket = useSocket(); // auth
-
-  var _useState = useState(propsLike || null),
-      _useState2 = _slicedToArray$1(_useState, 2),
-      like = _useState2[0],
-      setLike = _useState2[1];
-
-  var _useState3 = useState((subject === null || subject === void 0 ? void 0 : (_subject$count = subject.count) === null || _subject$count === void 0 ? void 0 : _subject$count.likes) || 0),
-      _useState4 = _slicedToArray$1(_useState3, 2),
-      count = _useState4[0],
-      setCount = _useState4[1];
-
-  var _useState5 = useState(false),
-      _useState6 = _slicedToArray$1(_useState5, 2),
-      loading = _useState6[0],
-      setLoading = _useState6[1]; // add like
-
-
-  var toggleLike = /*#__PURE__*/function () {
-    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
-      var id, _yield$socket$post, backendLike, backendCount;
-
-      return regeneratorRuntime.wrap(function _callee$(_context) {
-        while (1) {
-          switch (_context.prev = _context.next) {
-            case 0:
-              if (auth.account) {
-                _context.next = 2;
-                break;
-              }
-
-              return _context.abrupt("return", auth.login());
-
-            case 2:
-              // check found
-              id = (subject === null || subject === void 0 ? void 0 : subject.id) || subject; // check id
-
-              if (id) {
-                _context.next = 5;
-                break;
-              }
-
-              return _context.abrupt("return");
-
-            case 5:
-              // loading
-              setLoading(true); // load
-
-              _context.next = 8;
-              return socket.post("/like/".concat(id), {
-                type: type
-              });
-
-            case 8:
-              _yield$socket$post = _context.sent;
-              backendLike = _yield$socket$post.like;
-              backendCount = _yield$socket$post.count;
-              // set post
-              setLike(backendLike);
-              setCount(backendCount);
-              setLoading(false); // return backend post
-
-              return _context.abrupt("return", backendLike);
-
-            case 15:
-            case "end":
-              return _context.stop();
-          }
-        }
-      }, _callee);
-    }));
-
-    return function toggleLike() {
-      return _ref.apply(this, arguments);
-    };
-  }(); // emit user
-
-
-  var emitLike = function emitLike(like, count) {
-    // check found
-    var id = (subject === null || subject === void 0 ? void 0 : subject.id) || subject; // update post
-
-    if (like.from === id) {
-      // update
-      setLike(like);
-      setCount(count);
-    }
-  }; // use effect
-
-
-  useEffect(function () {
-    // add listener
-    socket.socket.on('like', emitLike); // done
-
-    return function () {
-      // off
-      socket.socket.removeListener('like', emitLike);
-    };
-  }, [(subject === null || subject === void 0 ? void 0 : subject.id) || subject, type]); // use effect
-
-  useEffect(function () {
-    var _subject$count2;
-
-    // set count
-    setCount((subject === null || subject === void 0 ? void 0 : (_subject$count2 = subject.count) === null || _subject$count2 === void 0 ? void 0 : _subject$count2.likes) || 0);
-  }, [subject === null || subject === void 0 ? void 0 : (_subject$count3 = subject.count) === null || _subject$count3 === void 0 ? void 0 : _subject$count3.likes]); // return posts
-
-  var actualLike = {
-    toggle: toggleLike,
-    like: like,
-    count: count,
-    loading: loading
-  }; // window
-
-  window.NFTLike = actualLike; // return post
-
-  return actualLike;
-}; // export default
-
-var lib$1 = {};
 
 var players = {};
 
@@ -75871,17 +72921,17 @@ utils.randomString = randomString;
 utils.queryString = queryString;
 utils.getSDK = getSDK;
 utils.getConfig = getConfig;
-utils.omit = omit;
+utils.omit = omit$1;
 utils.callPlayer = callPlayer;
 utils.isMediaStream = isMediaStream;
 utils.isBlobUrl = isBlobUrl;
 utils.supportsWebKitPresentationMode = supportsWebKitPresentationMode;
 
-var _loadScript = _interopRequireDefault$2(loadScript);
+var _loadScript = _interopRequireDefault$4(loadScript);
 
-var _deepmerge$1 = _interopRequireDefault$2(cjs);
+var _deepmerge$1 = _interopRequireDefault$4(cjs);
 
-function _interopRequireDefault$2(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+function _interopRequireDefault$4(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray$2(arr, i) || _nonIterableRest(); }
 
@@ -76044,7 +73094,7 @@ function getConfig(props, defaultProps) {
   return (0, _deepmerge$1["default"])(defaultProps.config, props.config);
 }
 
-function omit(object) {
+function omit$1(object) {
   var _ref;
 
   for (var _len = arguments.length, arrays = new Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
@@ -79692,19 +76742,19 @@ Object.defineProperty(props, "__esModule", {
 });
 props.defaultProps = props.propTypes = void 0;
 
-var _propTypes = _interopRequireDefault$1(propTypes$1.exports);
+var _propTypes$1 = _interopRequireDefault$3(propTypes$1.exports);
 
-function _interopRequireDefault$1(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+function _interopRequireDefault$3(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
-var string = _propTypes["default"].string,
-    bool = _propTypes["default"].bool,
-    number = _propTypes["default"].number,
-    array = _propTypes["default"].array,
-    oneOfType = _propTypes["default"].oneOfType,
-    shape = _propTypes["default"].shape,
-    object = _propTypes["default"].object,
-    func = _propTypes["default"].func,
-    node = _propTypes["default"].node;
+var string = _propTypes$1["default"].string,
+    bool = _propTypes$1["default"].bool,
+    number = _propTypes$1["default"].number,
+    array = _propTypes$1["default"].array,
+    oneOfType = _propTypes$1["default"].oneOfType,
+    shape = _propTypes$1["default"].shape,
+    object = _propTypes$1["default"].object,
+    func = _propTypes$1["default"].func,
+    node = _propTypes$1["default"].node;
 var propTypes = {
   url: oneOfType([string, array, object]),
   playing: bool,
@@ -80539,21 +77589,21 @@ Object.defineProperty(ReactPlayer$1, "__esModule", {
 });
 ReactPlayer$1.createReactPlayer = void 0;
 
-var _react = _interopRequireWildcard(React__default);
+var _react$1 = _interopRequireWildcard(React__default);
 
-var _deepmerge = _interopRequireDefault(cjs);
+var _deepmerge = _interopRequireDefault$2(cjs);
 
-var _memoizeOne = _interopRequireDefault(require$$2);
+var _memoizeOne = _interopRequireDefault$2(require$$2);
 
-var _reactFastCompare = _interopRequireDefault(reactFastCompare);
+var _reactFastCompare = _interopRequireDefault$2(reactFastCompare);
 
 var _props = props;
 
 var _utils = utils;
 
-var _Player3 = _interopRequireDefault(Player);
+var _Player3 = _interopRequireDefault$2(Player);
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
+function _interopRequireDefault$2(obj) { return obj && obj.__esModule ? obj : { "default": obj }; }
 
 function _typeof(obj) { "@babel/helpers - typeof"; if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof = function _typeof(obj) { return typeof obj; }; } else { _typeof = function _typeof(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof(obj); }
 
@@ -80561,7 +77611,7 @@ function ownKeys$b(object, enumerableOnly) { var keys = Object.keys(object); if 
 
 function _objectSpread$b(target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i] != null ? arguments[i] : {}; if (i % 2) { ownKeys$b(Object(source), true).forEach(function (key) { _defineProperty$2(target, key, source[key]); }); } else if (Object.getOwnPropertyDescriptors) { Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)); } else { ownKeys$b(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } } return target; }
 
-function _extends() { _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends.apply(this, arguments); }
+function _extends$1() { _extends$1 = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; }; return _extends$1.apply(this, arguments); }
 
 function _toConsumableArray(arr) { return _arrayWithoutHoles(arr) || _iterableToArray(arr) || _unsupportedIterableToArray(arr) || _nonIterableSpread(); }
 
@@ -80575,19 +77625,19 @@ function _arrayWithoutHoles(arr) { if (Array.isArray(arr)) return _arrayLikeToAr
 
 function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) { arr2[i] = arr[i]; } return arr2; }
 
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+function _classCallCheck$1(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
 
-function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+function _createClass$1(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
 
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf(subClass, superClass); }
+function _inherits$1(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function"); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, writable: true, configurable: true } }); if (superClass) _setPrototypeOf$1(subClass, superClass); }
 
-function _setPrototypeOf(o, p) { _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf(o, p); }
+function _setPrototypeOf$1(o, p) { _setPrototypeOf$1 = Object.setPrototypeOf || function _setPrototypeOf(o, p) { o.__proto__ = p; return o; }; return _setPrototypeOf$1(o, p); }
 
-function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn(this, result); }; }
+function _createSuper(Derived) { var hasNativeReflectConstruct = _isNativeReflectConstruct(); return function _createSuperInternal() { var Super = _getPrototypeOf(Derived), result; if (hasNativeReflectConstruct) { var NewTarget = _getPrototypeOf(this).constructor; result = Reflect.construct(Super, arguments, NewTarget); } else { result = Super.apply(this, arguments); } return _possibleConstructorReturn$1(this, result); }; }
 
-function _possibleConstructorReturn(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
+function _possibleConstructorReturn$1(self, call) { if (call && (_typeof(call) === "object" || typeof call === "function")) { return call; } return _assertThisInitialized(self); }
 
 function _assertThisInitialized(self) { if (self === void 0) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return self; }
 
@@ -80601,7 +77651,7 @@ function _getRequireWildcardCache() { if (typeof WeakMap !== "function") return 
 
 function _interopRequireWildcard(obj) { if (obj && obj.__esModule) { return obj; } if (obj === null || _typeof(obj) !== "object" && typeof obj !== "function") { return { "default": obj }; } var cache = _getRequireWildcardCache(); if (cache && cache.has(obj)) { return cache.get(obj); } var newObj = {}; var hasPropertyDescriptor = Object.defineProperty && Object.getOwnPropertyDescriptor; for (var key in obj) { if (Object.prototype.hasOwnProperty.call(obj, key)) { var desc = hasPropertyDescriptor ? Object.getOwnPropertyDescriptor(obj, key) : null; if (desc && (desc.get || desc.set)) { Object.defineProperty(newObj, key, desc); } else { newObj[key] = obj[key]; } } } newObj["default"] = obj; if (cache) { cache.set(obj, newObj); } return newObj; }
 
-var Preview = /*#__PURE__*/(0, _react.lazy)(function () {
+var Preview = /*#__PURE__*/(0, _react$1.lazy)(function () {
   return Promise.resolve().then(function () {
     return _interopRequireWildcard(Preview$1);
   });
@@ -80611,7 +77661,7 @@ var IS_GLOBAL = typeof commonjsGlobal !== 'undefined' && commonjsGlobal.window &
 var SUPPORTED_PROPS = Object.keys(_props.propTypes); // Return null when rendering on the server
 // as Suspense is not supported yet
 
-var UniversalSuspense = IS_BROWSER || IS_GLOBAL ? _react.Suspense : function () {
+var UniversalSuspense = IS_BROWSER || IS_GLOBAL ? _react$1.Suspense : function () {
   return null;
 };
 var customPlayers = [];
@@ -80620,14 +77670,14 @@ var createReactPlayer = function createReactPlayer(players, fallback) {
   var _class, _temp;
 
   return _temp = _class = /*#__PURE__*/function (_Component) {
-    _inherits(ReactPlayer, _Component);
+    _inherits$1(ReactPlayer, _Component);
 
     var _super = _createSuper(ReactPlayer);
 
     function ReactPlayer() {
       var _this;
 
-      _classCallCheck(this, ReactPlayer);
+      _classCallCheck$1(this, ReactPlayer);
 
       for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
         args[_key] = arguments[_key];
@@ -80727,7 +77777,7 @@ var createReactPlayer = function createReactPlayer(players, fallback) {
 
         var config = _this.getConfig(url, player.key);
 
-        return /*#__PURE__*/_react["default"].createElement(_Player3["default"], _extends({}, _this.props, {
+        return /*#__PURE__*/_react$1["default"].createElement(_Player3["default"], _extends$1({}, _this.props, {
           key: player.key,
           ref: _this.references.player,
           config: config,
@@ -80739,7 +77789,7 @@ var createReactPlayer = function createReactPlayer(players, fallback) {
       return _this;
     }
 
-    _createClass(ReactPlayer, [{
+    _createClass$1(ReactPlayer, [{
       key: "shouldComponentUpdate",
       value: function shouldComponentUpdate(nextProps, nextState) {
         return !(0, _reactFastCompare["default"])(this.props, nextProps) || !(0, _reactFastCompare["default"])(this.state, nextState);
@@ -80770,7 +77820,7 @@ var createReactPlayer = function createReactPlayer(players, fallback) {
             playIcon = _this$props.playIcon,
             previewTabIndex = _this$props.previewTabIndex,
             oEmbedUrl = _this$props.oEmbedUrl;
-        return /*#__PURE__*/_react["default"].createElement(Preview, {
+        return /*#__PURE__*/_react$1["default"].createElement(Preview, {
           url: url,
           light: light,
           playIcon: playIcon,
@@ -80791,20 +77841,20 @@ var createReactPlayer = function createReactPlayer(players, fallback) {
             Wrapper = _this$props2.wrapper;
         var showPreview = this.state.showPreview;
         var attributes = this.getAttributes(url);
-        return /*#__PURE__*/_react["default"].createElement(Wrapper, _extends({
+        return /*#__PURE__*/_react$1["default"].createElement(Wrapper, _extends$1({
           ref: this.references.wrapper,
           style: _objectSpread$b(_objectSpread$b({}, style), {}, {
             width: width,
             height: height
           })
-        }, attributes), /*#__PURE__*/_react["default"].createElement(UniversalSuspense, {
+        }, attributes), /*#__PURE__*/_react$1["default"].createElement(UniversalSuspense, {
           fallback: fallback
         }, showPreview ? this.renderPreview(url) : this.renderActivePlayer(url)));
       }
     }]);
 
     return ReactPlayer;
-  }(_react.Component), _defineProperty$2(_class, "displayName", 'ReactPlayer'), _defineProperty$2(_class, "propTypes", _props.propTypes), _defineProperty$2(_class, "defaultProps", _props.defaultProps), _defineProperty$2(_class, "addCustomPlayer", function (player) {
+  }(_react$1.Component), _defineProperty$2(_class, "displayName", 'ReactPlayer'), _defineProperty$2(_class, "propTypes", _props.propTypes), _defineProperty$2(_class, "defaultProps", _props.defaultProps), _defineProperty$2(_class, "addCustomPlayer", function (player) {
     customPlayers.push(player);
   }), _defineProperty$2(_class, "removeCustomPlayers", function () {
     customPlayers.length = 0;
@@ -80852,9 +77902,2990 @@ var fallback = _players["default"][_players["default"].length - 1];
 var _default = (0, _ReactPlayer.createReactPlayer)(_players["default"], fallback);
 
 exports["default"] = _default;
-}(lib$1));
+}(lib$2));
 
-var ReactPlayer = /*@__PURE__*/getDefaultExportFromCjs(lib$1);
+var ReactPlayer = /*@__PURE__*/getDefaultExportFromCjs(lib$2);
+
+/**
+ * moon desktop shortcut
+ *
+ * @param props 
+ */
+
+var MoonDesktopShortcut = function MoonDesktopShortcut() {
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // use theme
+  var theme = useTheme(); // state
+
+  var _useState = useState(false),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      active = _useState2[0],
+      setActive = _useState2[1];
+
+  var _useState3 = useState(false),
+      _useState4 = _slicedToArray$1(_useState3, 2),
+      leftDown = _useState4[0],
+      setLeftDown = _useState4[1];
+
+  var _useState5 = useState(false),
+      _useState6 = _slicedToArray$1(_useState5, 2),
+      rightDown = _useState6[0],
+      setRightDown = _useState6[1];
+
+  var _useState7 = useState(false),
+      _useState8 = _slicedToArray$1(_useState7, 2),
+      largeGrid = _useState8[0],
+      setLargeGrid = _useState8[1]; // large grid size
+
+
+  var shortcutSize = 80;
+  var largeGridSize = 20; // position
+
+  var _useState9 = useState({
+    x: 0,
+    y: 0,
+    width: shortcutSize,
+    height: shortcutSize
+  }),
+      _useState10 = _slicedToArray$1(_useState9, 2),
+      place = _useState10[0],
+      setPlace = _useState10[1]; // check mouse down
+
+
+  var onMouseDown = function onMouseDown(e) {
+    // set down
+    if (e.button === 0) {
+      setLeftDown(true);
+    } else if (e.button === 2) {
+      setRightDown(true);
+    }
+  }; // on mouse up
+
+
+  var onMouseUp = function onMouseUp(e) {
+    // set down
+    if (e.button === 0) {
+      setLeftDown(false);
+    } else if (e.button === 2) {
+      setRightDown(false);
+    }
+  }; // use effect
+
+
+  useEffect(function () {
+    // set
+    if (leftDown && rightDown) {
+      setLargeGrid(true);
+    } else {
+      setTimeout(function () {
+        return setLargeGrid(false);
+      }, 200);
+    }
+  }, [leftDown, rightDown]); // const body
+
+  var body = /*#__PURE__*/React__default.createElement(ClickAwayListener, {
+    onClickAway: function onClickAway() {
+      return setActive(false);
+    }
+  }, /*#__PURE__*/React__default.createElement(Tooltip, {
+    title: props.item.name || 'N/A'
+  }, /*#__PURE__*/React__default.createElement(Box, {
+    sx: {
+      flex: 1,
+      width: shortcutSize,
+      height: shortcutSize,
+      cursor: 'pointer',
+      border: active ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : "".concat(theme.shape.borderWidth, " solid rgba(255, 255, 255, 0)"),
+      display: 'flex',
+      maxWidth: shortcutSize,
+      maxHeight: shortcutSize,
+      background: active ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0)',
+      borderRadius: "".concat(theme.shape.borderRadius, "px"),
+      flexDirection: 'column',
+      '&:hover': {
+        border: active ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : "".concat(theme.shape.borderWidth, " solid rgba(255, 255, 255, 0.25)"),
+        background: active ? 'rgba(255, 255, 255, 0.25)' : 'rgba(255, 255, 255, 0.125)'
+      }
+    },
+    onClick: function onClick(e) {
+      return active ? props.onClick(e) : setActive(true);
+    }
+  }, /*#__PURE__*/React__default.createElement(Box, {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    display: "flex"
+  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+    icon: faMoon,
+    size: "2x"
+  })), /*#__PURE__*/React__default.createElement(Box, {
+    px: 1,
+    flex: 0,
+    width: "100%"
+  }, /*#__PURE__*/React__default.createElement(Box, {
+    textAlign: "center",
+    whiteSpace: "nowrap",
+    overflow: "hidden",
+    textOverflow: "ellipsis"
+  }, props.item.name || 'N/A'))))); // disable dragging
+
+  if (props.disableDragging) return body; // return jsx
+
+  return /*#__PURE__*/React__default.createElement(Rnd, {
+    size: {
+      width: place.width,
+      height: place.height
+    },
+    bounds: "parent",
+    position: {
+      x: place.x,
+      y: place.y
+    },
+    onDragStop: function onDragStop(e, d) {
+      return setPlace(_objectSpread2$1(_objectSpread2$1({}, place), {}, {
+        x: d.x,
+        y: d.y
+      }));
+    },
+    dragGrid: largeGrid ? [largeGridSize, largeGridSize] : [1, 1],
+    onMouseUp: onMouseUp,
+    onMouseDown: onMouseDown,
+    enableResizing: false
+  }, body);
+}; // export default
+
+/**
+ * moon desktop
+ *
+ * @param props 
+ */
+
+var MoonDesktop = function MoonDesktop() {
+  // tasks
+  var theme = useTheme();
+  var desktop = useDesktop(); // state
+
+  var _useState = useState([0, 0]),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      XY = _useState2[0],
+      setXY = _useState2[1];
+
+  var _useState3 = useState([0, 0]),
+      _useState4 = _slicedToArray$1(_useState3, 2),
+      HW = _useState4[0],
+      setHW = _useState4[1];
+
+  var _useState5 = useState(null),
+      _useState6 = _slicedToArray$1(_useState5, 2),
+      place = _useState6[0],
+      setPlace = _useState6[1];
+
+  var _useState7 = useState(false),
+      _useState8 = _slicedToArray$1(_useState7, 2),
+      useGrid = _useState8[0],
+      setUseGrid = _useState8[1];
+
+  var _useState9 = useState(null),
+      _useState10 = _slicedToArray$1(_useState9, 2),
+      resizing = _useState10[0],
+      setResizing = _useState10[1];
+
+  var _useState11 = useState(false),
+      _useState12 = _slicedToArray$1(_useState11, 2),
+      leftDown = _useState12[0],
+      setLeftDown = _useState12[1];
+
+  var _useState13 = useState(false),
+      _useState14 = _slicedToArray$1(_useState13, 2),
+      rightDown = _useState14[0],
+      setRightDown = _useState14[1]; // grid size
+
+
+  var _useState15 = useState([20, 12]),
+      _useState16 = _slicedToArray$1(_useState15, 2),
+      gridSize = _useState16[0];
+      _useState16[1]; // bring to front
+
+
+  var onBringToFront = function onBringToFront(id) {
+    // bring task to front
+    desktop.bringTaskToFront({
+      id: id
+    });
+  }; // check mouse down
+
+
+  var _onMoveDown = useCallback(function (item, e) {
+    // set resizing
+    setResizing(item); // set down
+
+    if (e.button === 0) {
+      // left down
+      setLeftDown(true); // if right down
+
+      if (rightDown) {
+        // set menu
+        setUseGrid(true);
+      }
+    } else if (e.button === 2) {
+      // right down
+      setRightDown(true); // if right down
+
+      if (leftDown) {
+        // set menu
+        setUseGrid(true);
+      }
+    }
+  }, [leftDown, rightDown]); // includes size
+
+
+  var includesSize = useCallback(function (row, col) {
+    // true xy
+    var trueXY = [XY[0] < HW[0] ? XY[0] : HW[0], XY[1] < HW[1] ? XY[1] : HW[1]];
+    var trueHW = [XY[0] > HW[0] ? XY[0] : HW[0], XY[1] > HW[1] ? XY[1] : HW[1]]; // return jsx
+
+    return row >= trueXY[0] && row <= trueHW[0] && col >= trueXY[1] && col <= trueHW[1];
+  }, [].concat(_toConsumableArray$1(XY), _toConsumableArray$1(HW))); // on mouse up
+
+  var _onMoveUp = useCallback(function (item, e) {
+    // set down
+    if (e.button === 0) {
+      setPlace(null);
+      setUseGrid(false);
+      setLeftDown(false);
+    } else if (e.button === 2) {
+      setRightDown(false);
+    }
+  }, []); // value
+
+
+  var cols = [];
+  var rows = []; // loop
+
+  for (var i = 0; i < gridSize[0]; i++) {
+    cols.push(i);
+  }
+
+  for (var _i = 0; _i < gridSize[1]; _i++) {
+    rows.push(_i);
+  } // use effect
+
+
+  useEffect(function () {
+    // check size
+    if (!resizing) return; // get first block size
+
+    var boxWidth = document.getElementById('desktop').clientWidth / gridSize[0];
+    var boxHeight = document.getElementById('desktop').clientHeight / gridSize[1]; // spacer
+
+    var spacer = parseInt(theme.spacing(.5).replace('px', '')); // size
+
+    var top = XY[0] < HW[0] ? XY[0] : HW[0];
+    var left = XY[1] < HW[1] ? XY[1] : HW[1];
+    var right = XY[1] > HW[1] ? XY[1] : HW[1];
+    var bottom = XY[0] > HW[0] ? XY[0] : HW[0]; // min width/height
+
+    var minWidth = boxWidth * 2;
+    var minHeight = boxHeight * 2; // new width
+
+    var newWidth = (right - left + 1) * boxWidth;
+    var newHeight = (bottom - top + 1) * boxHeight; // create new size
+
+    var newPosition = {
+      x: left * boxWidth + spacer,
+      y: top * boxHeight + spacer,
+      width: (newWidth < minWidth ? minWidth : newWidth) - spacer * 2,
+      height: (newHeight < minHeight ? minHeight : newHeight) - spacer * 2
+    }; // set position
+
+    setPlace(newPosition);
+  }, [].concat(_toConsumableArray$1(XY), _toConsumableArray$1(HW))); // return jsx
+
+  return /*#__PURE__*/React__default.createElement(Box, {
+    id: "desktop",
+    sx: {
+      flex: 1,
+      width: '100%',
+      height: '100%',
+      display: 'flex',
+      overflow: 'hidden',
+      position: 'relative',
+      alignItems: 'center',
+      backgroundSize: theme.shape.backgroundImage ? 'cover' : "20px 20px",
+      backgroundImage: theme.shape.backgroundImage ? "url(".concat(theme.shape.backgroundImage, ")") : "radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px), radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px)",
+      backgroundPosition: theme.shape.backgroundImage ? 'center' : "0 0,10px 10px"
+    }
+  }, !(theme.shape.backgroundImage || theme.shape.backgroundVideo) && /*#__PURE__*/React__default.createElement(Box, {
+    sx: {
+      mx: 'auto',
+      px: 4,
+      py: 2,
+      display: 'flex',
+      alignItems: 'center',
+      background: theme.palette.background["default"],
+      justifyContent: 'center'
+    }
+  }, /*#__PURE__*/React__default.createElement(Typography, {
+    variant: "h2"
+  }, "WELCOME TO MOON")), !!theme.shape.backgroundVideo && /*#__PURE__*/React__default.createElement(Box, {
+    sx: {
+      width: '100%!important',
+      height: '100%!important',
+      overflow: 'hidden',
+      position: 'relative',
+      '&.video-player > div': {
+        backgroundColor: "transparent!important"
+      }
+    },
+    config: {
+      youtube: {
+        playerVars: {
+          showinfo: 0
+        }
+      }
+    },
+    url: theme.shape.backgroundVideo,
+    component: ReactPlayer,
+    loop: true,
+    playing: true
+  }), !!useGrid && /*#__PURE__*/React__default.createElement(Box, {
+    sx: {
+      top: 0,
+      left: 0,
+      flex: 1,
+      width: '100%',
+      height: '100%',
+      zIndex: 100,
+      display: 'flex',
+      position: 'absolute',
+      flexDirection: 'column'
+    }
+  }, rows.map(function (row) {
+    // return jsx
+    return /*#__PURE__*/React__default.createElement(Box, {
+      key: "row-".concat(row),
+      display: "flex",
+      flex: 1,
+      flexDirection: "row"
+    }, cols.map(function (col) {
+      // return jsx
+      return /*#__PURE__*/React__default.createElement(Box, {
+        sx: _objectSpread2$1({
+          flex: 1,
+          border: "".concat(theme.shape.borderWidth, " solid rgba(255, 255, 255, 0.25)"),
+          height: '100%'
+        }, rightDown ? {
+          '&:hover': {
+            background: "rgba(255, 255, 255, 0.1)"
+          }
+        } : includesSize(row, col) ? {
+          background: "rgba(255, 255, 255, 0.1)"
+        } : {}),
+        id: row === 0 && col === 0 ? 'size-box' : undefined,
+        key: "col-".concat(row, "-").concat(col),
+        onMouseUp: function onMouseUp(e) {
+          return _onMoveUp(resizing, e);
+        },
+        onMouseDown: function onMouseDown(e) {
+          return _onMoveDown(resizing, e);
+        },
+        onMouseOver: function onMouseOver(e) {
+          return rightDown ? [setXY([row, col]), setHW([row, col])] : setHW([row, col]);
+        },
+        onContextMenu: function onContextMenu(e) {
+          return e.preventDefault();
+        }
+      });
+    }));
+  })), desktop.shortcuts.map(function (item, i) {
+    // return window
+    return /*#__PURE__*/React__default.createElement(MoonDesktopShortcut, {
+      key: "shortcut-".concat(item.id),
+      item: item
+    });
+  }), desktop.tasks.map(function (item, i) {
+    // return window
+    return /*#__PURE__*/React__default.createElement(MoonWindow, {
+      key: "window-".concat(item.id),
+      item: item,
+      desktop: desktop,
+      canDrag: !useGrid,
+      position: (resizing === null || resizing === void 0 ? void 0 : resizing.id) === item.id ? place : undefined,
+      onMoveUp: function onMoveUp(e) {
+        return _onMoveUp(item, e);
+      },
+      onMoveDown: function onMoveDown(e) {
+        return _onMoveDown(item, e);
+      },
+      bringToFront: function bringToFront(id) {
+        return onBringToFront(id || item.id);
+      }
+    });
+  }));
+}; // export default
+
+var isObj$1 = value => {
+	const type = typeof value;
+	return value !== null && (type === 'object' || type === 'function');
+};
+
+const isObj = isObj$1;
+
+const disallowedKeys = new Set([
+	'__proto__',
+	'prototype',
+	'constructor'
+]);
+
+const isValidPath = pathSegments => !pathSegments.some(segment => disallowedKeys.has(segment));
+
+function getPathSegments(path) {
+	const pathArray = path.split('.');
+	const parts = [];
+
+	for (let i = 0; i < pathArray.length; i++) {
+		let p = pathArray[i];
+
+		while (p[p.length - 1] === '\\' && pathArray[i + 1] !== undefined) {
+			p = p.slice(0, -1) + '.';
+			p += pathArray[++i];
+		}
+
+		parts.push(p);
+	}
+
+	if (!isValidPath(parts)) {
+		return [];
+	}
+
+	return parts;
+}
+
+var dotProp = {
+	get(object, path, value) {
+		if (!isObj(object) || typeof path !== 'string') {
+			return value === undefined ? object : value;
+		}
+
+		const pathArray = getPathSegments(path);
+		if (pathArray.length === 0) {
+			return;
+		}
+
+		for (let i = 0; i < pathArray.length; i++) {
+			object = object[pathArray[i]];
+
+			if (object === undefined || object === null) {
+				// `object` is either `undefined` or `null` so we want to stop the loop, and
+				// if this is not the last bit of the path, and
+				// if it did't return `undefined`
+				// it would return `null` if `object` is `null`
+				// but we want `get({foo: null}, 'foo.bar')` to equal `undefined`, or the supplied value, not `null`
+				if (i !== pathArray.length - 1) {
+					return value;
+				}
+
+				break;
+			}
+		}
+
+		return object === undefined ? value : object;
+	},
+
+	set(object, path, value) {
+		if (!isObj(object) || typeof path !== 'string') {
+			return object;
+		}
+
+		const root = object;
+		const pathArray = getPathSegments(path);
+
+		for (let i = 0; i < pathArray.length; i++) {
+			const p = pathArray[i];
+
+			if (!isObj(object[p])) {
+				object[p] = {};
+			}
+
+			if (i === pathArray.length - 1) {
+				object[p] = value;
+			}
+
+			object = object[p];
+		}
+
+		return root;
+	},
+
+	delete(object, path) {
+		if (!isObj(object) || typeof path !== 'string') {
+			return false;
+		}
+
+		const pathArray = getPathSegments(path);
+
+		for (let i = 0; i < pathArray.length; i++) {
+			const p = pathArray[i];
+
+			if (i === pathArray.length - 1) {
+				delete object[p];
+				return true;
+			}
+
+			object = object[p];
+
+			if (!isObj(object)) {
+				return false;
+			}
+		}
+	},
+
+	has(object, path) {
+		if (!isObj(object) || typeof path !== 'string') {
+			return false;
+		}
+
+		const pathArray = getPathSegments(path);
+		if (pathArray.length === 0) {
+			return false;
+		}
+
+		// eslint-disable-next-line unicorn/no-for-loop
+		for (let i = 0; i < pathArray.length; i++) {
+			if (isObj(object)) {
+				if (!(pathArray[i] in object)) {
+					return false;
+				}
+
+				object = object[pathArray[i]];
+			} else {
+				return false;
+			}
+		}
+
+		return true;
+	}
+};
+
+var MoonNFTAvatar = function MoonNFTAvatar() {
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // theme
+  var theme = useTheme(); // url
+
+  var nftUrl = dotProp.get(props, 'user.avatar.image.url') || dotProp.get(props, 'item.image.image.url') || dotProp.get(props, 'item.image.url') || dotProp.get(props, 'image.url'); // check height
+
+  if (nftUrl && props.height) nftUrl = "".concat(nftUrl, "?h=").concat(props.height);
+  if (nftUrl && props.width) nftUrl = "".concat(nftUrl).concat(props.height ? '&' : '?', "h=").concat(props.height); // get title
+
+  var avatarAlt = dotProp.get(props, 'user.avatar.name') || dotProp.get(props, 'item.image.name') || dotProp.get(props, 'user.username') || dotProp.get(props, 'user.id') || 'Anonymous'; // base
+
+  var base = /*#__PURE__*/React__default.createElement(Avatar, {
+    src: nftUrl,
+    alt: avatarAlt,
+    width: props.width,
+    height: props.height,
+    variant: props.variant,
+    onClick: props.onClick,
+    sx: _objectSpread2$1({
+      width: "".concat(props.width, "px"),
+      height: "".concat(props.height || props.width, "px"),
+      bgcolor: "rgba(255,255,255,0.1)",
+      transition: "all 0.2s ease",
+      '&:hover': {
+        bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[400] : theme.palette.grey[600]
+      }
+    }, props.sx || {})
+  }, !nftUrl && (props.children || /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+    icon: faUser
+  }))); // check no tooltip
+
+  if (props.noTooltip) return base; // base
+
+  return /*#__PURE__*/React__default.createElement(Tooltip, _extends$4({
+    title: avatarAlt
+  }, props.TooltipProps || {}), base);
+}; // export default
+
+var lib$1 = {};
+
+var Ratio$1 = {};
+
+Object.defineProperty(Ratio$1, "__esModule", {
+  value: true
+});
+
+var _extends = Object.assign || function (target) { for (var i = 1; i < arguments.length; i++) { var source = arguments[i]; for (var key in source) { if (Object.prototype.hasOwnProperty.call(source, key)) { target[key] = source[key]; } } } return target; };
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+Ratio$1.omit = omit;
+
+var _react = React__default;
+
+var _react2 = _interopRequireDefault$1(_react);
+
+var _propTypes = propTypes$1.exports;
+
+var _propTypes2 = _interopRequireDefault$1(_propTypes);
+
+function _interopRequireDefault$1(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+// Omits "keysToOmit" from "object"
+function omit(object, keysToOmit) {
+  var result = {};
+
+  Object.keys(object).forEach(function (key) {
+    if (keysToOmit.indexOf(key) === -1) {
+      result[key] = object[key];
+    }
+  });
+
+  return result;
+}
+
+var PROPS_TO_OMIT = ['children', 'contentClassName', 'ratio', 'ratioClassName', 'style', 'tagName'];
+
+var CONTENT_DIV_STYLE = {
+  height: '100%',
+  left: 0,
+  position: 'absolute',
+  top: 0,
+  width: '100%'
+};
+
+var RATIO_DIV_STYLE = {
+  height: 0,
+  position: 'relative',
+  width: '100%'
+};
+
+var Ratio = function (_Component) {
+  _inherits(Ratio, _Component);
+
+  function Ratio() {
+    _classCallCheck(this, Ratio);
+
+    return _possibleConstructorReturn(this, (Ratio.__proto__ || Object.getPrototypeOf(Ratio)).apply(this, arguments));
+  }
+
+  _createClass(Ratio, [{
+    key: 'render',
+    value: function render() {
+      var _props = this.props,
+          children = _props.children,
+          className = _props.className,
+          contentClassName = _props.contentClassName,
+          ratio = _props.ratio,
+          ratioClassName = _props.ratioClassName,
+          style = _props.style,
+          tagName = _props.tagName;
+
+
+      var Tag = tagName;
+
+      var cssStyle = _extends({
+        display: 'block'
+      }, style);
+
+      var paddingTop = ratio === 0 ? 100 : 100 / ratio;
+
+      return _react2.default.createElement(
+        Tag,
+        _extends({}, omit(this.props, PROPS_TO_OMIT), {
+          className: 'Ratio ' + className,
+          style: cssStyle
+        }),
+        _react2.default.createElement(
+          'div',
+          {
+            className: 'Ratio-ratio ' + ratioClassName,
+            style: _extends({}, RATIO_DIV_STYLE, {
+              paddingTop: paddingTop + '%'
+            })
+          },
+          _react2.default.createElement(
+            'div',
+            {
+              className: 'Ratio-content ' + contentClassName,
+              style: CONTENT_DIV_STYLE
+            },
+            children
+          )
+        )
+      );
+    }
+  }]);
+
+  return Ratio;
+}(_react.Component);
+
+Ratio$1.default = Ratio;
+
+
+Ratio.propTypes = {
+  children: _propTypes2.default.any,
+  className: _propTypes2.default.string,
+  contentClassName: _propTypes2.default.string,
+  ratio: _propTypes2.default.number,
+  ratioClassName: _propTypes2.default.string,
+  style: _propTypes2.default.object,
+  tagName: _propTypes2.default.string
+};
+
+Ratio.defaultProps = {
+  children: null,
+  className: '',
+  contentClassName: '',
+  ratio: 1,
+  ratioClassName: '',
+  style: {},
+  tagName: 'div'
+};
+
+Object.defineProperty(lib$1, "__esModule", {
+  value: true
+});
+
+var _Ratio = Ratio$1;
+
+var _Ratio2 = _interopRequireDefault(_Ratio);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var _default = lib$1.default = _Ratio2.default;
+
+var build = {exports: {}};
+
+(()=>{var e={296:(e,t,r)=>{var o=/^\s+|\s+$/g,n=/^[-+]0x[0-9a-f]+$/i,i=/^0b[01]+$/i,s=/^0o[0-7]+$/i,c=parseInt,u="object"==typeof r.g&&r.g&&r.g.Object===Object&&r.g,l="object"==typeof self&&self&&self.Object===Object&&self,a=u||l||Function("return this")(),f=Object.prototype.toString,p=Math.max,y=Math.min,d=function(){return a.Date.now()};function b(e){var t=typeof e;return !!e&&("object"==t||"function"==t)}function h(e){if("number"==typeof e)return e;if(function(e){return "symbol"==typeof e||function(e){return !!e&&"object"==typeof e}(e)&&"[object Symbol]"==f.call(e)}(e))return NaN;if(b(e)){var t="function"==typeof e.valueOf?e.valueOf():e;e=b(t)?t+"":t;}if("string"!=typeof e)return 0===e?e:+e;e=e.replace(o,"");var r=i.test(e);return r||s.test(e)?c(e.slice(2),r?2:8):n.test(e)?NaN:+e}e.exports=function(e,t,r){var o,n,i,s,c,u,l=0,a=!1,f=!1,v=!0;if("function"!=typeof e)throw new TypeError("Expected a function");function m(t){var r=o,i=n;return o=n=void 0,l=t,s=e.apply(i,r)}function O(e){return l=e,c=setTimeout(g,t),a?m(e):s}function w(e){var r=e-u;return void 0===u||r>=t||r<0||f&&e-l>=i}function g(){var e=d();if(w(e))return P(e);c=setTimeout(g,function(e){var r=t-(e-u);return f?y(r,i-(e-l)):r}(e));}function P(e){return c=void 0,v&&o?m(e):(o=n=void 0,s)}function T(){var e=d(),r=w(e);if(o=arguments,n=this,u=e,r){if(void 0===c)return O(u);if(f)return c=setTimeout(g,t),m(u)}return void 0===c&&(c=setTimeout(g,t)),s}return t=h(t)||0,b(r)&&(a=!!r.leading,i=(f="maxWait"in r)?p(h(r.maxWait)||0,t):i,v="trailing"in r?!!r.trailing:v),T.cancel=function(){void 0!==c&&clearTimeout(c),l=0,o=u=n=c=void 0;},T.flush=function(){return void 0===c?s:P(d())},T};},96:(e,t,r)=>{var o="Expected a function",n=/^\s+|\s+$/g,i=/^[-+]0x[0-9a-f]+$/i,s=/^0b[01]+$/i,c=/^0o[0-7]+$/i,u=parseInt,l="object"==typeof r.g&&r.g&&r.g.Object===Object&&r.g,a="object"==typeof self&&self&&self.Object===Object&&self,f=l||a||Function("return this")(),p=Object.prototype.toString,y=Math.max,d=Math.min,b=function(){return f.Date.now()};function h(e){var t=typeof e;return !!e&&("object"==t||"function"==t)}function v(e){if("number"==typeof e)return e;if(function(e){return "symbol"==typeof e||function(e){return !!e&&"object"==typeof e}(e)&&"[object Symbol]"==p.call(e)}(e))return NaN;if(h(e)){var t="function"==typeof e.valueOf?e.valueOf():e;e=h(t)?t+"":t;}if("string"!=typeof e)return 0===e?e:+e;e=e.replace(n,"");var r=s.test(e);return r||c.test(e)?u(e.slice(2),r?2:8):i.test(e)?NaN:+e}e.exports=function(e,t,r){var n=!0,i=!0;if("function"!=typeof e)throw new TypeError(o);return h(r)&&(n="leading"in r?!!r.leading:n,i="trailing"in r?!!r.trailing:i),function(e,t,r){var n,i,s,c,u,l,a=0,f=!1,p=!1,m=!0;if("function"!=typeof e)throw new TypeError(o);function O(t){var r=n,o=i;return n=i=void 0,a=t,c=e.apply(o,r)}function w(e){return a=e,u=setTimeout(P,t),f?O(e):c}function g(e){var r=e-l;return void 0===l||r>=t||r<0||p&&e-a>=s}function P(){var e=b();if(g(e))return T(e);u=setTimeout(P,function(e){var r=t-(e-l);return p?d(r,s-(e-a)):r}(e));}function T(e){return u=void 0,m&&n?O(e):(n=i=void 0,c)}function j(){var e=b(),r=g(e);if(n=arguments,i=this,l=e,r){if(void 0===u)return w(l);if(p)return u=setTimeout(P,t),O(l)}return void 0===u&&(u=setTimeout(P,t)),c}return t=v(t)||0,h(r)&&(f=!!r.leading,s=(p="maxWait"in r)?y(v(r.maxWait)||0,t):s,m="trailing"in r?!!r.trailing:m),j.cancel=function(){void 0!==u&&clearTimeout(u),a=0,n=l=i=u=void 0;},j.flush=function(){return void 0===u?c:T(b())},j}(e,t,{leading:n,maxWait:t,trailing:i})};},703:(e,t,r)=>{var o=r(414);function n(){}function i(){}i.resetWarningCache=n,e.exports=function(){function e(e,t,r,n,i,s){if(s!==o){var c=new Error("Calling PropTypes validators directly is not supported by the `prop-types` package. Use PropTypes.checkPropTypes() to call them. Read more at http://fb.me/use-check-prop-types");throw c.name="Invariant Violation",c}}function t(){return e}e.isRequired=e;var r={array:e,bool:e,func:e,number:e,object:e,string:e,symbol:e,any:e,arrayOf:t,element:e,elementType:e,instanceOf:t,node:e,objectOf:t,oneOf:t,oneOfType:t,shape:t,exact:t,checkPropTypes:i,resetWarningCache:n};return r.PropTypes=r,r};},697:(e,t,r)=>{e.exports=r(703)();},414:e=>{e.exports="SECRET_DO_NOT_PASS_THIS_OR_YOU_WILL_BE_FIRED";}},t={};function r(o){var n=t[o];if(void 0!==n)return n.exports;var i=t[o]={exports:{}};return e[o](i,i.exports,r),i.exports}r.n=e=>{var t=e&&e.__esModule?()=>e.default:()=>e;return r.d(t,{a:t}),t},r.d=(e,t)=>{for(var o in t)r.o(t,o)&&!r.o(e,o)&&Object.defineProperty(e,o,{enumerable:!0,get:t[o]});},r.g=function(){if("object"==typeof globalThis)return globalThis;try{return this||new Function("return this")()}catch(e){if("object"==typeof window)return window}}(),r.o=(e,t)=>Object.prototype.hasOwnProperty.call(e,t),r.r=e=>{"undefined"!=typeof Symbol&&Symbol.toStringTag&&Object.defineProperty(e,Symbol.toStringTag,{value:"Module"}),Object.defineProperty(e,"__esModule",{value:!0});};var o={};(()=>{r.r(o),r.d(o,{LazyLoadComponent:()=>J,LazyLoadImage:()=>ie,trackWindowScroll:()=>C});const e=React__default;var t=r.n(e),n=r(697);const i=ReactDOM;var s=r.n(i);function c(){return "undefined"!=typeof window&&"IntersectionObserver"in window&&"isIntersecting"in window.IntersectionObserverEntry.prototype}function u(e){return (u="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function l(e,t){var r=Object.keys(e);if(Object.getOwnPropertySymbols){var o=Object.getOwnPropertySymbols(e);t&&(o=o.filter((function(t){return Object.getOwnPropertyDescriptor(e,t).enumerable}))),r.push.apply(r,o);}return r}function a(e,t,r){return t in e?Object.defineProperty(e,t,{value:r,enumerable:!0,configurable:!0,writable:!0}):e[t]=r,e}function f(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function p(e,t){return (p=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function y(e,t){if(t&&("object"===u(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e)}function d(e){return (d=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var b=function(e){e.forEach((function(e){e.isIntersecting&&e.target.onVisible();}));},h={},v=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&p(e,t);}(v,e);var r,o,n,i,u=(n=v,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=d(n);if(i){var r=d(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return y(this,e)});function v(e){var t;if(function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,v),(t=u.call(this,e)).supportsObserver=!e.scrollPosition&&e.useIntersectionObserver&&c(),t.supportsObserver){var r=e.threshold;t.observer=function(e){return h[e]=h[e]||new IntersectionObserver(b,{rootMargin:e+"px"}),h[e]}(r);}return t}return r=v,(o=[{key:"componentDidMount",value:function(){this.placeholder&&this.observer&&(this.placeholder.onVisible=this.props.onVisible,this.observer.observe(this.placeholder)),this.supportsObserver||this.updateVisibility();}},{key:"componentWillUnmount",value:function(){this.observer&&this.observer.unobserve(this.placeholder);}},{key:"componentDidUpdate",value:function(){this.supportsObserver||this.updateVisibility();}},{key:"getPlaceholderBoundingBox",value:function(){var e=arguments.length>0&&void 0!==arguments[0]?arguments[0]:this.props.scrollPosition,t=this.placeholder.getBoundingClientRect(),r=s().findDOMNode(this.placeholder).style,o={left:parseInt(r.getPropertyValue("margin-left"),10)||0,top:parseInt(r.getPropertyValue("margin-top"),10)||0};return {bottom:e.y+t.bottom+o.top,left:e.x+t.left+o.left,right:e.x+t.right+o.left,top:e.y+t.top+o.top}}},{key:"isPlaceholderInViewport",value:function(){if("undefined"==typeof window||!this.placeholder)return !1;var e=this.props,t=e.scrollPosition,r=e.threshold,o=this.getPlaceholderBoundingBox(t),n=t.y+window.innerHeight,i=t.x,s=t.x+window.innerWidth,c=t.y;return Boolean(c-r<=o.bottom&&n+r>=o.top&&i-r<=o.right&&s+r>=o.left)}},{key:"updateVisibility",value:function(){this.isPlaceholderInViewport()&&this.props.onVisible();}},{key:"render",value:function(){var e=this,r=this.props,o=r.className,n=r.height,i=r.placeholder,s=r.style,c=r.width;if(i&&"function"!=typeof i.type)return t().cloneElement(i,{ref:function(t){return e.placeholder=t}});var u=function(e){for(var t=1;t<arguments.length;t++){var r=null!=arguments[t]?arguments[t]:{};t%2?l(Object(r),!0).forEach((function(t){a(e,t,r[t]);})):Object.getOwnPropertyDescriptors?Object.defineProperties(e,Object.getOwnPropertyDescriptors(r)):l(Object(r)).forEach((function(t){Object.defineProperty(e,t,Object.getOwnPropertyDescriptor(r,t));}));}return e}({display:"inline-block"},s);return void 0!==c&&(u.width=c),void 0!==n&&(u.height=n),t().createElement("span",{className:o,ref:function(t){return e.placeholder=t},style:u},i)}}])&&f(r.prototype,o),v}(t().Component);v.propTypes={onVisible:n.PropTypes.func.isRequired,className:n.PropTypes.string,height:n.PropTypes.oneOfType([n.PropTypes.number,n.PropTypes.string]),placeholder:n.PropTypes.element,threshold:n.PropTypes.number,useIntersectionObserver:n.PropTypes.bool,scrollPosition:n.PropTypes.shape({x:n.PropTypes.number.isRequired,y:n.PropTypes.number.isRequired}),width:n.PropTypes.oneOfType([n.PropTypes.number,n.PropTypes.string])},v.defaultProps={className:"",placeholder:null,threshold:100,useIntersectionObserver:!0};const m=v;var O=r(296),w=r.n(O),g=r(96),P=r.n(g),T=function(e){var t=getComputedStyle(e,null);return t.getPropertyValue("overflow")+t.getPropertyValue("overflow-y")+t.getPropertyValue("overflow-x")};const j=function(e){if(!(e instanceof HTMLElement))return window;for(var t=e;t&&t instanceof HTMLElement;){if(/(scroll|auto)/.test(T(t)))return t;t=t.parentNode;}return window};function S(e){return (S="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}var E=["delayMethod","delayTime"];function _(){return (_=Object.assign||function(e){for(var t=1;t<arguments.length;t++){var r=arguments[t];for(var o in r)Object.prototype.hasOwnProperty.call(r,o)&&(e[o]=r[o]);}return e}).apply(this,arguments)}function I(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function L(e,t){return (L=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function x(e,t){if(t&&("object"===S(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return R(e)}function R(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}function k(e){return (k=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var D=function(){return "undefined"==typeof window?0:window.scrollX||window.pageXOffset},N=function(){return "undefined"==typeof window?0:window.scrollY||window.pageYOffset};const C=function(e){var r=function(r){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&L(e,t);}(a,r);var o,n,i,u,l=(i=a,u=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=k(i);if(u){var r=k(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return x(this,e)});function a(e){var r;if(function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,a),(r=l.call(this,e)).useIntersectionObserver=e.useIntersectionObserver&&c(),r.useIntersectionObserver)return x(r);var o=r.onChangeScroll.bind(R(r));return "debounce"===e.delayMethod?r.delayedScroll=w()(o,e.delayTime):"throttle"===e.delayMethod&&(r.delayedScroll=P()(o,e.delayTime)),r.state={scrollPosition:{x:D(),y:N()}},r.baseComponentRef=t().createRef(),r}return o=a,(n=[{key:"componentDidMount",value:function(){this.addListeners();}},{key:"componentWillUnmount",value:function(){this.removeListeners();}},{key:"componentDidUpdate",value:function(){"undefined"==typeof window||this.useIntersectionObserver||j(s().findDOMNode(this.baseComponentRef.current))!==this.scrollElement&&(this.removeListeners(),this.addListeners());}},{key:"addListeners",value:function(){"undefined"==typeof window||this.useIntersectionObserver||(this.scrollElement=j(s().findDOMNode(this.baseComponentRef.current)),this.scrollElement.addEventListener("scroll",this.delayedScroll,{passive:!0}),window.addEventListener("resize",this.delayedScroll,{passive:!0}),this.scrollElement!==window&&window.addEventListener("scroll",this.delayedScroll,{passive:!0}));}},{key:"removeListeners",value:function(){"undefined"==typeof window||this.useIntersectionObserver||(this.scrollElement.removeEventListener("scroll",this.delayedScroll),window.removeEventListener("resize",this.delayedScroll),this.scrollElement!==window&&window.removeEventListener("scroll",this.delayedScroll));}},{key:"onChangeScroll",value:function(){this.useIntersectionObserver||this.setState({scrollPosition:{x:D(),y:N()}});}},{key:"render",value:function(){var r=this.props,o=(r.delayMethod,r.delayTime,function(e,t){if(null==e)return {};var r,o,n=function(e,t){if(null==e)return {};var r,o,n={},i=Object.keys(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||(n[r]=e[r]);return n}(e,t);if(Object.getOwnPropertySymbols){var i=Object.getOwnPropertySymbols(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||Object.prototype.propertyIsEnumerable.call(e,r)&&(n[r]=e[r]);}return n}(r,E)),n=this.useIntersectionObserver?null:this.state.scrollPosition;return t().createElement(e,_({forwardRef:this.baseComponentRef,scrollPosition:n},o))}}])&&I(o.prototype,n),a}(t().Component);return r.propTypes={delayMethod:n.PropTypes.oneOf(["debounce","throttle"]),delayTime:n.PropTypes.number,useIntersectionObserver:n.PropTypes.bool},r.defaultProps={delayMethod:"throttle",delayTime:300,useIntersectionObserver:!0},r};function M(e){return (M="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function B(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function V(e,t){return (V=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function W(e,t){if(t&&("object"===M(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e)}function z(e){return (z=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var $=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&V(e,t);}(c,e);var r,o,n,i,s=(n=c,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=z(n);if(i){var r=z(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return W(this,e)});function c(e){return function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,c),s.call(this,e)}return r=c,(o=[{key:"render",value:function(){return t().createElement(m,this.props)}}])&&B(r.prototype,o),c}(t().Component);const U=C($);function q(e){return (q="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}function F(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function H(e,t){return (H=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function Y(e,t){if(t&&("object"===q(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return X(e)}function X(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}function A(e){return (A=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var G=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&H(e,t);}(u,e);var r,o,n,i,s=(n=u,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=A(n);if(i){var r=A(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return Y(this,e)});function u(e){var t;!function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,u),t=s.call(this,e);var r=e.afterLoad,o=e.beforeLoad,n=e.scrollPosition,i=e.visibleByDefault;return t.state={visible:i},i&&(o(),r()),t.onVisible=t.onVisible.bind(X(t)),t.isScrollTracked=Boolean(n&&Number.isFinite(n.x)&&n.x>=0&&Number.isFinite(n.y)&&n.y>=0),t}return r=u,(o=[{key:"componentDidUpdate",value:function(e,t){t.visible!==this.state.visible&&this.props.afterLoad();}},{key:"onVisible",value:function(){this.props.beforeLoad(),this.setState({visible:!0});}},{key:"render",value:function(){if(this.state.visible)return this.props.children;var e=this.props,r=e.className,o=e.delayMethod,n=e.delayTime,i=e.height,s=e.placeholder,u=e.scrollPosition,l=e.style,a=e.threshold,f=e.useIntersectionObserver,p=e.width;return this.isScrollTracked||f&&c()?t().createElement(m,{className:r,height:i,onVisible:this.onVisible,placeholder:s,scrollPosition:u,style:l,threshold:a,useIntersectionObserver:f,width:p}):t().createElement(U,{className:r,delayMethod:o,delayTime:n,height:i,onVisible:this.onVisible,placeholder:s,style:l,threshold:a,width:p})}}])&&F(r.prototype,o),u}(t().Component);G.propTypes={afterLoad:n.PropTypes.func,beforeLoad:n.PropTypes.func,useIntersectionObserver:n.PropTypes.bool,visibleByDefault:n.PropTypes.bool},G.defaultProps={afterLoad:function(){return {}},beforeLoad:function(){return {}},useIntersectionObserver:!0,visibleByDefault:!1};const J=G;function K(e){return (K="function"==typeof Symbol&&"symbol"==typeof Symbol.iterator?function(e){return typeof e}:function(e){return e&&"function"==typeof Symbol&&e.constructor===Symbol&&e!==Symbol.prototype?"symbol":typeof e})(e)}var Q=["afterLoad","beforeLoad","delayMethod","delayTime","effect","placeholder","placeholderSrc","scrollPosition","threshold","useIntersectionObserver","visibleByDefault","wrapperClassName","wrapperProps"];function Z(){return (Z=Object.assign||function(e){for(var t=1;t<arguments.length;t++){var r=arguments[t];for(var o in r)Object.prototype.hasOwnProperty.call(r,o)&&(e[o]=r[o]);}return e}).apply(this,arguments)}function ee(e,t){for(var r=0;r<t.length;r++){var o=t[r];o.enumerable=o.enumerable||!1,o.configurable=!0,"value"in o&&(o.writable=!0),Object.defineProperty(e,o.key,o);}}function te(e,t){return (te=Object.setPrototypeOf||function(e,t){return e.__proto__=t,e})(e,t)}function re(e,t){if(t&&("object"===K(t)||"function"==typeof t))return t;if(void 0!==t)throw new TypeError("Derived constructors may only return object or undefined");return function(e){if(void 0===e)throw new ReferenceError("this hasn't been initialised - super() hasn't been called");return e}(e)}function oe(e){return (oe=Object.setPrototypeOf?Object.getPrototypeOf:function(e){return e.__proto__||Object.getPrototypeOf(e)})(e)}var ne=function(e){!function(e,t){if("function"!=typeof t&&null!==t)throw new TypeError("Super expression must either be null or a function");e.prototype=Object.create(t&&t.prototype,{constructor:{value:e,writable:!0,configurable:!0}}),t&&te(e,t);}(c,e);var r,o,n,i,s=(n=c,i=function(){if("undefined"==typeof Reflect||!Reflect.construct)return !1;if(Reflect.construct.sham)return !1;if("function"==typeof Proxy)return !0;try{return Boolean.prototype.valueOf.call(Reflect.construct(Boolean,[],(function(){}))),!0}catch(e){return !1}}(),function(){var e,t=oe(n);if(i){var r=oe(this).constructor;e=Reflect.construct(t,arguments,r);}else e=t.apply(this,arguments);return re(this,e)});function c(e){var t;return function(e,t){if(!(e instanceof t))throw new TypeError("Cannot call a class as a function")}(this,c),(t=s.call(this,e)).state={loaded:!1},t}return r=c,(o=[{key:"onImageLoad",value:function(){var e=this;return this.state.loaded?null:function(){e.props.afterLoad(),e.setState({loaded:!0});}}},{key:"getImg",value:function(){var e=this.props,r=(e.afterLoad,e.beforeLoad,e.delayMethod,e.delayTime,e.effect,e.placeholder,e.placeholderSrc,e.scrollPosition,e.threshold,e.useIntersectionObserver,e.visibleByDefault,e.wrapperClassName,e.wrapperProps,function(e,t){if(null==e)return {};var r,o,n=function(e,t){if(null==e)return {};var r,o,n={},i=Object.keys(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||(n[r]=e[r]);return n}(e,t);if(Object.getOwnPropertySymbols){var i=Object.getOwnPropertySymbols(e);for(o=0;o<i.length;o++)r=i[o],t.indexOf(r)>=0||Object.prototype.propertyIsEnumerable.call(e,r)&&(n[r]=e[r]);}return n}(e,Q));return t().createElement("img",Z({onLoad:this.onImageLoad()},r))}},{key:"getLazyLoadImage",value:function(){var e=this.props,r=e.beforeLoad,o=e.className,n=e.delayMethod,i=e.delayTime,s=e.height,c=e.placeholder,u=e.scrollPosition,l=e.style,a=e.threshold,f=e.useIntersectionObserver,p=e.visibleByDefault,y=e.width;return t().createElement(J,{beforeLoad:r,className:o,delayMethod:n,delayTime:i,height:s,placeholder:c,scrollPosition:u,style:l,threshold:a,useIntersectionObserver:f,visibleByDefault:p,width:y},this.getImg())}},{key:"getWrappedLazyLoadImage",value:function(e){var r=this.props,o=r.effect,n=r.height,i=r.placeholderSrc,s=r.width,c=r.wrapperClassName,u=r.wrapperProps,l=this.state.loaded,a=l?" lazy-load-image-loaded":"";return t().createElement("span",Z({className:c+" lazy-load-image-background "+o+a,style:{backgroundImage:l||!i?"":"url(".concat(i,")"),backgroundSize:l||!i?"":"100% 100%",color:"transparent",display:"inline-block",height:n,width:s}},u),e)}},{key:"render",value:function(){var e=this.props,t=e.effect,r=e.placeholderSrc,o=e.visibleByDefault,n=e.wrapperClassName,i=e.wrapperProps,s=this.getLazyLoadImage();return (t||r)&&!o||n||i?this.getWrappedLazyLoadImage(s):s}}])&&ee(r.prototype,o),c}(t().Component);ne.propTypes={afterLoad:n.PropTypes.func,beforeLoad:n.PropTypes.func,delayMethod:n.PropTypes.string,delayTime:n.PropTypes.number,effect:n.PropTypes.string,placeholderSrc:n.PropTypes.string,threshold:n.PropTypes.number,useIntersectionObserver:n.PropTypes.bool,visibleByDefault:n.PropTypes.bool,wrapperClassName:n.PropTypes.string,wrapperProps:n.PropTypes.object},ne.defaultProps={afterLoad:function(){return {}},beforeLoad:function(){return {}},delayMethod:"throttle",delayTime:300,effect:"",placeholderSrc:null,threshold:100,useIntersectionObserver:!0,visibleByDefault:!1,wrapperClassName:""};const ie=ne;})(),build.exports=o;})();
+
+var MoonNFTImage = function MoonNFTImage() {
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // theme
+  var theme = useTheme(); // state
+
+  var _useState = useState(false),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      error = _useState2[0],
+      setError = _useState2[1]; // url
+
+
+  var nftUrl = dotProp.get(props, 'item.image.url'); // check height
+
+  if (props.height) nftUrl = "".concat(nftUrl, "?h=").concat(props.height);
+  if (props.width) nftUrl = "".concat(nftUrl).concat(props.height ? '&' : '?', "w=").concat(props.width); // base
+
+  var base = /*#__PURE__*/React__default.createElement(Box, {
+    ref: props.ref,
+    sx: {
+      '& img': _objectSpread2$1(_objectSpread2$1({
+        width: 'auto',
+        height: 'auto'
+      }, props.variant === 'rounded' ? {
+        borderRadius: "".concat(theme.shape.borderRadius, "px")
+      } : {}), props.sx || {})
+    }
+  }, error ? /*#__PURE__*/React__default.createElement(Avatar, {
+    width: props.width,
+    height: props.height,
+    variant: props.variant,
+    onClick: props.onClick,
+    sx: _objectSpread2$1({
+      width: "".concat(props.width, "px"),
+      color: "rgba(255, 255, 255, 0.25)",
+      height: "".concat(props.height || props.width, "px"),
+      bgcolor: "rgba(255,255,255,0.1)",
+      transition: "all 0.2s ease",
+      '&:hover': {
+        bgcolor: theme.palette.mode === 'light' ? theme.palette.grey[400] : theme.palette.grey[600]
+      }
+    }, props.sx || {})
+  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+    icon: faImageSlash
+  })) : /*#__PURE__*/React__default.createElement(build.exports.LazyLoadImage, {
+    src: nftUrl,
+    alt: props.item.name,
+    width: props.width,
+    height: props.height,
+    onClick: props.onClick,
+    onError: function onError() {
+      return setError(true);
+    },
+    placeholder: /*#__PURE__*/React__default.createElement(_default, {
+      ratio: (props.width || 100) / (props.height || props.width || 100)
+    }, props.placeholder || /*#__PURE__*/React__default.createElement(Skeleton, {
+      variant: props.variant || 'rounded',
+      sx: {
+        width: '100%!important',
+        height: '100%!important',
+        minHeight: '100%'
+      }
+    }))
+  })); // tooltip
+
+  if (props.noTooltip) return base; // return jsx
+
+  return /*#__PURE__*/React__default.createElement(Tooltip, {
+    title: props.item.name || 'N/A'
+  }, base);
+}; // export default
+
+var MoonNFTPicker = function MoonNFTPicker() {
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // theme
+  var theme = useTheme();
+  var socket = useSocket();
+
+  var _useState = useState([]),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      images = _useState2[0],
+      setImages = _useState2[1];
+
+  var _useState3 = useState(''),
+      _useState4 = _slicedToArray$1(_useState3, 2),
+      search = _useState4[0],
+      setSearch = _useState4[1];
+
+  var _useState5 = useState(true),
+      _useState6 = _slicedToArray$1(_useState5, 2),
+      loading = _useState6[0],
+      setLoading = _useState6[1]; // width
+
+
+  var NFTWidth = theme.spacing(10).replace('px', ''); // load images
+
+  var loadImages = /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+      var loadedImages;
+      return regeneratorRuntime.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              // loading
+              setLoading(true); // images
+
+              _context.next = 3;
+              return socket.get('/nft/list', {
+                include: 'contract'
+              });
+
+            case 3:
+              loadedImages = _context.sent;
+              // load from api
+              setImages(loadedImages.data);
+              setLoading(false);
+
+            case 6:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee);
+    }));
+
+    return function loadImages() {
+      return _ref.apply(this, arguments);
+    };
+  }(); // get searched
+
+
+  var getSearched = function getSearched() {
+    // check search
+    if (!search || !search.trim().length) return images; // get tags
+
+    var tags = search.split(' ').map(function (t) {
+      return t.length ? t.toLowerCase() : null;
+    }).filter(function (t) {
+      return t;
+    }); // filter by tags
+
+    return _toConsumableArray$1(images).filter(function (image) {
+      // find in images
+      return !tags.find(function (t) {
+        var _image$value, _image$contract, _image$contract2;
+
+        // doesn't include a tag
+        return !"".concat(((_image$value = image.value) === null || _image$value === void 0 ? void 0 : _image$value.name) || image.name, " ").concat((_image$contract = image.contract) === null || _image$contract === void 0 ? void 0 : _image$contract.id, " ").concat(image.id, " ").concat((_image$contract2 = image.contract) === null || _image$contract2 === void 0 ? void 0 : _image$contract2.name).toLowerCase().includes(t);
+      });
+    });
+  }; // get contracts
+
+
+  var getContracts = function getContracts() {
+    // return from images
+    return getSearched().reduce(function (accum, image) {
+      // find contract
+      if (accum.find(function (c) {
+        var _image$contract3;
+
+        return c.id === ((_image$contract3 = image.contract) === null || _image$contract3 === void 0 ? void 0 : _image$contract3.id);
+      })) return accum; // push image contract
+
+      accum.push(image.contract); // return accum
+
+      return accum;
+    }, []);
+  }; // get images
+
+
+  var getImages = function getImages(contract) {
+    // filtered images
+    return getSearched().filter(function (image) {
+      var _image$contract4;
+
+      return ((_image$contract4 = image.contract) === null || _image$contract4 === void 0 ? void 0 : _image$contract4.id) === contract;
+    });
+  }; // use effect
+
+
+  useEffect(function () {
+    // load images
+    if (props.open) loadImages();
+  }, [props.account, props.open]); // return jsx
+
+  return /*#__PURE__*/React__default.createElement(Popper, {
+    style: {
+      zIndex: 1499
+    },
+    open: props.open,
+    anchorEl: props.anchorEl,
+    placement: props.placement,
+    transition: true
+  }, function (_ref2) {
+    var TransitionProps = _ref2.TransitionProps;
+    return /*#__PURE__*/React__default.createElement(Grow, _extends$4({}, TransitionProps, {
+      style: {
+        transformOrigin: props.placement === 'right-end' ? 'left bottom' : 'right bottom'
+      }
+    }), /*#__PURE__*/React__default.createElement(Paper, {
+      elevation: 2,
+      sx: {
+        border: ".1rem solid ".concat(theme.palette.grey[300]),
+        borderRadius: "".concat(theme.shape.borderRadius * 2, "px")
+      }
+    }, /*#__PURE__*/React__default.createElement(ClickAwayListener, {
+      onClickAway: props.onClose
+    }, /*#__PURE__*/React__default.createElement(Box, {
+      width: theme.spacing(40),
+      height: theme.spacing(50),
+      display: "flex"
+    }, loading ? /*#__PURE__*/React__default.createElement(Box, {
+      flex: 1,
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center"
+    }, /*#__PURE__*/React__default.createElement(CircularProgress$1, null)) : /*#__PURE__*/React__default.createElement(Box, {
+      component: NFTScrollBar,
+      isFlex: true
+    }, /*#__PURE__*/React__default.createElement(Box, {
+      p: 2
+    }, /*#__PURE__*/React__default.createElement(Stack, {
+      spacing: 2
+    }, /*#__PURE__*/React__default.createElement(FormControl, {
+      sx: {
+        width: '100%'
+      },
+      variant: "outlined"
+    }, /*#__PURE__*/React__default.createElement(InputLabel, {
+      htmlFor: "nft-picker-search"
+    }, "Search"), /*#__PURE__*/React__default.createElement(OutlinedInput, {
+      id: "nft-picker-search",
+      type: "search",
+      value: search,
+      onChange: function onChange(e) {
+        return setSearch(e.target.value);
+      },
+      endAdornment: /*#__PURE__*/React__default.createElement(InputAdornment, {
+        position: "end"
+      }, /*#__PURE__*/React__default.createElement(IconButton, {
+        "aria-label": "search"
+      }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+        icon: faSearch,
+        size: "xs"
+      }))),
+      label: "Search"
+    })), getContracts().map(function (contract) {
+      // return jsx
+      return /*#__PURE__*/React__default.createElement(Box, {
+        key: "contract-".concat(contract.id),
+        sx: {
+          '& .MuiImageList-root': {
+            overflowY: 'initial'
+          },
+          '& .MuiImageListItem-root > img': {
+            cursor: 'pointer',
+            borderRadius: "".concat(theme.shape.borderRadius, "px")
+          }
+        }
+      }, /*#__PURE__*/React__default.createElement(Box, {
+        mb: 1
+      }, /*#__PURE__*/React__default.createElement(Typography, null, contract.name || 'N/A')), /*#__PURE__*/React__default.createElement(Grid, {
+        container: true,
+        spacing: 1
+      }, getImages(contract.id).map(function (image, i) {
+        // return image
+        return /*#__PURE__*/React__default.createElement(Grid, {
+          item: true,
+          xs: 3,
+          key: "image-".concat(contract.id, "-").concat(image.id || i)
+        }, /*#__PURE__*/React__default.createElement(MoonNFTImage, {
+          item: image,
+          width: NFTWidth,
+          height: NFTWidth,
+          onClick: function onClick() {
+            return props.onPick(image);
+          },
+          sx: {
+            cursor: 'pointer',
+            maxWidth: '100%',
+            borderRadius: "".concat(theme.shape.borderRadius, "px")
+          }
+        }));
+      })));
+    }))))))));
+  });
+}; // export default
+
+/**
+ * create moon start menu
+ *
+ * @param props 
+ * @returns 
+ */
+
+var MoonStartMenu = function MoonStartMenu() {
+  var _app$apps$find;
+
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // theme
+  var app = useApps();
+  var auth = useAuth();
+  var theme = useTheme();
+  var socket = useSocket();
+  var desktop = useDesktop(); // ref
+
+  var subMenuRef = useRef(null);
+  var userMenuRef = useRef(null); // use state
+
+  var _useState = useState(null),
+      _useState2 = _slicedToArray$1(_useState, 2);
+      _useState2[0];
+      var setLoading = _useState2[1];
+
+  var _useState3 = useState(null),
+      _useState4 = _slicedToArray$1(_useState3, 2),
+      subMenu = _useState4[0],
+      setSubMenu = _useState4[1];
+
+  var _useState5 = useState(false),
+      _useState6 = _slicedToArray$1(_useState5, 2),
+      avatarMenu = _useState6[0],
+      setAvatarMenu = _useState6[1]; // width
+
+
+  var avatarWidth = theme.spacing(6).replace('px', '');
+  var startMenuWidth = parseInt(theme.spacing(35).replace('px', '')); // on task
+
+  var onTask = /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(app, path) {
+      return regeneratorRuntime.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              // set loading
+              setLoading(true);
+              setSubMenu(null); // task
+
+              _context.next = 4;
+              return desktop.findOrCreateTask({
+                app: app,
+                path: path
+              });
+
+            case 4:
+              // loading
+              setLoading(false);
+
+            case 5:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee);
+    }));
+
+    return function onTask(_x, _x2) {
+      return _ref.apply(this, arguments);
+    };
+  }(); // on select
+
+
+  var onAvatar = /*#__PURE__*/function () {
+    var _ref2 = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(nft) {
+      var account;
+      return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        while (1) {
+          switch (_context2.prev = _context2.next) {
+            case 0:
+              if (nft) {
+                _context2.next = 2;
+                break;
+              }
+
+              return _context2.abrupt("return");
+
+            case 2:
+              // loading
+              setAvatarMenu(false); // set nft
+
+              _context2.next = 5;
+              return socket.post("/account/update", {
+                avatar: nft.id
+              });
+
+            case 5:
+              account = _context2.sent;
+              // auth
+              auth.emitUser(account);
+
+            case 7:
+            case "end":
+              return _context2.stop();
+          }
+        }
+      }, _callee2);
+    }));
+
+    return function onAvatar(_x3) {
+      return _ref2.apply(this, arguments);
+    };
+  }(); // return jsx
+
+
+  return /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(Popper, {
+    open: !!props.open,
+    anchorEl: props.anchorEl,
+    placement: props.placement || 'top-start',
+    transition: true,
+    style: {
+      zIndex: 1498
+    }
+  }, function (_ref3) {
+    var TransitionProps = _ref3.TransitionProps;
+    return /*#__PURE__*/React__default.createElement(Grow, _extends$4({}, TransitionProps, {
+      style: {
+        transformOrigin: 'left bottom'
+      }
+    }), /*#__PURE__*/React__default.createElement(Paper, {
+      sx: {
+        mb: 1,
+        ml: 1,
+        width: startMenuWidth,
+        border: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary),
+        height: startMenuWidth * 1.5,
+        background: theme.palette.background.paper,
+        borderRadius: "".concat(theme.shape.borderRadius * 2, "px")
+      },
+      elevation: 1
+    }, /*#__PURE__*/React__default.createElement(ClickAwayListener, {
+      onClickAway: function onClickAway() {
+        return avatarMenu || subMenu ? null : props.onClose();
+      }
+    }, /*#__PURE__*/React__default.createElement(Box, {
+      height: "100%",
+      width: "100%",
+      display: "flex",
+      flexDirection: "column"
+    }, /*#__PURE__*/React__default.createElement(Stack, {
+      sx: {
+        flex: 0,
+        width: '100%',
+        display: 'flex',
+        padding: 2,
+        alignItems: 'center',
+        borderBottom: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
+      },
+      spacing: 2,
+      direction: "row"
+    }, /*#__PURE__*/React__default.createElement(Box, {
+      sx: {
+        cursor: 'pointer'
+      },
+      onClick: function onClick(e) {
+        // check auth
+        if (!auth.account) {
+          e.preventDefault();
+          return auth.login();
+        } // pop up menu
+
+
+        setAvatarMenu(true);
+      },
+      ref: userMenuRef
+    }, auth.loading ? /*#__PURE__*/React__default.createElement(Skeleton, {
+      variant: "circular",
+      width: avatarWidth,
+      height: avatarWidth,
+      sx: {
+        minHeight: "".concat(avatarWidth, "px")
+      }
+    }) : /*#__PURE__*/React__default.createElement(MoonNFTAvatar, {
+      user: auth.user,
+      width: avatarWidth,
+      height: avatarWidth,
+      sx: {
+        color: "rgba(255, 255, 255, 0.25)"
+      },
+      TooltipProps: {
+        title: auth.account ? 'My Profile' : 'Login',
+        placement: 'right'
+      }
+    })), /*#__PURE__*/React__default.createElement(Box, {
+      flex: 1,
+      flexDirection: "column",
+      alignItems: "center"
+    }, auth.account ? /*#__PURE__*/React__default.createElement(Link, {
+      to: "/a/".concat(auth.account)
+    }, /*#__PURE__*/React__default.createElement(Box, {
+      component: "span",
+      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body1), {}, {
+        color: theme.palette.text.primary,
+        fontWeight: theme.typography.fontWeightMedium
+      })
+    }, auth.account.toLowerCase() === '0x9d4150274f0a67985a53513767ebf5988cef45a4' ? 'eden' : 'not eden')) : /*#__PURE__*/React__default.createElement(Box, {
+      component: "span",
+      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body1), {}, {
+        color: theme.palette.text.primary,
+        fontWeight: theme.typography.fontWeightMedium
+      }),
+      onClick: function onClick() {
+        return auth.login();
+      }
+    }, "Anonymous"), auth.account ? /*#__PURE__*/React__default.createElement(Box, {
+      component: "a",
+      target: "_BLANK",
+      href: "https://ftmscan.com/address/".concat(auth.account),
+      color: "rgba(255, 255, 255, 0.4)",
+      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body2), {}, {
+        display: 'block',
+        textDecoration: 'none'
+      })
+    }, "".concat(auth.account.substring(0, 8))) : /*#__PURE__*/React__default.createElement(Box, {
+      color: "rgba(255, 255, 255, 0.4)",
+      sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body2), {}, {
+        textDecoration: 'none'
+      })
+    }, "Anonymous")), auth.account ? /*#__PURE__*/React__default.createElement(Tooltip, {
+      title: "Logout"
+    }, /*#__PURE__*/React__default.createElement(IconButton, {
+      onClick: function onClick() {
+        return auth.logout();
+      }
+    }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+      icon: faSignOut,
+      size: "sm"
+    }))) : /*#__PURE__*/React__default.createElement(Tooltip, {
+      title: "Login"
+    }, /*#__PURE__*/React__default.createElement(IconButton, {
+      onClick: function onClick() {
+        return auth.login();
+      }
+    }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+      icon: faSignIn,
+      size: "sm"
+    })))), /*#__PURE__*/React__default.createElement(Box, {
+      sx: {
+        flex: 1
+      },
+      ref: subMenuRef
+    }, /*#__PURE__*/React__default.createElement(MenuList, null, app.apps.map(function (app) {
+      // return jsx
+      return /*#__PURE__*/React__default.createElement(MenuItem, {
+        id: "app-".concat(app.id),
+        key: "app-".concat(app.id),
+        onClick: function onClick() {
+          return setSubMenu(app.id);
+        },
+        selected: app.id === subMenu
+      }, app.name, /*#__PURE__*/React__default.createElement(Box, {
+        ml: "auto"
+      }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+        icon: faChevronRight
+      })));
+    })))))));
+  }), !!subMenu && /*#__PURE__*/React__default.createElement(Menu, {
+    open: !!subMenu,
+    onClose: function onClose() {
+      return setSubMenu(null);
+    },
+    anchorEl: subMenuRef === null || subMenuRef === void 0 ? void 0 : subMenuRef.current,
+    anchorOrigin: {
+      vertical: 'top',
+      horizontal: 'right'
+    },
+    transformOrigin: {
+      vertical: 'top',
+      horizontal: 'left'
+    },
+    MenuListProps: {
+      sx: {
+        border: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary),
+        borderRadius: "".concat(theme.shape.borderRadius, "px")
+      }
+    }
+  }, (((_app$apps$find = app.apps.find(function (app) {
+    return app.id === subMenu;
+  })) === null || _app$apps$find === void 0 ? void 0 : _app$apps$find.paths) || []).map(function (item, i) {
+    // return jsx
+    if (item === 'divider') return /*#__PURE__*/React__default.createElement(Divider, {
+      key: "sub-".concat(i)
+    }); // return menu
+
+    return /*#__PURE__*/React__default.createElement(MenuItem, {
+      key: "sub-".concat(item.path),
+      onClick: function onClick() {
+        return onTask(subMenu, item.path);
+      }
+    }, item.name);
+  })), /*#__PURE__*/React__default.createElement(MoonNFTPicker, {
+    open: !!avatarMenu,
+    title: "Select New Avatar",
+    onPick: function onPick(nft) {
+      return onAvatar(nft);
+    },
+    onClose: function onClose() {
+      return setAvatarMenu(false);
+    },
+    account: auth.account,
+    anchorEl: userMenuRef.current,
+    placement: "right-end"
+  }));
+}; // export default
+
+var MoonTaskBar = function MoonTaskBar() {
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // theme
+  var theme = useTheme();
+  var style = props.style || 'floating';
+  var desktop = useDesktop();
+  var position = props.position || 'bottom';
+
+  var _useState = useState(false),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      startMenu = _useState2[0],
+      setStartMenu = _useState2[1]; // menu ref
+
+
+  var startMenuRef = useRef(null); // widths
+
+  var taskBarSize = parseInt(theme.spacing(8).replace('px', ''));
+  var taskBarItemSize = parseInt(theme.spacing(6).replace('px', '')); // is vertical
+
+  var isVertical = ['left', 'right'].includes(position); // bring to front
+
+  var _onBringToFront = function onBringToFront(id) {
+    // bring task to front
+    desktop.bringTaskToFront({
+      id: id
+    });
+  }; // get tasks
+
+
+  var getTasks = function getTasks() {
+    // return sorted tasks
+    return _toConsumableArray$1(desktop.tasks || []).sort(function (a, b) {
+      // return a,b
+      if (a.order > b.order) return 1;
+      if (a.order < b.order) return -1;
+      return 0;
+    });
+  }; // return jsx
+
+
+  return /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(Box, {
+    sx: {
+      width: isVertical ? taskBarSize : style === 'floating' ? "calc(100vw - ".concat(theme.spacing(2), ")") : '100vw',
+      height: isVertical ? style === 'floating' ? "calc(100vh - ".concat(theme.spacing(2), ")") : '100vh' : taskBarSize,
+      margin: style === 'floating' ? theme.spacing(1) : undefined,
+      display: 'flex'
+    },
+    ref: startMenuRef
+  }, /*#__PURE__*/React__default.createElement(Paper, {
+    sx: {
+      flex: 1,
+      display: 'flex',
+      borderRadius: style === 'fixed' ? undefined : 2
+    },
+    elevation: 1
+  }, /*#__PURE__*/React__default.createElement(Stack, {
+    direction: isVertical ? 'column' : 'row',
+    spacing: 1,
+    sx: {
+      px: isVertical ? undefined : theme.spacing(1),
+      py: isVertical ? theme.spacing(1) : undefined,
+      flex: 1,
+      border: style === 'floating' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
+      alignItems: isVertical ? undefined : 'center',
+      borderRadius: style === 'fixed' ? undefined : 2,
+      justifyContent: isVertical ? 'center' : undefined,
+      borderTop: style === 'fixed' && position === 'bottom' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
+      borderLeft: style === 'fixed' && position === 'right' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
+      borderRight: style === 'fixed' && position === 'left' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
+      borderBottom: style === 'fixed' && position === 'top' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined
+    }
+  }, /*#__PURE__*/React__default.createElement(Button, {
+    sx: {
+      mx: isVertical ? 'auto!important' : undefined,
+      width: "".concat(taskBarItemSize, "px"),
+      color: theme.palette.text.primary,
+      height: "".concat(taskBarItemSize, "px"),
+      minWidth: "".concat(taskBarItemSize, "px"),
+      background: 'transparent',
+      borderWidth: theme.shape.borderWidth,
+      borderColor: startMenu ? undefined : 'transparent'
+    },
+    variant: "outlined",
+    color: "primary",
+    onClick: function onClick(e) {
+      return setStartMenu(true);
+    }
+  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+    icon: faMoon,
+    size: "lg"
+  })), /*#__PURE__*/React__default.createElement(Box, {
+    mx: isVertical ? 'auto!important' : undefined,
+    width: isVertical ? theme.spacing(4) : undefined,
+    height: isVertical ? undefined : theme.spacing(4),
+    borderTop: isVertical ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
+    borderRight: isVertical ? undefined : "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
+  }), /*#__PURE__*/React__default.createElement(Stack, {
+    direction: isVertical ? 'column' : 'row',
+    sx: {
+      px: theme.spacing(1),
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: isVertical ? 'flex-start' : undefined
+    }
+  }, getTasks().map(function (task) {
+    // return jsx
+    return /*#__PURE__*/React__default.createElement(MoonTask, {
+      key: "task-".concat(task.id),
+      item: task,
+      onBringToFront: function onBringToFront() {
+        return _onBringToFront(task.id);
+      }
+    });
+  })), /*#__PURE__*/React__default.createElement(Box, {
+    mx: isVertical ? 'auto!important' : undefined,
+    width: isVertical ? theme.spacing(4) : undefined,
+    height: isVertical ? undefined : theme.spacing(4),
+    borderTop: isVertical ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
+    borderRight: isVertical ? undefined : "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
+  }), /*#__PURE__*/React__default.createElement(Button, {
+    sx: {
+      mx: isVertical ? 'auto!important' : undefined,
+      width: "".concat(taskBarItemSize, "px"),
+      color: theme.palette.text.primary,
+      height: "".concat(taskBarItemSize, "px"),
+      minWidth: "".concat(taskBarItemSize, "px"),
+      background: 'transparent'
+    },
+    variant: "text"
+  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+    icon: faBell,
+    size: "lg"
+  }))))), /*#__PURE__*/React__default.createElement(MoonStartMenu, {
+    open: !!startMenu,
+    anchorEl: startMenuRef.current,
+    placement: "top-start",
+    onClose: function onClose() {
+      return setStartMenu(false);
+    }
+  }));
+}; // export default
+
+// import dependencies
+
+var MoonNFTList = function MoonNFTList() {
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // use theme
+  var theme = useTheme(); // width/height
+
+  var NFTWidth = props.width || 200; // return jsx
+
+  return /*#__PURE__*/React__default.createElement(Grid, {
+    container: true,
+    spacing: 1
+  }, (props.items || []).map(function (item) {
+    // return item
+    return /*#__PURE__*/React__default.createElement(Grid, {
+      item: true,
+      xs: 3,
+      key: item.id
+    }, /*#__PURE__*/React__default.createElement(MoonNFTImage, {
+      item: item,
+      width: NFTWidth,
+      height: NFTWidth,
+      onClick: function onClick() {
+        return props.onPick && props.onPick(item);
+      },
+      sx: {
+        cursor: 'pointer',
+        maxWidth: '100%',
+        borderRadius: "".concat(theme.shape.borderRadius, "px")
+      }
+    }));
+  }));
+}; // export default
+
+function _setPrototypeOf(o, p) {
+  _setPrototypeOf = Object.setPrototypeOf || function _setPrototypeOf(o, p) {
+    o.__proto__ = p;
+    return o;
+  };
+
+  return _setPrototypeOf(o, p);
+}
+
+function _inheritsLoose(subClass, superClass) {
+  subClass.prototype = Object.create(superClass.prototype);
+  subClass.prototype.constructor = subClass;
+  _setPrototypeOf(subClass, superClass);
+}
+
+/**
+ * A collection of shims that provide minimal functionality of the ES6 collections.
+ *
+ * These implementations are not meant to be used outside of the ResizeObserver
+ * modules as they cover only a limited range of use cases.
+ */
+/* eslint-disable require-jsdoc, valid-jsdoc */
+var MapShim = (function () {
+    if (typeof Map !== 'undefined') {
+        return Map;
+    }
+    /**
+     * Returns index in provided array that matches the specified key.
+     *
+     * @param {Array<Array>} arr
+     * @param {*} key
+     * @returns {number}
+     */
+    function getIndex(arr, key) {
+        var result = -1;
+        arr.some(function (entry, index) {
+            if (entry[0] === key) {
+                result = index;
+                return true;
+            }
+            return false;
+        });
+        return result;
+    }
+    return /** @class */ (function () {
+        function class_1() {
+            this.__entries__ = [];
+        }
+        Object.defineProperty(class_1.prototype, "size", {
+            /**
+             * @returns {boolean}
+             */
+            get: function () {
+                return this.__entries__.length;
+            },
+            enumerable: true,
+            configurable: true
+        });
+        /**
+         * @param {*} key
+         * @returns {*}
+         */
+        class_1.prototype.get = function (key) {
+            var index = getIndex(this.__entries__, key);
+            var entry = this.__entries__[index];
+            return entry && entry[1];
+        };
+        /**
+         * @param {*} key
+         * @param {*} value
+         * @returns {void}
+         */
+        class_1.prototype.set = function (key, value) {
+            var index = getIndex(this.__entries__, key);
+            if (~index) {
+                this.__entries__[index][1] = value;
+            }
+            else {
+                this.__entries__.push([key, value]);
+            }
+        };
+        /**
+         * @param {*} key
+         * @returns {void}
+         */
+        class_1.prototype.delete = function (key) {
+            var entries = this.__entries__;
+            var index = getIndex(entries, key);
+            if (~index) {
+                entries.splice(index, 1);
+            }
+        };
+        /**
+         * @param {*} key
+         * @returns {void}
+         */
+        class_1.prototype.has = function (key) {
+            return !!~getIndex(this.__entries__, key);
+        };
+        /**
+         * @returns {void}
+         */
+        class_1.prototype.clear = function () {
+            this.__entries__.splice(0);
+        };
+        /**
+         * @param {Function} callback
+         * @param {*} [ctx=null]
+         * @returns {void}
+         */
+        class_1.prototype.forEach = function (callback, ctx) {
+            if (ctx === void 0) { ctx = null; }
+            for (var _i = 0, _a = this.__entries__; _i < _a.length; _i++) {
+                var entry = _a[_i];
+                callback.call(ctx, entry[1], entry[0]);
+            }
+        };
+        return class_1;
+    }());
+})();
+
+/**
+ * Detects whether window and document objects are available in current environment.
+ */
+var isBrowser = typeof window !== 'undefined' && typeof document !== 'undefined' && window.document === document;
+
+// Returns global object of a current environment.
+var global$1 = (function () {
+    if (typeof global !== 'undefined' && global.Math === Math) {
+        return global;
+    }
+    if (typeof self !== 'undefined' && self.Math === Math) {
+        return self;
+    }
+    if (typeof window !== 'undefined' && window.Math === Math) {
+        return window;
+    }
+    // eslint-disable-next-line no-new-func
+    return Function('return this')();
+})();
+
+/**
+ * A shim for the requestAnimationFrame which falls back to the setTimeout if
+ * first one is not supported.
+ *
+ * @returns {number} Requests' identifier.
+ */
+var requestAnimationFrame$1 = (function () {
+    if (typeof requestAnimationFrame === 'function') {
+        // It's required to use a bounded function because IE sometimes throws
+        // an "Invalid calling object" error if rAF is invoked without the global
+        // object on the left hand side.
+        return requestAnimationFrame.bind(global$1);
+    }
+    return function (callback) { return setTimeout(function () { return callback(Date.now()); }, 1000 / 60); };
+})();
+
+// Defines minimum timeout before adding a trailing call.
+var trailingTimeout = 2;
+/**
+ * Creates a wrapper function which ensures that provided callback will be
+ * invoked only once during the specified delay period.
+ *
+ * @param {Function} callback - Function to be invoked after the delay period.
+ * @param {number} delay - Delay after which to invoke callback.
+ * @returns {Function}
+ */
+function throttle$1 (callback, delay) {
+    var leadingCall = false, trailingCall = false, lastCallTime = 0;
+    /**
+     * Invokes the original callback function and schedules new invocation if
+     * the "proxy" was called during current request.
+     *
+     * @returns {void}
+     */
+    function resolvePending() {
+        if (leadingCall) {
+            leadingCall = false;
+            callback();
+        }
+        if (trailingCall) {
+            proxy();
+        }
+    }
+    /**
+     * Callback invoked after the specified delay. It will further postpone
+     * invocation of the original function delegating it to the
+     * requestAnimationFrame.
+     *
+     * @returns {void}
+     */
+    function timeoutCallback() {
+        requestAnimationFrame$1(resolvePending);
+    }
+    /**
+     * Schedules invocation of the original function.
+     *
+     * @returns {void}
+     */
+    function proxy() {
+        var timeStamp = Date.now();
+        if (leadingCall) {
+            // Reject immediately following calls.
+            if (timeStamp - lastCallTime < trailingTimeout) {
+                return;
+            }
+            // Schedule new call to be in invoked when the pending one is resolved.
+            // This is important for "transitions" which never actually start
+            // immediately so there is a chance that we might miss one if change
+            // happens amids the pending invocation.
+            trailingCall = true;
+        }
+        else {
+            leadingCall = true;
+            trailingCall = false;
+            setTimeout(timeoutCallback, delay);
+        }
+        lastCallTime = timeStamp;
+    }
+    return proxy;
+}
+
+// Minimum delay before invoking the update of observers.
+var REFRESH_DELAY = 20;
+// A list of substrings of CSS properties used to find transition events that
+// might affect dimensions of observed elements.
+var transitionKeys = ['top', 'right', 'bottom', 'left', 'width', 'height', 'size', 'weight'];
+// Check if MutationObserver is available.
+var mutationObserverSupported = typeof MutationObserver !== 'undefined';
+/**
+ * Singleton controller class which handles updates of ResizeObserver instances.
+ */
+var ResizeObserverController = /** @class */ (function () {
+    /**
+     * Creates a new instance of ResizeObserverController.
+     *
+     * @private
+     */
+    function ResizeObserverController() {
+        /**
+         * Indicates whether DOM listeners have been added.
+         *
+         * @private {boolean}
+         */
+        this.connected_ = false;
+        /**
+         * Tells that controller has subscribed for Mutation Events.
+         *
+         * @private {boolean}
+         */
+        this.mutationEventsAdded_ = false;
+        /**
+         * Keeps reference to the instance of MutationObserver.
+         *
+         * @private {MutationObserver}
+         */
+        this.mutationsObserver_ = null;
+        /**
+         * A list of connected observers.
+         *
+         * @private {Array<ResizeObserverSPI>}
+         */
+        this.observers_ = [];
+        this.onTransitionEnd_ = this.onTransitionEnd_.bind(this);
+        this.refresh = throttle$1(this.refresh.bind(this), REFRESH_DELAY);
+    }
+    /**
+     * Adds observer to observers list.
+     *
+     * @param {ResizeObserverSPI} observer - Observer to be added.
+     * @returns {void}
+     */
+    ResizeObserverController.prototype.addObserver = function (observer) {
+        if (!~this.observers_.indexOf(observer)) {
+            this.observers_.push(observer);
+        }
+        // Add listeners if they haven't been added yet.
+        if (!this.connected_) {
+            this.connect_();
+        }
+    };
+    /**
+     * Removes observer from observers list.
+     *
+     * @param {ResizeObserverSPI} observer - Observer to be removed.
+     * @returns {void}
+     */
+    ResizeObserverController.prototype.removeObserver = function (observer) {
+        var observers = this.observers_;
+        var index = observers.indexOf(observer);
+        // Remove observer if it's present in registry.
+        if (~index) {
+            observers.splice(index, 1);
+        }
+        // Remove listeners if controller has no connected observers.
+        if (!observers.length && this.connected_) {
+            this.disconnect_();
+        }
+    };
+    /**
+     * Invokes the update of observers. It will continue running updates insofar
+     * it detects changes.
+     *
+     * @returns {void}
+     */
+    ResizeObserverController.prototype.refresh = function () {
+        var changesDetected = this.updateObservers_();
+        // Continue running updates if changes have been detected as there might
+        // be future ones caused by CSS transitions.
+        if (changesDetected) {
+            this.refresh();
+        }
+    };
+    /**
+     * Updates every observer from observers list and notifies them of queued
+     * entries.
+     *
+     * @private
+     * @returns {boolean} Returns "true" if any observer has detected changes in
+     *      dimensions of it's elements.
+     */
+    ResizeObserverController.prototype.updateObservers_ = function () {
+        // Collect observers that have active observations.
+        var activeObservers = this.observers_.filter(function (observer) {
+            return observer.gatherActive(), observer.hasActive();
+        });
+        // Deliver notifications in a separate cycle in order to avoid any
+        // collisions between observers, e.g. when multiple instances of
+        // ResizeObserver are tracking the same element and the callback of one
+        // of them changes content dimensions of the observed target. Sometimes
+        // this may result in notifications being blocked for the rest of observers.
+        activeObservers.forEach(function (observer) { return observer.broadcastActive(); });
+        return activeObservers.length > 0;
+    };
+    /**
+     * Initializes DOM listeners.
+     *
+     * @private
+     * @returns {void}
+     */
+    ResizeObserverController.prototype.connect_ = function () {
+        // Do nothing if running in a non-browser environment or if listeners
+        // have been already added.
+        if (!isBrowser || this.connected_) {
+            return;
+        }
+        // Subscription to the "Transitionend" event is used as a workaround for
+        // delayed transitions. This way it's possible to capture at least the
+        // final state of an element.
+        document.addEventListener('transitionend', this.onTransitionEnd_);
+        window.addEventListener('resize', this.refresh);
+        if (mutationObserverSupported) {
+            this.mutationsObserver_ = new MutationObserver(this.refresh);
+            this.mutationsObserver_.observe(document, {
+                attributes: true,
+                childList: true,
+                characterData: true,
+                subtree: true
+            });
+        }
+        else {
+            document.addEventListener('DOMSubtreeModified', this.refresh);
+            this.mutationEventsAdded_ = true;
+        }
+        this.connected_ = true;
+    };
+    /**
+     * Removes DOM listeners.
+     *
+     * @private
+     * @returns {void}
+     */
+    ResizeObserverController.prototype.disconnect_ = function () {
+        // Do nothing if running in a non-browser environment or if listeners
+        // have been already removed.
+        if (!isBrowser || !this.connected_) {
+            return;
+        }
+        document.removeEventListener('transitionend', this.onTransitionEnd_);
+        window.removeEventListener('resize', this.refresh);
+        if (this.mutationsObserver_) {
+            this.mutationsObserver_.disconnect();
+        }
+        if (this.mutationEventsAdded_) {
+            document.removeEventListener('DOMSubtreeModified', this.refresh);
+        }
+        this.mutationsObserver_ = null;
+        this.mutationEventsAdded_ = false;
+        this.connected_ = false;
+    };
+    /**
+     * "Transitionend" event handler.
+     *
+     * @private
+     * @param {TransitionEvent} event
+     * @returns {void}
+     */
+    ResizeObserverController.prototype.onTransitionEnd_ = function (_a) {
+        var _b = _a.propertyName, propertyName = _b === void 0 ? '' : _b;
+        // Detect whether transition may affect dimensions of an element.
+        var isReflowProperty = transitionKeys.some(function (key) {
+            return !!~propertyName.indexOf(key);
+        });
+        if (isReflowProperty) {
+            this.refresh();
+        }
+    };
+    /**
+     * Returns instance of the ResizeObserverController.
+     *
+     * @returns {ResizeObserverController}
+     */
+    ResizeObserverController.getInstance = function () {
+        if (!this.instance_) {
+            this.instance_ = new ResizeObserverController();
+        }
+        return this.instance_;
+    };
+    /**
+     * Holds reference to the controller's instance.
+     *
+     * @private {ResizeObserverController}
+     */
+    ResizeObserverController.instance_ = null;
+    return ResizeObserverController;
+}());
+
+/**
+ * Defines non-writable/enumerable properties of the provided target object.
+ *
+ * @param {Object} target - Object for which to define properties.
+ * @param {Object} props - Properties to be defined.
+ * @returns {Object} Target object.
+ */
+var defineConfigurable = (function (target, props) {
+    for (var _i = 0, _a = Object.keys(props); _i < _a.length; _i++) {
+        var key = _a[_i];
+        Object.defineProperty(target, key, {
+            value: props[key],
+            enumerable: false,
+            writable: false,
+            configurable: true
+        });
+    }
+    return target;
+});
+
+/**
+ * Returns the global object associated with provided element.
+ *
+ * @param {Object} target
+ * @returns {Object}
+ */
+var getWindowOf$1 = (function (target) {
+    // Assume that the element is an instance of Node, which means that it
+    // has the "ownerDocument" property from which we can retrieve a
+    // corresponding global object.
+    var ownerGlobal = target && target.ownerDocument && target.ownerDocument.defaultView;
+    // Return the local global object if it's not possible extract one from
+    // provided element.
+    return ownerGlobal || global$1;
+});
+
+// Placeholder of an empty content rectangle.
+var emptyRect = createRectInit(0, 0, 0, 0);
+/**
+ * Converts provided string to a number.
+ *
+ * @param {number|string} value
+ * @returns {number}
+ */
+function toFloat(value) {
+    return parseFloat(value) || 0;
+}
+/**
+ * Extracts borders size from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @param {...string} positions - Borders positions (top, right, ...)
+ * @returns {number}
+ */
+function getBordersSize(styles) {
+    var positions = [];
+    for (var _i = 1; _i < arguments.length; _i++) {
+        positions[_i - 1] = arguments[_i];
+    }
+    return positions.reduce(function (size, position) {
+        var value = styles['border-' + position + '-width'];
+        return size + toFloat(value);
+    }, 0);
+}
+/**
+ * Extracts paddings sizes from provided styles.
+ *
+ * @param {CSSStyleDeclaration} styles
+ * @returns {Object} Paddings box.
+ */
+function getPaddings(styles) {
+    var positions = ['top', 'right', 'bottom', 'left'];
+    var paddings = {};
+    for (var _i = 0, positions_1 = positions; _i < positions_1.length; _i++) {
+        var position = positions_1[_i];
+        var value = styles['padding-' + position];
+        paddings[position] = toFloat(value);
+    }
+    return paddings;
+}
+/**
+ * Calculates content rectangle of provided SVG element.
+ *
+ * @param {SVGGraphicsElement} target - Element content rectangle of which needs
+ *      to be calculated.
+ * @returns {DOMRectInit}
+ */
+function getSVGContentRect(target) {
+    var bbox = target.getBBox();
+    return createRectInit(0, 0, bbox.width, bbox.height);
+}
+/**
+ * Calculates content rectangle of provided HTMLElement.
+ *
+ * @param {HTMLElement} target - Element for which to calculate the content rectangle.
+ * @returns {DOMRectInit}
+ */
+function getHTMLElementContentRect(target) {
+    // Client width & height properties can't be
+    // used exclusively as they provide rounded values.
+    var clientWidth = target.clientWidth, clientHeight = target.clientHeight;
+    // By this condition we can catch all non-replaced inline, hidden and
+    // detached elements. Though elements with width & height properties less
+    // than 0.5 will be discarded as well.
+    //
+    // Without it we would need to implement separate methods for each of
+    // those cases and it's not possible to perform a precise and performance
+    // effective test for hidden elements. E.g. even jQuery's ':visible' filter
+    // gives wrong results for elements with width & height less than 0.5.
+    if (!clientWidth && !clientHeight) {
+        return emptyRect;
+    }
+    var styles = getWindowOf$1(target).getComputedStyle(target);
+    var paddings = getPaddings(styles);
+    var horizPad = paddings.left + paddings.right;
+    var vertPad = paddings.top + paddings.bottom;
+    // Computed styles of width & height are being used because they are the
+    // only dimensions available to JS that contain non-rounded values. It could
+    // be possible to utilize the getBoundingClientRect if only it's data wasn't
+    // affected by CSS transformations let alone paddings, borders and scroll bars.
+    var width = toFloat(styles.width), height = toFloat(styles.height);
+    // Width & height include paddings and borders when the 'border-box' box
+    // model is applied (except for IE).
+    if (styles.boxSizing === 'border-box') {
+        // Following conditions are required to handle Internet Explorer which
+        // doesn't include paddings and borders to computed CSS dimensions.
+        //
+        // We can say that if CSS dimensions + paddings are equal to the "client"
+        // properties then it's either IE, and thus we don't need to subtract
+        // anything, or an element merely doesn't have paddings/borders styles.
+        if (Math.round(width + horizPad) !== clientWidth) {
+            width -= getBordersSize(styles, 'left', 'right') + horizPad;
+        }
+        if (Math.round(height + vertPad) !== clientHeight) {
+            height -= getBordersSize(styles, 'top', 'bottom') + vertPad;
+        }
+    }
+    // Following steps can't be applied to the document's root element as its
+    // client[Width/Height] properties represent viewport area of the window.
+    // Besides, it's as well not necessary as the <html> itself neither has
+    // rendered scroll bars nor it can be clipped.
+    if (!isDocumentElement(target)) {
+        // In some browsers (only in Firefox, actually) CSS width & height
+        // include scroll bars size which can be removed at this step as scroll
+        // bars are the only difference between rounded dimensions + paddings
+        // and "client" properties, though that is not always true in Chrome.
+        var vertScrollbar = Math.round(width + horizPad) - clientWidth;
+        var horizScrollbar = Math.round(height + vertPad) - clientHeight;
+        // Chrome has a rather weird rounding of "client" properties.
+        // E.g. for an element with content width of 314.2px it sometimes gives
+        // the client width of 315px and for the width of 314.7px it may give
+        // 314px. And it doesn't happen all the time. So just ignore this delta
+        // as a non-relevant.
+        if (Math.abs(vertScrollbar) !== 1) {
+            width -= vertScrollbar;
+        }
+        if (Math.abs(horizScrollbar) !== 1) {
+            height -= horizScrollbar;
+        }
+    }
+    return createRectInit(paddings.left, paddings.top, width, height);
+}
+/**
+ * Checks whether provided element is an instance of the SVGGraphicsElement.
+ *
+ * @param {Element} target - Element to be checked.
+ * @returns {boolean}
+ */
+var isSVGGraphicsElement = (function () {
+    // Some browsers, namely IE and Edge, don't have the SVGGraphicsElement
+    // interface.
+    if (typeof SVGGraphicsElement !== 'undefined') {
+        return function (target) { return target instanceof getWindowOf$1(target).SVGGraphicsElement; };
+    }
+    // If it's so, then check that element is at least an instance of the
+    // SVGElement and that it has the "getBBox" method.
+    // eslint-disable-next-line no-extra-parens
+    return function (target) { return (target instanceof getWindowOf$1(target).SVGElement &&
+        typeof target.getBBox === 'function'); };
+})();
+/**
+ * Checks whether provided element is a document element (<html>).
+ *
+ * @param {Element} target - Element to be checked.
+ * @returns {boolean}
+ */
+function isDocumentElement(target) {
+    return target === getWindowOf$1(target).document.documentElement;
+}
+/**
+ * Calculates an appropriate content rectangle for provided html or svg element.
+ *
+ * @param {Element} target - Element content rectangle of which needs to be calculated.
+ * @returns {DOMRectInit}
+ */
+function getContentRect$1(target) {
+    if (!isBrowser) {
+        return emptyRect;
+    }
+    if (isSVGGraphicsElement(target)) {
+        return getSVGContentRect(target);
+    }
+    return getHTMLElementContentRect(target);
+}
+/**
+ * Creates rectangle with an interface of the DOMRectReadOnly.
+ * Spec: https://drafts.fxtf.org/geometry/#domrectreadonly
+ *
+ * @param {DOMRectInit} rectInit - Object with rectangle's x/y coordinates and dimensions.
+ * @returns {DOMRectReadOnly}
+ */
+function createReadOnlyRect(_a) {
+    var x = _a.x, y = _a.y, width = _a.width, height = _a.height;
+    // If DOMRectReadOnly is available use it as a prototype for the rectangle.
+    var Constr = typeof DOMRectReadOnly !== 'undefined' ? DOMRectReadOnly : Object;
+    var rect = Object.create(Constr.prototype);
+    // Rectangle's properties are not writable and non-enumerable.
+    defineConfigurable(rect, {
+        x: x, y: y, width: width, height: height,
+        top: y,
+        right: x + width,
+        bottom: height + y,
+        left: x
+    });
+    return rect;
+}
+/**
+ * Creates DOMRectInit object based on the provided dimensions and the x/y coordinates.
+ * Spec: https://drafts.fxtf.org/geometry/#dictdef-domrectinit
+ *
+ * @param {number} x - X coordinate.
+ * @param {number} y - Y coordinate.
+ * @param {number} width - Rectangle's width.
+ * @param {number} height - Rectangle's height.
+ * @returns {DOMRectInit}
+ */
+function createRectInit(x, y, width, height) {
+    return { x: x, y: y, width: width, height: height };
+}
+
+/**
+ * Class that is responsible for computations of the content rectangle of
+ * provided DOM element and for keeping track of it's changes.
+ */
+var ResizeObservation = /** @class */ (function () {
+    /**
+     * Creates an instance of ResizeObservation.
+     *
+     * @param {Element} target - Element to be observed.
+     */
+    function ResizeObservation(target) {
+        /**
+         * Broadcasted width of content rectangle.
+         *
+         * @type {number}
+         */
+        this.broadcastWidth = 0;
+        /**
+         * Broadcasted height of content rectangle.
+         *
+         * @type {number}
+         */
+        this.broadcastHeight = 0;
+        /**
+         * Reference to the last observed content rectangle.
+         *
+         * @private {DOMRectInit}
+         */
+        this.contentRect_ = createRectInit(0, 0, 0, 0);
+        this.target = target;
+    }
+    /**
+     * Updates content rectangle and tells whether it's width or height properties
+     * have changed since the last broadcast.
+     *
+     * @returns {boolean}
+     */
+    ResizeObservation.prototype.isActive = function () {
+        var rect = getContentRect$1(this.target);
+        this.contentRect_ = rect;
+        return (rect.width !== this.broadcastWidth ||
+            rect.height !== this.broadcastHeight);
+    };
+    /**
+     * Updates 'broadcastWidth' and 'broadcastHeight' properties with a data
+     * from the corresponding properties of the last observed content rectangle.
+     *
+     * @returns {DOMRectInit} Last observed content rectangle.
+     */
+    ResizeObservation.prototype.broadcastRect = function () {
+        var rect = this.contentRect_;
+        this.broadcastWidth = rect.width;
+        this.broadcastHeight = rect.height;
+        return rect;
+    };
+    return ResizeObservation;
+}());
+
+var ResizeObserverEntry = /** @class */ (function () {
+    /**
+     * Creates an instance of ResizeObserverEntry.
+     *
+     * @param {Element} target - Element that is being observed.
+     * @param {DOMRectInit} rectInit - Data of the element's content rectangle.
+     */
+    function ResizeObserverEntry(target, rectInit) {
+        var contentRect = createReadOnlyRect(rectInit);
+        // According to the specification following properties are not writable
+        // and are also not enumerable in the native implementation.
+        //
+        // Property accessors are not being used as they'd require to define a
+        // private WeakMap storage which may cause memory leaks in browsers that
+        // don't support this type of collections.
+        defineConfigurable(this, { target: target, contentRect: contentRect });
+    }
+    return ResizeObserverEntry;
+}());
+
+var ResizeObserverSPI = /** @class */ (function () {
+    /**
+     * Creates a new instance of ResizeObserver.
+     *
+     * @param {ResizeObserverCallback} callback - Callback function that is invoked
+     *      when one of the observed elements changes it's content dimensions.
+     * @param {ResizeObserverController} controller - Controller instance which
+     *      is responsible for the updates of observer.
+     * @param {ResizeObserver} callbackCtx - Reference to the public
+     *      ResizeObserver instance which will be passed to callback function.
+     */
+    function ResizeObserverSPI(callback, controller, callbackCtx) {
+        /**
+         * Collection of resize observations that have detected changes in dimensions
+         * of elements.
+         *
+         * @private {Array<ResizeObservation>}
+         */
+        this.activeObservations_ = [];
+        /**
+         * Registry of the ResizeObservation instances.
+         *
+         * @private {Map<Element, ResizeObservation>}
+         */
+        this.observations_ = new MapShim();
+        if (typeof callback !== 'function') {
+            throw new TypeError('The callback provided as parameter 1 is not a function.');
+        }
+        this.callback_ = callback;
+        this.controller_ = controller;
+        this.callbackCtx_ = callbackCtx;
+    }
+    /**
+     * Starts observing provided element.
+     *
+     * @param {Element} target - Element to be observed.
+     * @returns {void}
+     */
+    ResizeObserverSPI.prototype.observe = function (target) {
+        if (!arguments.length) {
+            throw new TypeError('1 argument required, but only 0 present.');
+        }
+        // Do nothing if current environment doesn't have the Element interface.
+        if (typeof Element === 'undefined' || !(Element instanceof Object)) {
+            return;
+        }
+        if (!(target instanceof getWindowOf$1(target).Element)) {
+            throw new TypeError('parameter 1 is not of type "Element".');
+        }
+        var observations = this.observations_;
+        // Do nothing if element is already being observed.
+        if (observations.has(target)) {
+            return;
+        }
+        observations.set(target, new ResizeObservation(target));
+        this.controller_.addObserver(this);
+        // Force the update of observations.
+        this.controller_.refresh();
+    };
+    /**
+     * Stops observing provided element.
+     *
+     * @param {Element} target - Element to stop observing.
+     * @returns {void}
+     */
+    ResizeObserverSPI.prototype.unobserve = function (target) {
+        if (!arguments.length) {
+            throw new TypeError('1 argument required, but only 0 present.');
+        }
+        // Do nothing if current environment doesn't have the Element interface.
+        if (typeof Element === 'undefined' || !(Element instanceof Object)) {
+            return;
+        }
+        if (!(target instanceof getWindowOf$1(target).Element)) {
+            throw new TypeError('parameter 1 is not of type "Element".');
+        }
+        var observations = this.observations_;
+        // Do nothing if element is not being observed.
+        if (!observations.has(target)) {
+            return;
+        }
+        observations.delete(target);
+        if (!observations.size) {
+            this.controller_.removeObserver(this);
+        }
+    };
+    /**
+     * Stops observing all elements.
+     *
+     * @returns {void}
+     */
+    ResizeObserverSPI.prototype.disconnect = function () {
+        this.clearActive();
+        this.observations_.clear();
+        this.controller_.removeObserver(this);
+    };
+    /**
+     * Collects observation instances the associated element of which has changed
+     * it's content rectangle.
+     *
+     * @returns {void}
+     */
+    ResizeObserverSPI.prototype.gatherActive = function () {
+        var _this = this;
+        this.clearActive();
+        this.observations_.forEach(function (observation) {
+            if (observation.isActive()) {
+                _this.activeObservations_.push(observation);
+            }
+        });
+    };
+    /**
+     * Invokes initial callback function with a list of ResizeObserverEntry
+     * instances collected from active resize observations.
+     *
+     * @returns {void}
+     */
+    ResizeObserverSPI.prototype.broadcastActive = function () {
+        // Do nothing if observer doesn't have active observations.
+        if (!this.hasActive()) {
+            return;
+        }
+        var ctx = this.callbackCtx_;
+        // Create ResizeObserverEntry instance for every active observation.
+        var entries = this.activeObservations_.map(function (observation) {
+            return new ResizeObserverEntry(observation.target, observation.broadcastRect());
+        });
+        this.callback_.call(ctx, entries, ctx);
+        this.clearActive();
+    };
+    /**
+     * Clears the collection of active observations.
+     *
+     * @returns {void}
+     */
+    ResizeObserverSPI.prototype.clearActive = function () {
+        this.activeObservations_.splice(0);
+    };
+    /**
+     * Tells whether observer has active observations.
+     *
+     * @returns {boolean}
+     */
+    ResizeObserverSPI.prototype.hasActive = function () {
+        return this.activeObservations_.length > 0;
+    };
+    return ResizeObserverSPI;
+}());
+
+// Registry of internal observers. If WeakMap is not available use current shim
+// for the Map collection as it has all required methods and because WeakMap
+// can't be fully polyfilled anyway.
+var observers = typeof WeakMap !== 'undefined' ? new WeakMap() : new MapShim();
+/**
+ * ResizeObserver API. Encapsulates the ResizeObserver SPI implementation
+ * exposing only those methods and properties that are defined in the spec.
+ */
+var ResizeObserver = /** @class */ (function () {
+    /**
+     * Creates a new instance of ResizeObserver.
+     *
+     * @param {ResizeObserverCallback} callback - Callback that is invoked when
+     *      dimensions of the observed elements change.
+     */
+    function ResizeObserver(callback) {
+        if (!(this instanceof ResizeObserver)) {
+            throw new TypeError('Cannot call a class as a function.');
+        }
+        if (!arguments.length) {
+            throw new TypeError('1 argument required, but only 0 present.');
+        }
+        var controller = ResizeObserverController.getInstance();
+        var observer = new ResizeObserverSPI(callback, controller, this);
+        observers.set(this, observer);
+    }
+    return ResizeObserver;
+}());
+// Expose public methods of ResizeObserver.
+[
+    'observe',
+    'unobserve',
+    'disconnect'
+].forEach(function (method) {
+    ResizeObserver.prototype[method] = function () {
+        var _a;
+        return (_a = observers.get(this))[method].apply(_a, arguments);
+    };
+});
+
+var index$1 = (function () {
+    // Export existing implementation if available.
+    if (typeof global$1.ResizeObserver !== 'undefined') {
+        return global$1.ResizeObserver;
+    }
+    return ResizeObserver;
+})();
+
+var types = ['client', 'offset', 'scroll', 'bounds', 'margin'];
+function getTypes(props) {
+  var allowedTypes = [];
+  types.forEach(function (type) {
+    if (props[type]) {
+      allowedTypes.push(type);
+    }
+  });
+  return allowedTypes;
+}
+
+function getContentRect(node, types) {
+  var calculations = {};
+
+  if (types.indexOf('client') > -1) {
+    calculations.client = {
+      top: node.clientTop,
+      left: node.clientLeft,
+      width: node.clientWidth,
+      height: node.clientHeight
+    };
+  }
+
+  if (types.indexOf('offset') > -1) {
+    calculations.offset = {
+      top: node.offsetTop,
+      left: node.offsetLeft,
+      width: node.offsetWidth,
+      height: node.offsetHeight
+    };
+  }
+
+  if (types.indexOf('scroll') > -1) {
+    calculations.scroll = {
+      top: node.scrollTop,
+      left: node.scrollLeft,
+      width: node.scrollWidth,
+      height: node.scrollHeight
+    };
+  }
+
+  if (types.indexOf('bounds') > -1) {
+    var rect = node.getBoundingClientRect();
+    calculations.bounds = {
+      top: rect.top,
+      right: rect.right,
+      bottom: rect.bottom,
+      left: rect.left,
+      width: rect.width,
+      height: rect.height
+    };
+  }
+
+  if (types.indexOf('margin') > -1) {
+    var styles = getComputedStyle(node);
+    calculations.margin = {
+      top: styles ? parseInt(styles.marginTop) : 0,
+      right: styles ? parseInt(styles.marginRight) : 0,
+      bottom: styles ? parseInt(styles.marginBottom) : 0,
+      left: styles ? parseInt(styles.marginLeft) : 0
+    };
+  }
+
+  return calculations;
+}
+
+/**
+ * Returns the global window object associated with provided element.
+ */
+function getWindowOf(target) {
+  // Assume that the element is an instance of Node, which means that it
+  // has the "ownerDocument" property from which we can retrieve a
+  // corresponding global object.
+  var ownerGlobal = target && target.ownerDocument && target.ownerDocument.defaultView; // Return the local window object if it's not possible extract one from
+  // provided element.
+
+  return ownerGlobal || window;
+}
+
+function withContentRect(types) {
+  return function (WrappedComponent) {
+    var _class, _temp;
+
+    return _temp = _class =
+    /*#__PURE__*/
+    function (_Component) {
+      _inheritsLoose(WithContentRect, _Component);
+
+      function WithContentRect() {
+        var _this;
+
+        for (var _len = arguments.length, args = new Array(_len), _key = 0; _key < _len; _key++) {
+          args[_key] = arguments[_key];
+        }
+
+        _this = _Component.call.apply(_Component, [this].concat(args)) || this;
+        _this.state = {
+          contentRect: {
+            entry: {},
+            client: {},
+            offset: {},
+            scroll: {},
+            bounds: {},
+            margin: {}
+          }
+        };
+        _this._animationFrameID = null;
+        _this._resizeObserver = null;
+        _this._node = null;
+        _this._window = null;
+
+        _this.measure = function (entries) {
+          var contentRect = getContentRect(_this._node, types || getTypes(_this.props));
+
+          if (entries) {
+            contentRect.entry = entries[0].contentRect;
+          }
+
+          _this._animationFrameID = _this._window.requestAnimationFrame(function () {
+            if (_this._resizeObserver !== null) {
+              _this.setState({
+                contentRect: contentRect
+              });
+
+              if (typeof _this.props.onResize === 'function') {
+                _this.props.onResize(contentRect);
+              }
+            }
+          });
+        };
+
+        _this._handleRef = function (node) {
+          if (_this._resizeObserver !== null && _this._node !== null) {
+            _this._resizeObserver.unobserve(_this._node);
+          }
+
+          _this._node = node;
+          _this._window = getWindowOf(_this._node);
+          var innerRef = _this.props.innerRef;
+
+          if (innerRef) {
+            if (typeof innerRef === 'function') {
+              innerRef(_this._node);
+            } else {
+              innerRef.current = _this._node;
+            }
+          }
+
+          if (_this._resizeObserver !== null && _this._node !== null) {
+            _this._resizeObserver.observe(_this._node);
+          }
+        };
+
+        return _this;
+      }
+
+      var _proto = WithContentRect.prototype;
+
+      _proto.componentDidMount = function componentDidMount() {
+        this._resizeObserver = this._window !== null && this._window.ResizeObserver ? new this._window.ResizeObserver(this.measure) : new index$1(this.measure);
+
+        if (this._node !== null) {
+          this._resizeObserver.observe(this._node);
+
+          if (typeof this.props.onResize === 'function') {
+            this.props.onResize(getContentRect(this._node, types || getTypes(this.props)));
+          }
+        }
+      };
+
+      _proto.componentWillUnmount = function componentWillUnmount() {
+        if (this._window !== null) {
+          this._window.cancelAnimationFrame(this._animationFrameID);
+        }
+
+        if (this._resizeObserver !== null) {
+          this._resizeObserver.disconnect();
+
+          this._resizeObserver = null;
+        }
+      };
+
+      _proto.render = function render() {
+        var _this$props = this.props;
+            _this$props.innerRef;
+            _this$props.onResize;
+            var props = _objectWithoutPropertiesLoose$2(_this$props, ["innerRef", "onResize"]);
+
+        return createElement$1(WrappedComponent, _extends$2({}, props, {
+          measureRef: this._handleRef,
+          measure: this.measure,
+          contentRect: this.state.contentRect
+        }));
+      };
+
+      return WithContentRect;
+    }(Component), _class.propTypes = {
+      client: PropTypes.bool,
+      offset: PropTypes.bool,
+      scroll: PropTypes.bool,
+      bounds: PropTypes.bool,
+      margin: PropTypes.bool,
+      innerRef: PropTypes.oneOfType([PropTypes.object, PropTypes.func]),
+      onResize: PropTypes.func
+    }, _temp;
+  };
+}
+
+var Measure = withContentRect()(function (_ref) {
+  var measure = _ref.measure,
+      measureRef = _ref.measureRef,
+      contentRect = _ref.contentRect,
+      children = _ref.children;
+  return children({
+    measure: measure,
+    measureRef: measureRef,
+    contentRect: contentRect
+  });
+});
+Measure.displayName = 'Measure';
+Measure.propTypes.children = PropTypes.func;
+
+/**
+ * NFT Contract
+ * @returns 
+ */
+
+var MoonNFTContract = function MoonNFTContract() {
+  var _props$item, _nft$nfts, _props$item2, _props$item3, _props$item4, _props$item4$address, _props$item5, _props$item6;
+
+  var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
+  // nft
+  var nft = useNFTs({
+    limit: 8,
+    contract: ((_props$item = props.item) === null || _props$item === void 0 ? void 0 : _props$item.id) || props.item
+  });
+  var theme = useTheme(); // state
+
+  var _useState = useState(0),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      width = _useState2[0],
+      setWidth = _useState2[1];
+
+  var _useState3 = useState(0),
+      _useState4 = _slicedToArray$1(_useState3, 2),
+      index = _useState4[0],
+      setIndex = _useState4[1]; // avatar width
+
+
+  props.feed === 'chat' ? 40 : 50; // return jsx
+
+  return /*#__PURE__*/React__default.createElement(Card, null, !!((_nft$nfts = nft.nfts) !== null && _nft$nfts !== void 0 && _nft$nfts.length) && /*#__PURE__*/React__default.createElement(Box, {
+    px: 2,
+    pt: 2,
+    sx: {
+      '& .MuiIconButton-root': {
+        width: '40px',
+        height: '40px',
+        opacity: 0.5
+      }
+    }
+  }, /*#__PURE__*/React__default.createElement(Carousel, {
+    index: index,
+    height: width,
+    autoPlay: false,
+    onChange: function onChange(newIndex) {
+      return setIndex(newIndex);
+    },
+    PrevIcon: /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+      icon: faChevronLeft,
+      size: "xs"
+    }),
+    NextIcon: /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+      icon: faChevronRight,
+      size: "xs"
+    }),
+    animation: "fade",
+    indicatorContainerProps: {
+      sx: {
+        left: 0,
+        right: 0,
+        zIndex: 1,
+        bottom: 0,
+        position: 'absolute'
+      }
+    },
+    navButtonsAlwaysVisible: true
+  }, nft.nfts.map(function (nft) {
+    // return jsx
+    return /*#__PURE__*/React__default.createElement(Box, {
+      key: nft.id
+    }, /*#__PURE__*/React__default.createElement(Measure, {
+      bounds: true,
+      onResize: function onResize(contentRect) {
+        // set width
+        setWidth(parseInt(contentRect.bounds.width));
+      }
+    }, function (_ref) {
+      var measureRef = _ref.measureRef;
+      return /*#__PURE__*/React__default.createElement(Box, {
+        ref: measureRef,
+        height: width
+      }, !!width && /*#__PURE__*/React__default.createElement(MoonNFTImage, {
+        item: nft,
+        width: width,
+        height: width,
+        variant: "rounded"
+      }));
+    }));
+  }))), /*#__PURE__*/React__default.createElement(CardContent, null, /*#__PURE__*/React__default.createElement(Stack, {
+    width: "100%",
+    direction: "row",
+    spacing: 2
+  }, /*#__PURE__*/React__default.createElement(Stack, null, /*#__PURE__*/React__default.createElement(Box, {
+    component: "span",
+    sx: _objectSpread2$1(_objectSpread2$1({}, props.feed === 'chat' ? theme.typography.body2 : theme.typography.body1), {}, {
+      color: theme.palette.text.primary,
+      fontWeight: theme.typography.fontWeightMedium
+    })
+  }, (_props$item2 = props.item) === null || _props$item2 === void 0 ? void 0 : _props$item2.name), /*#__PURE__*/React__default.createElement(Box, {
+    component: Link,
+    target: "_BLANK",
+    to: "/c/".concat((_props$item3 = props.item) === null || _props$item3 === void 0 ? void 0 : _props$item3.address),
+    color: "rgba(255, 255, 255, 0.4)",
+    sx: _objectSpread2$1(_objectSpread2$1({}, theme.typography.body2), {}, {
+      textDecoration: 'none'
+    })
+  }, (_props$item4 = props.item) === null || _props$item4 === void 0 ? void 0 : (_props$item4$address = _props$item4.address) === null || _props$item4$address === void 0 ? void 0 : _props$item4$address.substring(0, 8))), /*#__PURE__*/React__default.createElement(Box, {
+    ml: "auto!important"
+  }, /*#__PURE__*/React__default.createElement(AvatarGroup, {
+    max: 3
+  }, /*#__PURE__*/React__default.createElement(Avatar, {
+    "aria-label": "recipe"
+  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
+    "aria-label": "recipe"
+  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
+    "aria-label": "recipe"
+  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
+    "aria-label": "recipe"
+  }, "R"), /*#__PURE__*/React__default.createElement(Avatar, {
+    "aria-label": "recipe"
+  }, "R")))), !!((_props$item5 = props.item) !== null && _props$item5 !== void 0 && _props$item5.description) && /*#__PURE__*/React__default.createElement(Typography, {
+    variant: "body2",
+    color: "text.secondary"
+  }, (_props$item6 = props.item) === null || _props$item6 === void 0 ? void 0 : _props$item6.description)));
+}; // export default
+
+const ALPHABET = 'KMGTPEZY'.split('');
+const TRESHOLD = 1e3;
+
+var src = function (n, fn) {
+  n = Math.abs(n);
+  let index = 0;
+  while (n >= TRESHOLD && ++index < ALPHABET.length) n /= TRESHOLD;
+  if (fn) n = fn(n);
+  return String(index === 0 ? n : n + ALPHABET[index - 1])
+};
+
+function useIntersectionObserver(elementRef, { threshold = 0, root = null, rootMargin = '0%', freezeOnceVisible = false, }) {
+    const [entry, setEntry] = useState();
+    const frozen = entry?.isIntersecting && freezeOnceVisible;
+    const updateEntry = ([entry]) => {
+        setEntry(entry);
+    };
+    useEffect(() => {
+        const node = elementRef?.current;
+        const hasIOSupport = !!window.IntersectionObserver;
+        if (!hasIOSupport || frozen || !node)
+            return;
+        const observerParams = { threshold, root, rootMargin };
+        const observer = new IntersectionObserver(updateEntry, observerParams);
+        observer.observe(node);
+        return () => observer.disconnect();
+    }, [elementRef, JSON.stringify(threshold), root, rootMargin, frozen]);
+    return entry;
+}
+
+var useLike = function useLike(subject, propsLike) {
+  var _subject$count, _subject$count3;
+
+  var type = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 'post';
+  // socket
+  var auth = useAuth();
+  var socket = useSocket(); // auth
+
+  var _useState = useState(propsLike || null),
+      _useState2 = _slicedToArray$1(_useState, 2),
+      like = _useState2[0],
+      setLike = _useState2[1];
+
+  var _useState3 = useState((subject === null || subject === void 0 ? void 0 : (_subject$count = subject.count) === null || _subject$count === void 0 ? void 0 : _subject$count.likes) || 0),
+      _useState4 = _slicedToArray$1(_useState3, 2),
+      count = _useState4[0],
+      setCount = _useState4[1];
+
+  var _useState5 = useState(false),
+      _useState6 = _slicedToArray$1(_useState5, 2),
+      loading = _useState6[0],
+      setLoading = _useState6[1]; // add like
+
+
+  var toggleLike = /*#__PURE__*/function () {
+    var _ref = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+      var id, _yield$socket$post, backendLike, backendCount;
+
+      return regeneratorRuntime.wrap(function _callee$(_context) {
+        while (1) {
+          switch (_context.prev = _context.next) {
+            case 0:
+              if (auth.account) {
+                _context.next = 2;
+                break;
+              }
+
+              return _context.abrupt("return", auth.login());
+
+            case 2:
+              // check found
+              id = (subject === null || subject === void 0 ? void 0 : subject.id) || subject; // check id
+
+              if (id) {
+                _context.next = 5;
+                break;
+              }
+
+              return _context.abrupt("return");
+
+            case 5:
+              // loading
+              setLoading(true); // load
+
+              _context.next = 8;
+              return socket.post("/like/".concat(id), {
+                type: type
+              });
+
+            case 8:
+              _yield$socket$post = _context.sent;
+              backendLike = _yield$socket$post.like;
+              backendCount = _yield$socket$post.count;
+              // set post
+              setLike(backendLike);
+              setCount(backendCount);
+              setLoading(false); // return backend post
+
+              return _context.abrupt("return", backendLike);
+
+            case 15:
+            case "end":
+              return _context.stop();
+          }
+        }
+      }, _callee);
+    }));
+
+    return function toggleLike() {
+      return _ref.apply(this, arguments);
+    };
+  }(); // emit user
+
+
+  var emitLike = function emitLike(like, count) {
+    // check found
+    var id = (subject === null || subject === void 0 ? void 0 : subject.id) || subject; // update post
+
+    if (like.from === id) {
+      // update
+      setLike(like);
+      setCount(count);
+    }
+  }; // use effect
+
+
+  useEffect(function () {
+    // add listener
+    socket.socket.on('like', emitLike); // done
+
+    return function () {
+      // off
+      socket.socket.removeListener('like', emitLike);
+    };
+  }, [(subject === null || subject === void 0 ? void 0 : subject.id) || subject, type]); // use effect
+
+  useEffect(function () {
+    var _subject$count2;
+
+    // set count
+    setCount((subject === null || subject === void 0 ? void 0 : (_subject$count2 = subject.count) === null || _subject$count2 === void 0 ? void 0 : _subject$count2.likes) || 0);
+  }, [subject === null || subject === void 0 ? void 0 : (_subject$count3 = subject.count) === null || _subject$count3 === void 0 ? void 0 : _subject$count3.likes]); // return posts
+
+  var actualLike = {
+    toggle: toggleLike,
+    like: like,
+    count: count,
+    loading: loading
+  }; // window
+
+  window.NFTLike = actualLike; // return post
+
+  return actualLike;
+}; // export default
 
 var NFTVideoEmbed = function NFTVideoEmbed() {
   var _item$provider;

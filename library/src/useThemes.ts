@@ -1,6 +1,6 @@
 
 // import auth context
-import ThemeContext from './Desktop/Context';
+import ThemeContext from './Theme/Context';
 import React, { useContext } from 'react';
 
 // use auth hook

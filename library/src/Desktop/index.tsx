@@ -1,4 +1,5 @@
 
+import ReactPlayer from 'react-player';
 import { Box, Typography, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 
@@ -146,23 +147,53 @@ const MoonDesktop = (props = {}) => {
       position   : 'relative',
       alignItems : 'center',
 
-      backgroundSize     : `20px 20px`,
-      backgroundImage    : `radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px), radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px)`,
-      backgroundPosition : `0 0,10px 10px`,
+      backgroundSize     : theme.shape.backgroundImage ? 'cover' : `20px 20px`,
+      backgroundImage    : theme.shape.backgroundImage ? `url(${theme.shape.backgroundImage})` : `radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px), radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px)`,
+      backgroundPosition : theme.shape.backgroundImage ? 'center' : `0 0,10px 10px`,
     } }>
-      <Box sx={ {
-        mx             : 'auto',
-        px             : 4,
-        py             : 2,
-        display        : 'flex',
-        alignItems     : 'center',
-        background     : theme.palette.background.default,
-        justifyContent : 'center',
-      } }>
-        <Typography variant="h2">
-          WELCOME TO MOON
-        </Typography>
-      </Box>
+      { !(theme.shape.backgroundImage || theme.shape.backgroundVideo) && (
+        <Box sx={ {
+          mx             : 'auto',
+          px             : 4,
+          py             : 2,
+          display        : 'flex',
+          alignItems     : 'center',
+          background     : theme.palette.background.default,
+          justifyContent : 'center',
+        } }>
+          <Typography variant="h2">
+            WELCOME TO MOON
+          </Typography>
+        </Box>
+      ) }
+
+      { !!theme.shape.backgroundVideo && (
+        <Box
+          sx={ {
+            width    : '100%!important',
+            height   : '100%!important',
+            overflow : 'hidden',
+            position : 'relative',
+
+            '&.video-player > div' : { 
+              backgroundColor : `transparent!important`,
+            },
+          } }
+          config={ {
+            youtube : {
+              playerVars : {
+                showinfo : 0,
+              },
+            },
+          } }
+
+          url={ theme.shape.backgroundVideo }
+          component={ ReactPlayer }
+
+          loop
+          playing
+        />
+      ) }
 
       { !!useGrid && (
         <Box sx={ {

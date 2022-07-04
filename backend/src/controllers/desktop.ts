@@ -1058,6 +1058,37 @@ export default class DesktopController extends NFTController {
    * @param param1 
    * @param next 
    */
+  @Route('GET', '/api/v1/theme/:id')
+  async themeGetAction(req, { data, params }, next) {
+    // lowerAccount
+    const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
+
+    // check account
+    if (!lowerAccount) return {
+      message : 'Authentication Required',
+      success : false,
+    };
+
+    // load actual segment
+    const getTheme = await ThemeModel.findById(params.id);
+
+    // sanitised
+    const sanitisedTheme = await getTheme.toJSON();
+
+    // return
+    return {
+      result  : sanitisedTheme,
+      success : true,
+    };
+  }
+
+  /**
+   * group action
+   *
+   * @param req 
+   * @param param1 
+   * @param next 
+   */
   @Route('POST', '/api/v1/theme')
   async themeCreateAction(req, { data, params }, next) {
     // lowerAccount

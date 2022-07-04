@@ -19,7 +19,7 @@ const MoonAppSideBar = (props = {}) => {
         py          : theme.spacing(2),
         width       : subspaceWidth,
         height      : '100%',
-        borderRight : `.1rem solid ${theme.palette.divider}`,
+        borderRight : `.1rem solid ${theme.palette.border.primary}`,
 
         '&:empty' : {
           display : 'none',

@@ -12,7 +12,7 @@ export default class MoonAuthEmitter extends EventEmitter {
   private socket    = null;
   private library   = null;
   private current   = {};
-  private challenge = (nonce) => ({ message : '', signature : '' });
+  private challenge = (nonce, account) => ({ message : '', signature : '' });
 
   // getter/setter
   private __user    = null;
@@ -48,12 +48,6 @@ export default class MoonAuthEmitter extends EventEmitter {
     this.library   = props.library   || this.library;
     this.account   = props.account   || this.account;
     this.challenge = props.challenge || this.challenge;
-    
-    // check should auth backend
-    if (this.account && !this.user) {
-      // authenticate account
-      this.loadUser();
-    }
 
     // set current
     this.current = props;
@@ -128,6 +122,9 @@ export default class MoonAuthEmitter extends EventEmitter {
     if (shouldUpdate) {
       // emit
       this.emit('account', this.__account);
+
+      // authenticate account
+      this.loadUser();
     }
   }
 
@@ -155,8 +152,8 @@ export default class MoonAuthEmitter extends EventEmitter {
       this.emit('user', this.__user);
 
       // auth backend on restart
-      this.socket.removeListener('user', this.emitUser);
-      this.socket.removeListener('connect', this.loadUser);
+      this.socket.off('user', this.emitUser);
+      this.socket.off('connect', this.loadUser);
 
       // check user
       if (user) {
@@ -221,7 +218,7 @@ export default class MoonAuthEmitter extends EventEmitter {
       }
 
       // challenge
-      const { message, signature } = await this.challenge(authReq.nonce);
+      const { message, signature } = await this.challenge(authReq.nonce, this.account);
 
       // auth
       const result = await this.socket.post(`/auth/${this.account}`, {
@@ -233,6 +230,9 @@ export default class MoonAuthEmitter extends EventEmitter {
       if (result) {
         // user
         this.user = result;
+      } else {
+        // logout
+        this.logout();
       }
       
       // done loading
@@ -241,6 +241,7 @@ export default class MoonAuthEmitter extends EventEmitter {
       // return result
       return result;
     } catch (e) {
+      console.log('test', e);
       // logout
       this.logout();
     }

@@ -17,7 +17,7 @@ const useFollow = (subject, type = 'space') => {
   const [following, setFollowing] = useState(subject?.count?.following || 0);
 
   // get post
-  const loadFollow = async (id = null) => {
+  const loadFollow = async (id = null, type) => {
     // check found
     if (!id) id = subject?.id || subject;
 

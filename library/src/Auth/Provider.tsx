@@ -6,7 +6,7 @@ import {
   DAppProvider,
 } from '@usedapp/core';
 import { SiweMessage } from 'siwe';
-import { getDefaultProvider } from 'ethers';
+import { providers, getDefaultProvider } from 'ethers';
 import React, { useState, useEffect } from 'react';
 
 // socket context
@@ -33,7 +33,7 @@ const config = {
  */
 const MoonAuthProvider = (props = {}) => {
   // highest order
-  const { library, activateBrowserWallet, deactivate, account } = useEthers();
+  const { activateBrowserWallet, deactivate, account } = useEthers();
 
   // socket
   const socket = useSocket();
@@ -47,31 +47,20 @@ const MoonAuthProvider = (props = {}) => {
     return new Date();
   });
 
-  // create emitter
-  const [emitter] = useState(() => {
-    // return emitter
-    return window.authEmitter || new AuthEmitter({
-      socket,
-      account : account || initialAccount,
-
-      login,
-      logout,
-      challenge,
-    });
-  });
-
   /**
    * login
    */
   const login = () => {
+    console.log('do login');
     // activate wallet
-    activateBrowserWallet();
+    return activateBrowserWallet();
   };
 
   /**
    * logout function
    */
   const logout = () => {
+    console.log('do logout');
     // session id
     localStorage?.removeItem('acid');
     deactivate();
@@ -80,16 +69,18 @@ const MoonAuthProvider = (props = {}) => {
   /**
    * challenge function
    */
-  const challenge = async (nonce) => {
+  const challenge = async (nonce, account) => {
     // get provider
-    const signer = library.getSigner();
+    const signer = (new providers.Web3Provider(window.ethereum)).getSigner();
+
+    console.log('test', account);
 
     // create message
     const message = new SiweMessage({
       nonce,
       domain,
       uri       : origin,
-      chainId   : '1',
+      chainId   : Mainnet.chainId,
       address   : account,
       version   : '1',
       statement : 'Sign in to NFT',
@@ -104,6 +95,19 @@ const MoonAuthProvider = (props = {}) => {
       signature,
     };
   };
+
+  // create emitter
+  const [emitter] = useState(() => {
+    // return emitter
+    return window.authEmitter || new AuthEmitter({
+      socket,
+      account : account || initialAccount,
+
+      login,
+      logout,
+      challenge,
+    });
+  });
 
   // use effect
   useEffect(() => {

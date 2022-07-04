@@ -35,7 +35,11 @@ const MoonThemeProvider = (props = {}) => {
     // real theme
     const realTheme = deepmerge((mainTheme || {}), (emitter.state?.theme?.theme || {}));
 
-    console.log('real theme', realTheme);
+    // remove broken
+    Object.keys(realTheme.palette || {}).forEach((key) => {
+      // check value
+      if (!Object.keys(realTheme.palette[key]).length) delete realTheme.palette[key];
+    });
 
     // check theme
     setTheme(createTheme(realTheme));
@@ -50,11 +54,15 @@ const MoonThemeProvider = (props = {}) => {
     const onUpdated = () => setUpdated(new Date());
 
     // add listener
+    emitter.on('theme', onUpdated);
+    emitter.on('loading', onUpdated);
     emitter.on('updated', onUpdated);
 
     // return done
     return () => {
       // remove listener
+      emitter.removeListener('theme', onUpdated);
+      emitter.removeListener('loading', onUpdated);
       emitter.removeListener('updated', onUpdated);
     };
   }, [emitter]);
