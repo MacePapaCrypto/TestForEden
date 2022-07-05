@@ -1139,12 +1139,6 @@ export default class DesktopEmitter extends EventEmitter {
     // const
     const {
       id,
-      app,
-      path,
-      order,
-      parent,
-      zIndex,
-      position,
     } = updatingTask;
 
     // set loading
@@ -1182,39 +1176,42 @@ export default class DesktopEmitter extends EventEmitter {
       this.updated = new Date();
     }
 
-    // loaded
-    let loadedTask = localTask;
-
-    // try/catch
-    try {
-      // load
-      loadedTask = await this.socket.patch(`/task/${id}`, {
-        app,
-        path,
-        order,
-        parent,
-        zIndex,
-        position
-      });
-
-      // loop
-      Object.keys(loadedTask).forEach((key) => {
-        // add to loaded
-        localTask[key] = loadedTask[key];
-      });
-
-      // set tasks
-      this.updated = new Date();
-    } catch (e) {
-      // loading
-      throw e;
-    }
-
-    // done loading
-    this.loading = null;
-
-    // return tasks
-    return loadedTask;
+    // return debounce
+    return this.debounce(`task.${id}`, async () => {
+      // loaded
+      let loadedTask = localTask;
+  
+      // try/catch
+      try {
+        // load
+        loadedTask = await this.socket.patch(`/task/${id}`, {
+          app      : localTask.app,
+          path     : localTask.path,
+          order    : localTask.order,
+          parent   : localTask.parent,
+          zIndex   : localTask.zIndex,
+          position : localTask.position,
+        });
+  
+        // loop
+        Object.keys(loadedTask).forEach((key) => {
+          // add to loaded
+          localTask[key] = loadedTask[key];
+        });
+  
+        // set tasks
+        this.updated = new Date();
+      } catch (e) {
+        // loading
+        throw e;
+      }
+  
+      // done loading
+      this.loading = null;
+  
+      // return tasks
+      return loadedTask;
+    }, 500);
   }
 
   /**

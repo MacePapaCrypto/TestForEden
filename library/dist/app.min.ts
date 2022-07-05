@@ -60675,25 +60675,20 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "updateTask",
     value: function () {
-      var _updateTask = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee17(updatingTask) {
+      var _updateTask = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee18(updatingTask) {
+        var _this6 = this;
+
         var save,
             id,
-            app,
-            path,
-            order,
-            parent,
-            zIndex,
-            position,
             localTask,
-            loadedTask,
-            _args17 = arguments;
-        return regeneratorRuntime.wrap(function _callee17$(_context17) {
+            _args18 = arguments;
+        return regeneratorRuntime.wrap(function _callee18$(_context18) {
           while (1) {
-            switch (_context17.prev = _context17.next) {
+            switch (_context18.prev = _context18.next) {
               case 0:
-                save = _args17.length > 1 && _args17[1] !== undefined ? _args17[1] : true;
+                save = _args18.length > 1 && _args18[1] !== undefined ? _args18[1] : true;
                 // const
-                id = updatingTask.id, app = updatingTask.app, path = updatingTask.path, order = updatingTask.order, parent = updatingTask.parent, zIndex = updatingTask.zIndex, position = updatingTask.position; // set loading
+                id = updatingTask.id; // set loading
 
                 if (save) this.loading = id; // update task
 
@@ -60717,60 +60712,74 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                 }); // update
 
                 if (save) {
-                  _context17.next = 10;
+                  _context18.next = 10;
                   break;
                 }
 
-                return _context17.abrupt("return", this.updated = new Date());
+                return _context18.abrupt("return", this.updated = new Date());
 
               case 10:
                 // update in place
                 this.updated = new Date();
 
               case 11:
-                // loaded
-                loadedTask = localTask; // try/catch
+                return _context18.abrupt("return", this.debounce("task.".concat(id), /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee17() {
+                  var loadedTask;
+                  return regeneratorRuntime.wrap(function _callee17$(_context17) {
+                    while (1) {
+                      switch (_context17.prev = _context17.next) {
+                        case 0:
+                          // loaded
+                          loadedTask = localTask; // try/catch
 
-                _context17.prev = 12;
-                _context17.next = 15;
-                return this.socket.patch("/task/".concat(id), {
-                  app: app,
-                  path: path,
-                  order: order,
-                  parent: parent,
-                  zIndex: zIndex,
-                  position: position
-                });
+                          _context17.prev = 1;
+                          _context17.next = 4;
+                          return _this6.socket.patch("/task/".concat(id), {
+                            app: localTask.app,
+                            path: localTask.path,
+                            order: localTask.order,
+                            parent: localTask.parent,
+                            zIndex: localTask.zIndex,
+                            position: localTask.position
+                          });
 
-              case 15:
-                loadedTask = _context17.sent;
-                // loop
-                Object.keys(loadedTask).forEach(function (key) {
-                  // add to loaded
-                  localTask[key] = loadedTask[key];
-                }); // set tasks
+                        case 4:
+                          loadedTask = _context17.sent;
+                          // loop
+                          Object.keys(loadedTask).forEach(function (key) {
+                            // add to loaded
+                            localTask[key] = loadedTask[key];
+                          }); // set tasks
 
-                this.updated = new Date();
-                _context17.next = 23;
-                break;
+                          _this6.updated = new Date();
+                          _context17.next = 12;
+                          break;
 
-              case 20:
-                _context17.prev = 20;
-                _context17.t0 = _context17["catch"](12);
-                throw _context17.t0;
+                        case 9:
+                          _context17.prev = 9;
+                          _context17.t0 = _context17["catch"](1);
+                          throw _context17.t0;
 
-              case 23:
-                // done loading
-                this.loading = null; // return tasks
+                        case 12:
+                          // done loading
+                          _this6.loading = null; // return tasks
 
-                return _context17.abrupt("return", loadedTask);
+                          return _context17.abrupt("return", loadedTask);
 
-              case 25:
+                        case 14:
+                        case "end":
+                          return _context17.stop();
+                      }
+                    }
+                  }, _callee17, null, [[1, 9]]);
+                })), 500));
+
+              case 12:
               case "end":
-                return _context17.stop();
+                return _context18.stop();
             }
           }
-        }, _callee17, this, [[12, 20]]);
+        }, _callee18, this);
       }));
 
       function updateTask(_x13) {
@@ -60791,7 +60800,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "updateTasks",
     value: function updateTasks() {
       var _this$desktop6,
-          _this6 = this;
+          _this7 = this;
 
       var updates = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.tasks;
       var digestBackendUpdates = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
@@ -60800,38 +60809,38 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
       this.updated = new Date(); // debounce
 
-      return this.debounce('tasks', /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee18() {
+      return this.debounce('tasks', /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee19() {
         var loadedTasks;
-        return regeneratorRuntime.wrap(function _callee18$(_context18) {
+        return regeneratorRuntime.wrap(function _callee19$(_context19) {
           while (1) {
-            switch (_context18.prev = _context18.next) {
+            switch (_context19.prev = _context19.next) {
               case 0:
                 // loading
-                _this6.loading = 'tasks'; // loaded
+                _this7.loading = 'tasks'; // loaded
 
                 loadedTasks = []; // try/catch
 
-                _context18.prev = 2;
-                _context18.next = 5;
-                return _this6.socket.post("/task/updates", {
+                _context19.prev = 2;
+                _context19.next = 5;
+                return _this7.socket.post("/task/updates", {
                   updates: updates,
-                  desktop: _this6.desktop.id
+                  desktop: _this7.desktop.id
                 });
 
               case 5:
-                loadedTasks = _context18.sent;
+                loadedTasks = _context19.sent;
 
                 // check digest backend
                 if (digestBackendUpdates) {
                   // replace all info
                   loadedTasks.forEach(function (task) {
                     // local
-                    var localTask = _this6.tasks.find(function (s) {
+                    var localTask = _this7.tasks.find(function (s) {
                       return s.id === task.id;
                     }); // check local space
 
 
-                    if (!localTask) return _this6.tasks.push(task); // update info
+                    if (!localTask) return _this7.tasks.push(task); // update info
 
                     Object.keys(task).forEach(function (key) {
                       // space key
@@ -60839,31 +60848,31 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                     });
                   }); // set spaces
 
-                  _this6.updated = new Date();
+                  _this7.updated = new Date();
                 }
 
-                _context18.next = 13;
+                _context19.next = 13;
                 break;
 
               case 9:
-                _context18.prev = 9;
-                _context18.t0 = _context18["catch"](2);
+                _context19.prev = 9;
+                _context19.t0 = _context19["catch"](2);
                 // loading
-                _this6.loading = null;
-                throw _context18.t0;
+                _this7.loading = null;
+                throw _context19.t0;
 
               case 13:
                 // done loading
-                _this6.loading = null; // return loaded
+                _this7.loading = null; // return loaded
 
-                return _context18.abrupt("return", loadedTasks);
+                return _context19.abrupt("return", loadedTasks);
 
               case 15:
               case "end":
-                return _context18.stop();
+                return _context19.stop();
             }
           }
-        }, _callee18, null, [[2, 9]]);
+        }, _callee19, null, [[2, 9]]);
       })), 500);
     }
     /**
@@ -60876,46 +60885,46 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "deleteTask",
     value: function () {
-      var _deleteTask = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee19(_ref14) {
+      var _deleteTask = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee20(_ref15) {
         var id;
-        return regeneratorRuntime.wrap(function _callee19$(_context19) {
+        return regeneratorRuntime.wrap(function _callee20$(_context20) {
           while (1) {
-            switch (_context19.prev = _context19.next) {
+            switch (_context20.prev = _context20.next) {
               case 0:
-                id = _ref14.id;
+                id = _ref15.id;
                 // set loading
                 this.loading = id; // try/catch
 
-                _context19.prev = 2;
+                _context20.prev = 2;
                 // emit task
                 this.emitTaskRemove({
                   id: id
                 }); // load
 
-                _context19.next = 6;
+                _context20.next = 6;
                 return this.socket["delete"]("/task/".concat(id));
 
               case 6:
-                _context19.next = 11;
+                _context20.next = 11;
                 break;
 
               case 8:
-                _context19.prev = 8;
-                _context19.t0 = _context19["catch"](2);
-                throw _context19.t0;
+                _context20.prev = 8;
+                _context20.t0 = _context20["catch"](2);
+                throw _context20.t0;
 
               case 11:
                 // done loading
                 this.loading = null; // return tasks
 
-                return _context19.abrupt("return", true);
+                return _context20.abrupt("return", true);
 
               case 13:
               case "end":
-                return _context19.stop();
+                return _context20.stop();
             }
           }
-        }, _callee19, this, [[2, 8]]);
+        }, _callee20, this, [[2, 8]]);
       }));
 
       function deleteTask(_x14) {
@@ -60982,21 +60991,21 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "createGroup",
     value: function () {
-      var _createGroup = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee20(_ref15) {
-        var _ref15$name, name, _ref15$type, type, _ref15$order, order, _ref15$description, description, createdGroup, _this$auth3, _this$desktop7;
+      var _createGroup = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee21(_ref16) {
+        var _ref16$name, name, _ref16$type, type, _ref16$order, order, _ref16$description, description, createdGroup, _this$auth3, _this$desktop7;
 
-        return regeneratorRuntime.wrap(function _callee20$(_context20) {
+        return regeneratorRuntime.wrap(function _callee21$(_context21) {
           while (1) {
-            switch (_context20.prev = _context20.next) {
+            switch (_context21.prev = _context21.next) {
               case 0:
-                _ref15$name = _ref15.name, name = _ref15$name === void 0 ? null : _ref15$name, _ref15$type = _ref15.type, type = _ref15$type === void 0 ? 'task' : _ref15$type, _ref15$order = _ref15.order, order = _ref15$order === void 0 ? 0 : _ref15$order, _ref15$description = _ref15.description, description = _ref15$description === void 0 ? '' : _ref15$description;
+                _ref16$name = _ref16.name, name = _ref16$name === void 0 ? null : _ref16$name, _ref16$type = _ref16.type, type = _ref16$type === void 0 ? 'task' : _ref16$type, _ref16$order = _ref16.order, order = _ref16$order === void 0 ? 0 : _ref16$order, _ref16$description = _ref16.description, description = _ref16$description === void 0 ? '' : _ref16$description;
                 // set loading
                 this.loading = 'group'; // loaded
 
                 createdGroup = {}; // try/catch
 
-                _context20.prev = 3;
-                _context20.next = 6;
+                _context21.prev = 3;
+                _context21.next = 6;
                 return this.socket.post("/group/".concat(type), {
                   name: name,
                   type: type,
@@ -61007,31 +61016,31 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                 }, this.timeout);
 
               case 6:
-                createdGroup = _context20.sent;
+                createdGroup = _context21.sent;
                 // set desktops
                 this.updateDesktop(createdGroup, false);
-                _context20.next = 14;
+                _context21.next = 14;
                 break;
 
               case 10:
-                _context20.prev = 10;
-                _context20.t0 = _context20["catch"](3);
+                _context21.prev = 10;
+                _context21.t0 = _context21["catch"](3);
                 // loading
                 this.loading = null;
-                throw _context20.t0;
+                throw _context21.t0;
 
               case 14:
                 // done loading
                 this.loading = null; // return desktops
 
-                return _context20.abrupt("return", createdGroup);
+                return _context21.abrupt("return", createdGroup);
 
               case 16:
               case "end":
-                return _context20.stop();
+                return _context21.stop();
             }
           }
-        }, _callee20, this, [[3, 10]]);
+        }, _callee21, this, [[3, 10]]);
       }));
 
       function createGroup(_x15) {
@@ -61050,19 +61059,19 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "removeGroup",
     value: function () {
-      var _removeGroup = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee21(_ref16) {
-        var _ref16$id, id, _ref16$type, type, i;
+      var _removeGroup = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee22(_ref17) {
+        var _ref17$id, id, _ref17$type, type, i;
 
-        return regeneratorRuntime.wrap(function _callee21$(_context21) {
+        return regeneratorRuntime.wrap(function _callee22$(_context22) {
           while (1) {
-            switch (_context21.prev = _context21.next) {
+            switch (_context22.prev = _context22.next) {
               case 0:
-                _ref16$id = _ref16.id, id = _ref16$id === void 0 ? null : _ref16$id, _ref16$type = _ref16.type, type = _ref16$type === void 0 ? 'task' : _ref16$type;
+                _ref17$id = _ref17.id, id = _ref17$id === void 0 ? null : _ref17$id, _ref17$type = _ref17.type, type = _ref17$type === void 0 ? 'task' : _ref17$type;
                 // set loading
                 this.loading = 'group'; // try/catch
 
-                _context21.prev = 2;
-                _context21.next = 5;
+                _context22.prev = 2;
+                _context22.next = 5;
                 return this.socket["delete"]("/group/".concat(type, "/").concat(id));
 
               case 5:
@@ -61077,26 +61086,26 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
 
                 this.updated = new Date();
-                _context21.next = 12;
+                _context22.next = 12;
                 break;
 
               case 9:
-                _context21.prev = 9;
-                _context21.t0 = _context21["catch"](2);
-                throw _context21.t0;
+                _context22.prev = 9;
+                _context22.t0 = _context22["catch"](2);
+                throw _context22.t0;
 
               case 12:
                 // done loading
                 this.loading = null; // return desktops
 
-                return _context21.abrupt("return", true);
+                return _context22.abrupt("return", true);
 
               case 14:
               case "end":
-                return _context21.stop();
+                return _context22.stop();
             }
           }
-        }, _callee21, this, [[2, 9]]);
+        }, _callee22, this, [[2, 9]]);
       }));
 
       function removeGroup(_x16) {
@@ -61116,23 +61125,23 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "updateGroup",
     value: function () {
-      var _updateGroup = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee22(_ref17) {
+      var _updateGroup = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee23(_ref18) {
         var id,
             open,
             order,
-            _ref17$type,
+            _ref18$type,
             type,
             save,
             localGroup,
             loadedGroup,
-            _args22 = arguments;
+            _args23 = arguments;
 
-        return regeneratorRuntime.wrap(function _callee22$(_context22) {
+        return regeneratorRuntime.wrap(function _callee23$(_context23) {
           while (1) {
-            switch (_context22.prev = _context22.next) {
+            switch (_context23.prev = _context23.next) {
               case 0:
-                id = _ref17.id, open = _ref17.open, order = _ref17.order, _ref17$type = _ref17.type, type = _ref17$type === void 0 ? 'task' : _ref17$type;
-                save = _args22.length > 1 && _args22[1] !== undefined ? _args22[1] : true;
+                id = _ref18.id, open = _ref18.open, order = _ref18.order, _ref18$type = _ref18.type, type = _ref18$type === void 0 ? 'task' : _ref18$type;
+                save = _args23.length > 1 && _args23[1] !== undefined ? _args23[1] : true;
                 // set loading
                 if (save) this.loading = id; // update desktop
 
@@ -61156,11 +61165,11 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                 if (typeof order !== 'undefined') localGroup.order = order; // update
 
                 if (save) {
-                  _context22.next = 11;
+                  _context23.next = 11;
                   break;
                 }
 
-                return _context22.abrupt("return", this.updated = new Date());
+                return _context23.abrupt("return", this.updated = new Date());
 
               case 11:
                 // update in place
@@ -61170,15 +61179,15 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                 // loaded
                 loadedGroup = localGroup; // try/catch
 
-                _context22.prev = 13;
-                _context22.next = 16;
+                _context23.prev = 13;
+                _context23.next = 16;
                 return this.socket.patch("/group/".concat(type, "/").concat(id), {
                   open: open,
                   order: order
                 });
 
               case 16:
-                loadedGroup = _context22.sent;
+                loadedGroup = _context23.sent;
                 // loop
                 Object.keys(loadedGroup).forEach(function (key) {
                   // add to loaded
@@ -61186,26 +61195,26 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                 }); // set desktops
 
                 this.updated = new Date();
-                _context22.next = 24;
+                _context23.next = 24;
                 break;
 
               case 21:
-                _context22.prev = 21;
-                _context22.t0 = _context22["catch"](13);
-                throw _context22.t0;
+                _context23.prev = 21;
+                _context23.t0 = _context23["catch"](13);
+                throw _context23.t0;
 
               case 24:
                 // done loading
                 this.loading = null; // return desktops
 
-                return _context22.abrupt("return", loadedGroup);
+                return _context23.abrupt("return", loadedGroup);
 
               case 26:
               case "end":
-                return _context22.stop();
+                return _context23.stop();
             }
           }
-        }, _callee22, this, [[13, 21]]);
+        }, _callee23, this, [[13, 21]]);
       }));
 
       function updateGroup(_x17) {
