@@ -4,15 +4,15 @@ import React, { useEffect, useState } from 'react';
 import { Box } from '@mui/material';
 
 // import
-import { App, Route, useSpaces } from '@moonup/ui';
+import { App, Route, useSpaces, useSocket } from '@moonup/ui';
 
 // import local
-import List from './Space/List';
-import Feed from './Space/Feed';
+import Feed from './Feed';
 import Create from './Create';
-import SideBar from './Space/SideBar';
-import ExploreSideBar from './ExploreSideBar';
-import SubSpaceCreate from './Space/SubSpaceCreate';
+import Explore from './Explore';
+import SideBar from './SideBar';
+import CreateSub from './Create/Sub';
+import SideBarExplore from './SideBar/Explore';
 
 /**
  * create space app
@@ -21,15 +21,42 @@ import SubSpaceCreate from './Space/SubSpaceCreate';
  */
 const SpaceApp = (props = {}) => {
   // action
-  const [space, action] = props.path.split('/');
+  const [,,spaceId, action] = props.path.split('/');
+
+  // space
+  const [space, setSpace] = useState(null);
+  const [loading, setLoading] = useState(false);
 
   // spaces
+  const socket = useSocket();
   const subSpaces = useSpaces({
-    space        : null,
+    space,
     requireSpace : true,
   });
   const [feed, setFeed] = useState(['hot', 'new'].find((t) => t === action));
   const [subSpace, setSubSpace] = useState(subSpaces.spaces.find((s) => s.id === action));
+
+  // load space
+  const loadSpace = async (spaceId) => {
+    // check space id
+    if (!spaceId) {
+      setSpace(null);
+      setLoading(false);
+
+      // return
+      return;
+    }
+
+    // get space
+    setLoading(true);
+
+    // get
+    const actualSpace = await socket.get(`/space/${spaceId}`);
+
+    // set space
+    setSpace(actualSpace || null);
+    setLoading(false);
+  };
 
   // save feed
   const saveFeed = async (feed) => {
@@ -53,11 +80,14 @@ const SpaceApp = (props = {}) => {
   // path change
   useEffect(() => {
     // action
-    const [,action] = props.path.split('/');
+    const [,,spaceId,action] = props.path.split('/');
 
     // set space
     setFeed(['hot', 'new'].find((t) => t === action));
     setSubSpace(subSpaces.spaces.find((s) => s.id === action));
+
+    // load space
+    loadSpace(spaceId);
   }, [props.path]);
 
   // use effect
@@ -84,22 +114,27 @@ const SpaceApp = (props = {}) => {
   // return jsx
   return (
     <App
-      name="App Name"
-      description="App Description"
+      name={ space?.name || 'Explore Spaces' }
 
       menu={ (
         <>
           <Route path="/">
-            <ExploreSideBar { ...props } />
+            <SideBarExplore { ...props } />
           </Route>
           <Route path="/mooning">
-            <ExploreSideBar { ...props } />
+            <SideBarExplore { ...props } />
           </Route>
           <Route path="/latest">
-            <ExploreSideBar { ...props } />
+            <SideBarExplore { ...props } />
           </Route>
           <Route path="/following">
-            <ExploreSideBar { ...props } />
+            <SideBarExplore { ...props } />
+          </Route>
+          <Route path="/space/:space">
+            <SideBar { ...props } space={ space } subSpaces={ subSpaces } loading={ loading } />
+          </Route>
+          <Route path="/space/:space/:route">
+            <SideBar { ...props } space={ space } subSpaces={ subSpaces } loading={ loading } />
           </Route>
         </>
       ) }
@@ -113,80 +148,94 @@ const SpaceApp = (props = {}) => {
         </Box>
       </Route>
       <Route path="/mooning">
-        <List
+        <Explore
+          { ...props }
           feed="mooning"
-          onClose={ props.onClose }
-          bringToFront={ props.bringToFront }
         />
       </Route>
       <Route path="/latest">
-        <List
+        <Explore
+          { ...props }
           feed="latest"
-          onClose={ props.onClose }
-          bringToFront={ props.bringToFront }
         />
       </Route>
       <Route path="/following">
-        <List
+        <Explore
+          { ...props }
           feed="following"
-          onClose={ props.onClose }
-          bringToFront={ props.bringToFront }
         />
       </Route>
 
       <Route path="/create">
         <Create
-          onClose={ props.onClose }
-          bringToFront={ props.bringToFront }
+          { ...props }
         />
       </Route>
 
       <Route path="/space/:space/create">
-        <SubSpaceCreate
-          space={ null }
-          onClose={ props.onClose }
-          bringToFront={ props.bringToFront }
+        <CreateSub
+          { ...props }
+
+          space={ space }
+          loading={ loading }
+          subSpaces={ subSpaces }
         />
       </Route>
 
       <Route path="/space/:space">
         <Feed
+          { ...props }
           feed="hot"
           space={ null }
           onFeed={ saveFeed }
           subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
-          bringToFront={ props.bringToFront }
+
+          space={ space }
+          loading={ loading }
+          subSpaces={ subSpaces }
         />
       </Route>
       <Route path="/space/:space/hot">
         <Feed
+          { ...props }
           feed="hot"
           space={ null }
           onFeed={ saveFeed }
           subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
-          bringToFront={ props.bringToFront }
+
+          space={ space }
+          loading={ loading }
+          subSpaces={ subSpaces }
         />
       </Route>
       <Route path="/space/:space/latest">
         <Feed
+          { ...props }
           feed="latest"
           space={ null }
           onFeed={ saveFeed }
           subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
-          bringToFront={ props.bringToFront }
+
+          space={ space }
+          loading={ loading }
+          subSpaces={ subSpaces }
         />
       </Route>
       <Route path="/space/:space/mooning">
         <Feed
+          { ...props }
           feed="mooning"
           space={ null }
           onFeed={ saveFeed }
           subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
-          bringToFront={ props.bringToFront }
+
+          space={ space }
+          loading={ loading }
+          subSpaces={ subSpaces }
         />
       </Route>
     </App>

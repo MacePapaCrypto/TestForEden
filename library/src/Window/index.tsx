@@ -137,12 +137,12 @@ const MoonWindow = (props = {}) => {
           </Box>
         </>
       ) : (
-        app.App ? (
-          <ErrorBoundary FallbackComponent={ (
-            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-              <FontAwesomeIcon icon={ faExclamationTriangle } size="xl" />
-            </Box>
-          ) }>
+        <ErrorBoundary FallbackComponent={ (
+          <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+            <FontAwesomeIcon icon={ faExclamationTriangle } size="xl" />
+          </Box>
+        ) }>
+          { app.App ? (
             <Context.Provider value={ {
               item       : props.item,
               path       : props.item.path,
@@ -167,12 +167,12 @@ const MoonWindow = (props = {}) => {
                 pushPath={ pushPath }
               />
             </Context.Provider>
-          </ErrorBoundary>
-        ) : (
-          <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
-            App Removed
-          </Box>
-        )
+          ) : (
+            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+              App Removed
+            </Box>
+          ) }
+        </ErrorBoundary>
       ) }
     </Paper>
   );

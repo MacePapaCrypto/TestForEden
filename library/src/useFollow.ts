@@ -5,10 +5,13 @@ import useSocket from './useSocket';
 import React, { useState, useEffect } from 'react';
 
 // use auth hook
-const useFollow = (subject, type = 'space') => {
+const useFollow = (subject, type) => {
   // socket
   const auth = useAuth();
   const socket = useSocket();
+
+  // check type
+  if (!type) type = subject?.type || 'space';
 
   // auth
   const [follow, setFollow] = useState(null);
@@ -17,7 +20,7 @@ const useFollow = (subject, type = 'space') => {
   const [following, setFollowing] = useState(subject?.count?.following || 0);
 
   // get post
-  const loadFollow = async (id = null, type) => {
+  const loadFollow = async (id = null) => {
     // check found
     if (!id) id = subject?.id || subject;
 

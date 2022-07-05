@@ -84,17 +84,22 @@ const useApp = (app, path) => {
 
     // create loader
     appLoads[app.url] = (async () => {
-      // fetch module
-      const module = await UMDFetcher.fetch({
-        url  : `https://app.moon.social/${app.url}`,
-        name : app.package,
-      });
+      // try/catch
+      try {
+        // fetch module
+        const module = await UMDFetcher.fetch({
+          url  : `https://app.moon.social/${app.url}`,
+          name : app.package,
+        });
 
-      // set module
-      appCache[app.url] = module;
+        // set module
+        appCache[app.url] = module;
 
-      // return module
-      return module;
+        // return module
+        return module;
+      } catch (e) {
+        return null;
+      }
     })();
 
     // await

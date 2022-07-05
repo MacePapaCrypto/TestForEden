@@ -1,6 +1,6 @@
 {
   "name": "@moonup/theme",
-  "version": "0.0.47",
+  "version": "0.0.118",
   "description": "Explore Moon Themes",
   "main": "dist/index.js",
   "type": "module",
@@ -10,7 +10,7 @@
     "watch": "rollup -w -c"
   },
   "moon": {
-    "name": "Moon ThemeStore",
+    "name": "Moon Themes",
     "icon": "https://img.edenup.com/chrome_Mp3T7BAqeh.png",
     "space": "spaceid",
     "banner": "https://img.edenup.com/chrome_4woZKQKUBB.png",

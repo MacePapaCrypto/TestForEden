@@ -47,6 +47,7 @@ var MoonUi = /*#__PURE__*/Object.freeze({
   get ThemeContext () { return MoonThemeContext; },
   get ThemeProvider () { return MoonThemeProvider; },
   get useId () { return useId; },
+  get useAcls () { return usePost$1; },
   get useNFTs () { return useNFTs; },
   get useFeed () { return useFeed; },
   get usePost () { return usePost; },
@@ -8902,11 +8903,10 @@ var MoonAuthEmitter = /*#__PURE__*/function (_EventEmitter) {
               case 25:
                 _context.prev = 25;
                 _context.t0 = _context["catch"](2);
-                console.log('test', _context.t0); // logout
-
+                // logout
                 this.logout();
 
-              case 29:
+              case 28:
               case "end":
                 return _context.stop();
             }
@@ -55232,8 +55232,7 @@ var MoonAuthProvider = function MoonAuthProvider() {
           switch (_context.prev = _context.next) {
             case 0:
               // get provider
-              signer = new Web3Provider$1(window.ethereum).getSigner();
-              console.log('test', account); // create message
+              signer = new Web3Provider$1(window.ethereum).getSigner(); // create message
 
               message = new siwe.SiweMessage({
                 nonce: nonce,
@@ -55245,17 +55244,17 @@ var MoonAuthProvider = function MoonAuthProvider() {
                 statement: 'Sign in to NFT'
               }); // send async
 
-              _context.next = 5;
+              _context.next = 4;
               return signer.signMessage(message.prepareMessage());
 
-            case 5:
+            case 4:
               signature = _context.sent;
               return _context.abrupt("return", {
                 message: message,
                 signature: signature
               });
 
-            case 7:
+            case 6:
             case "end":
               return _context.stop();
           }
@@ -58998,8 +58997,8 @@ var MoonSocketProvider = function MoonSocketProvider() {
   }, props.children);
 }; // export default
 
-var timeouts = {};
-var promises = {};
+var timeouts$1 = {};
+var promises$1 = {};
 /**
  * desktop emitter class
  */
@@ -59307,9 +59306,9 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     value: function debounce(key, fn) {
       var to = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
       // clear
-      clearTimeout(timeouts[key]); // get resolver
+      clearTimeout(timeouts$1[key]); // get resolver
 
-      var _ref = promises[key] || [],
+      var _ref = promises$1[key] || [],
           _ref2 = _slicedToArray$1(_ref, 2),
           promise = _ref2[0],
           resolver = _ref2[1]; // if no promise
@@ -59321,11 +59320,11 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
           resolver = resolve;
         }); // set
 
-        promises[key] = [promise, resolver];
+        promises$1[key] = [promise, resolver];
       } // set timeout
 
 
-      timeouts[key] = setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+      timeouts$1[key] = setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
         var result;
         return regeneratorRuntime.wrap(function _callee$(_context) {
           while (1) {
@@ -59339,7 +59338,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                 // resolve
                 resolver(result); // delete
 
-                delete promises[key];
+                delete promises$1[key];
 
               case 5:
               case "end":
@@ -61348,6 +61347,8 @@ var mainTheme = {
   }
 };
 
+var timeouts = {};
+var promises = {};
 /**
  * theme emitter class
  */
@@ -61466,7 +61467,8 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
         create: this.createTheme,
         "delete": this.deleteTheme,
         theme: this.theme,
-        themes: this.themes
+        themes: this.themes,
+        "default": mainTheme
       };
     }
     /**
@@ -61547,6 +61549,68 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
       }
     } ////////////////////////////////////////////////////////////////////////
     //
+    // MISC FUNCTIONALITY
+    //
+    ////////////////////////////////////////////////////////////////////////
+
+    /**
+     * debounce function
+     *
+     * @param key 
+     * @param fn 
+     * @param to 
+     */
+
+  }, {
+    key: "debounce",
+    value: function debounce(key, fn) {
+      var to = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
+      // clear
+      clearTimeout(timeouts[key]); // get resolver
+
+      var _ref = promises[key] || [],
+          _ref2 = _slicedToArray$1(_ref, 2),
+          promise = _ref2[0],
+          resolver = _ref2[1]; // if no promise
+
+
+      if (!promise || !resolver) {
+        // create new promise
+        promise = new Promise(function (resolve) {
+          resolver = resolve;
+        }); // set
+
+        promises[key] = [promise, resolver];
+      } // set timeout
+
+
+      timeouts[key] = setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
+        var result;
+        return regeneratorRuntime.wrap(function _callee$(_context) {
+          while (1) {
+            switch (_context.prev = _context.next) {
+              case 0:
+                _context.next = 2;
+                return fn();
+
+              case 2:
+                result = _context.sent;
+                // resolve
+                resolver(result); // delete
+
+                delete promises[key];
+
+              case 5:
+              case "end":
+                return _context.stop();
+            }
+          }
+        }, _callee);
+      })), to); // return promise
+
+      return promise;
+    } ////////////////////////////////////////////////////////////////////////
+    //
     // DESKTOP FUNCTIONALITY
     //
     ////////////////////////////////////////////////////////////////////////
@@ -61561,18 +61625,18 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "getTheme",
     value: function () {
-      var _getTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee(id) {
+      var _getTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2(id) {
         var found, backendTheme;
-        return regeneratorRuntime.wrap(function _callee$(_context) {
+        return regeneratorRuntime.wrap(function _callee2$(_context2) {
           while (1) {
-            switch (_context.prev = _context.next) {
+            switch (_context2.prev = _context2.next) {
               case 0:
                 if (id) {
-                  _context.next = 2;
+                  _context2.next = 2;
                   break;
                 }
 
-                return _context.abrupt("return");
+                return _context2.abrupt("return");
 
               case 2:
                 // check found
@@ -61581,26 +61645,26 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
                 }); // check found
 
                 if (!found) {
-                  _context.next = 5;
+                  _context2.next = 5;
                   break;
                 }
 
-                return _context.abrupt("return", found);
+                return _context2.abrupt("return", found);
 
               case 5:
-                _context.next = 7;
+                _context2.next = 7;
                 return this.socket.get("/theme/".concat(id));
 
               case 7:
-                backendTheme = _context.sent;
-                return _context.abrupt("return", backendTheme);
+                backendTheme = _context2.sent;
+                return _context2.abrupt("return", backendTheme);
 
               case 9:
               case "end":
-                return _context.stop();
+                return _context2.stop();
             }
           }
-        }, _callee, this);
+        }, _callee2, this);
       }));
 
       function getTheme(_x) {
@@ -61618,22 +61682,22 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "listThemes",
     value: function () {
-      var _listThemes = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee2() {
+      var _listThemes = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3() {
         var _this$auth,
             _this3 = this;
 
         var loadedThemes, _loop, i, defaultTheme;
 
-        return regeneratorRuntime.wrap(function _callee2$(_context2) {
+        return regeneratorRuntime.wrap(function _callee3$(_context3) {
           while (1) {
-            switch (_context2.prev = _context2.next) {
+            switch (_context3.prev = _context3.next) {
               case 0:
                 if (!(!this.socket || !((_this$auth = this.auth) !== null && _this$auth !== void 0 && _this$auth.account))) {
-                  _context2.next = 2;
+                  _context3.next = 2;
                   break;
                 }
 
-                return _context2.abrupt("return");
+                return _context3.abrupt("return");
 
               case 2:
                 // loading
@@ -61641,12 +61705,12 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
 
                 loadedThemes = []; // try/catch
 
-                _context2.prev = 4;
-                _context2.next = 7;
-                return this.socket.get('/theme/list');
+                _context3.prev = 4;
+                _context3.next = 7;
+                return this.socket.get('/theme/installed');
 
               case 7:
-                loadedThemes = _context2.sent;
+                loadedThemes = _context3.sent;
 
                 _loop = function _loop(i) {
                   // check if theme
@@ -61680,15 +61744,15 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
                 }); // set themes
 
                 this.updated = new Date();
-                _context2.next = 18;
+                _context3.next = 18;
                 break;
 
               case 14:
-                _context2.prev = 14;
-                _context2.t0 = _context2["catch"](4);
+                _context3.prev = 14;
+                _context3.t0 = _context3["catch"](4);
                 // loading
                 this.loading = null;
-                throw _context2.t0;
+                throw _context3.t0;
 
               case 18:
                 // set loading
@@ -61710,14 +61774,14 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
                 } // return themes
 
 
-                return _context2.abrupt("return", loadedThemes);
+                return _context3.abrupt("return", loadedThemes);
 
               case 21:
               case "end":
-                return _context2.stop();
+                return _context3.stop();
             }
           }
-        }, _callee2, this, [[4, 14]]);
+        }, _callee3, this, [[4, 14]]);
       }));
 
       function listThemes() {
@@ -61736,51 +61800,54 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "createTheme",
     value: function () {
-      var _createTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee3(_ref) {
-        var theme, chosen, createdTheme;
-        return regeneratorRuntime.wrap(function _callee3$(_context3) {
+      var _createTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(_ref4) {
+        var theme, chosen, name, published, description, createdTheme;
+        return regeneratorRuntime.wrap(function _callee4$(_context4) {
           while (1) {
-            switch (_context3.prev = _context3.next) {
+            switch (_context4.prev = _context4.next) {
               case 0:
-                theme = _ref.theme, chosen = _ref.chosen;
+                theme = _ref4.theme, chosen = _ref4.chosen, name = _ref4.name, published = _ref4.published, description = _ref4.description;
                 // set loading
                 this.loading = 'create'; // loaded
 
                 createdTheme = {}; // try/catch
 
-                _context3.prev = 3;
-                _context3.next = 6;
+                _context4.prev = 3;
+                _context4.next = 6;
                 return this.socket.post('/theme', {
+                  name: name,
                   theme: theme,
-                  chosen: chosen
+                  chosen: chosen,
+                  published: published,
+                  description: description
                 }, this.timeout);
 
               case 6:
-                createdTheme = _context3.sent;
+                createdTheme = _context4.sent;
                 // set themes
                 this.updateTheme(createdTheme, false);
-                _context3.next = 14;
+                _context4.next = 14;
                 break;
 
               case 10:
-                _context3.prev = 10;
-                _context3.t0 = _context3["catch"](3);
+                _context4.prev = 10;
+                _context4.t0 = _context4["catch"](3);
                 // loading
                 this.loading = null;
-                throw _context3.t0;
+                throw _context4.t0;
 
               case 14:
                 // done loading
                 this.loading = null; // return themes
 
-                return _context3.abrupt("return", createdTheme);
+                return _context4.abrupt("return", createdTheme);
 
               case 16:
               case "end":
-                return _context3.stop();
+                return _context4.stop();
             }
           }
-        }, _callee3, this, [[3, 10]]);
+        }, _callee4, this, [[3, 10]]);
       }));
 
       function createTheme(_x2) {
@@ -61799,8 +61866,8 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
 
   }, {
     key: "chooseTheme",
-    value: function chooseTheme(_ref2) {
-      var id = _ref2.id;
+    value: function chooseTheme(_ref5) {
+      var id = _ref5.id;
       // update theme
       var localTheme = this.themes.find(function (s) {
         return s.id === id;
@@ -61824,22 +61891,25 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "updateTheme",
     value: function () {
-      var _updateTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee4(_ref3) {
-        var _this$theme;
+      var _updateTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee6(_ref6) {
+        var _this$theme,
+            _this4 = this;
 
         var id,
             theme,
+            name,
+            description,
+            published,
             chosen,
             save,
             localTheme,
-            loadedTheme,
-            _args4 = arguments;
-        return regeneratorRuntime.wrap(function _callee4$(_context4) {
+            _args6 = arguments;
+        return regeneratorRuntime.wrap(function _callee6$(_context6) {
           while (1) {
-            switch (_context4.prev = _context4.next) {
+            switch (_context6.prev = _context6.next) {
               case 0:
-                id = _ref3.id, theme = _ref3.theme, chosen = _ref3.chosen;
-                save = _args4.length > 1 && _args4[1] !== undefined ? _args4[1] : true;
+                id = _ref6.id, theme = _ref6.theme, name = _ref6.name, description = _ref6.description, published = _ref6.published, chosen = _ref6.chosen;
+                save = _args6.length > 1 && _args6[1] !== undefined ? _args6[1] : true;
 
                 // set loading
                 if (save) {
@@ -61855,17 +61925,23 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
                 if (!localTheme) {
                   // set theme
                   localTheme = {
-                    id: id,
+                    name: name,
                     theme: theme,
-                    chosenAt: chosen ? new Date() : null
+                    chosen: chosen,
+                    chosenAt: chosen ? new Date() : null,
+                    publishedAt: published ? new Date() : null,
+                    description: description
                   }; // push
 
                   this.themes.push(localTheme);
                 } // keys
 
 
+                if (typeof name !== 'undefined') localTheme.name = name;
                 if (typeof theme !== 'undefined') localTheme.theme = theme;
-                if (typeof chosen !== 'undefined') localTheme.chosenAt = chosen ? new Date() : null; // check theme
+                if (typeof chosen !== 'undefined') localTheme.chosenAt = chosen ? new Date() : null;
+                if (typeof published !== 'undefined') localTheme.publishedAt = published ? new Date() : null;
+                if (typeof description !== 'undefined') localTheme.description = description; // check theme
 
                 if (localTheme && new Date(localTheme.chosenAt || 0) > new Date(((_this$theme = this.theme) === null || _this$theme === void 0 ? void 0 : _this$theme.chosenAt) || 0)) {
                   // set theme
@@ -61874,56 +61950,73 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
 
 
                 if (save) {
-                  _context4.next = 12;
+                  _context6.next = 15;
                   break;
                 }
 
-                return _context4.abrupt("return", this.updated = new Date());
+                return _context6.abrupt("return", this.updated = new Date());
 
-              case 12:
+              case 15:
                 // update in place
                 this.updated = new Date();
 
-              case 13:
-                // loaded
-                loadedTheme = localTheme; // try/catch
+              case 16:
+                return _context6.abrupt("return", this.debounce("".concat(id, ".update"), /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5() {
+                  var loadedTheme;
+                  return regeneratorRuntime.wrap(function _callee5$(_context5) {
+                    while (1) {
+                      switch (_context5.prev = _context5.next) {
+                        case 0:
+                          // loaded
+                          loadedTheme = localTheme; // try/catch
 
-                _context4.prev = 14;
-                _context4.next = 17;
-                return this.socket.patch("/theme/".concat(id), {
-                  theme: theme,
-                  chosen: chosen
-                });
+                          _context5.prev = 1;
+                          _context5.next = 4;
+                          return _this4.socket.patch("/theme/".concat(id), {
+                            chosen: chosen,
+                            published: published,
+                            name: localTheme.name,
+                            theme: localTheme.theme,
+                            description: localTheme.description
+                          });
+
+                        case 4:
+                          loadedTheme = _context5.sent;
+                          // loop
+                          Object.keys(loadedTheme).forEach(function (key) {
+                            // add to loaded
+                            localTheme[key] = loadedTheme[key];
+                          }); // set themes
+
+                          _this4.updated = new Date();
+                          _context5.next = 12;
+                          break;
+
+                        case 9:
+                          _context5.prev = 9;
+                          _context5.t0 = _context5["catch"](1);
+                          throw _context5.t0;
+
+                        case 12:
+                          // done loading
+                          _this4.loading = null; // return themes
+
+                          return _context5.abrupt("return", loadedTheme);
+
+                        case 14:
+                        case "end":
+                          return _context5.stop();
+                      }
+                    }
+                  }, _callee5, null, [[1, 9]]);
+                })), 1000));
 
               case 17:
-                loadedTheme = _context4.sent;
-                // loop
-                Object.keys(loadedTheme).forEach(function (key) {
-                  // add to loaded
-                  localTheme[key] = loadedTheme[key];
-                }); // set themes
-
-                this.updated = new Date();
-                _context4.next = 25;
-                break;
-
-              case 22:
-                _context4.prev = 22;
-                _context4.t0 = _context4["catch"](14);
-                throw _context4.t0;
-
-              case 25:
-                // done loading
-                this.loading = null; // return themes
-
-                return _context4.abrupt("return", loadedTheme);
-
-              case 27:
               case "end":
-                return _context4.stop();
+                return _context6.stop();
             }
           }
-        }, _callee4, this, [[14, 22]]);
+        }, _callee6, this);
       }));
 
       function updateTheme(_x3) {
@@ -61942,18 +62035,18 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "deleteTheme",
     value: function () {
-      var _deleteTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee5(_ref4) {
+      var _deleteTheme = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee7(_ref8) {
         var id, i;
-        return regeneratorRuntime.wrap(function _callee5$(_context5) {
+        return regeneratorRuntime.wrap(function _callee7$(_context7) {
           while (1) {
-            switch (_context5.prev = _context5.next) {
+            switch (_context7.prev = _context7.next) {
               case 0:
-                id = _ref4.id;
+                id = _ref8.id;
                 // set loading
                 this.loading = id; // try/catch
 
-                _context5.prev = 2;
-                _context5.next = 5;
+                _context7.prev = 2;
+                _context7.next = 5;
                 return this.socket["delete"]("/theme/".concat(id));
 
               case 5:
@@ -61968,26 +62061,26 @@ var ThemeEmitter = /*#__PURE__*/function (_EventEmitter) {
 
 
                 this.updated = new Date();
-                _context5.next = 12;
+                _context7.next = 12;
                 break;
 
               case 9:
-                _context5.prev = 9;
-                _context5.t0 = _context5["catch"](2);
-                throw _context5.t0;
+                _context7.prev = 9;
+                _context7.t0 = _context7["catch"](2);
+                throw _context7.t0;
 
               case 12:
                 // done loading
                 this.loading = null; // return themes
 
-                return _context5.abrupt("return", true);
+                return _context7.abrupt("return", true);
 
               case 14:
               case "end":
-                return _context5.stop();
+                return _context7.stop();
             }
           }
-        }, _callee5, this, [[2, 9]]);
+        }, _callee7, this, [[2, 9]]);
       }));
 
       function deleteTheme(_x4) {
@@ -62264,6 +62357,42 @@ var MoonThemeProvider = function MoonThemeProvider() {
   }, /*#__PURE__*/React__default.createElement(MoonThemeContext.Provider, {
     value: emitter === null || emitter === void 0 ? void 0 : emitter.state
   }, props.children));
+}; // export default
+
+// import auth post
+// use auth hook
+var usePost$1 = function usePost(space, member) {
+  // use acls
+  var roles = ((space === null || space === void 0 ? void 0 : space.roles) || []).filter(function (r) {
+    return ((member === null || member === void 0 ? void 0 : member.roles) || []).includes(r.id);
+  }); // reduce
+
+  var acls = Array.from(new Set(roles.reduce(function (accum, role) {
+    // push
+    accum.push.apply(accum, _toConsumableArray$1(role.acls || []));
+    return accum;
+  }, []))); // create can
+
+  var can = function can(acl) {
+    // includes
+    if (acls.includes('*')) return true; // return split
+
+    if (acls.includes(acl)) return true; // split
+
+    var split = acl.split(':'); // for
+
+    while (split.length) {
+      // check helps
+      if (acls.includes("".concat(split.join(':'), ":*"))) return true; // pop
+
+      split.pop();
+    }
+  }; // acls
+
+
+  can.acls = acls; // return post
+
+  return can;
 }; // export default
 
 var moment$1 = {exports: {}};
@@ -69967,13 +70096,14 @@ var useSpaces = function useSpaces() {
   return MoonSpaces;
 }; // export default
 
-var useFollow = function useFollow(subject) {
+var useFollow = function useFollow(subject, type) {
   var _subject$count, _subject$count2;
 
-  var type = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 'space';
   // socket
   var auth = useAuth();
-  var socket = useSocket(); // auth
+  var socket = useSocket(); // check type
+
+  if (!type) type = (subject === null || subject === void 0 ? void 0 : subject.type) || 'space'; // auth
 
   var _useState = useState(null),
       _useState2 = _slicedToArray$1(_useState, 2),
@@ -70010,28 +70140,28 @@ var useFollow = function useFollow(subject) {
               if (!id) id = (subject === null || subject === void 0 ? void 0 : subject.id) || subject; // check id
 
               if (id) {
-                _context.next = 5;
+                _context.next = 4;
                 break;
               }
 
               return _context.abrupt("return");
 
-            case 5:
+            case 4:
               if (auth.account) {
-                _context.next = 7;
+                _context.next = 6;
                 break;
               }
 
               return _context.abrupt("return");
 
-            case 7:
+            case 6:
               // loading
               setLoading(true); // load
 
-              _context.next = 10;
+              _context.next = 9;
               return socket.get("/follow/".concat(id));
 
-            case 10:
+            case 9:
               backendFollow = _context.sent;
               // set post
               setFollow(backendFollow);
@@ -70039,7 +70169,7 @@ var useFollow = function useFollow(subject) {
 
               return _context.abrupt("return", backendFollow);
 
-            case 14:
+            case 13:
             case "end":
               return _context.stop();
           }
@@ -72565,25 +72695,31 @@ var useApp = function useApp(app, path) {
                   while (1) {
                     switch (_context.prev = _context.next) {
                       case 0:
-                        _context.next = 2;
+                        _context.prev = 0;
+                        _context.next = 3;
                         return e$1.fetch({
                           url: "https://app.moon.social/".concat(app.url),
                           name: app["package"]
                         });
 
-                      case 2:
+                      case 3:
                         module = _context.sent;
                         // set module
                         appCache[app.url] = module; // return module
 
                         return _context.abrupt("return", module);
 
-                      case 5:
+                      case 8:
+                        _context.prev = 8;
+                        _context.t0 = _context["catch"](0);
+                        return _context.abrupt("return", null);
+
+                      case 11:
                       case "end":
                         return _context.stop();
                     }
                   }
-                }, _callee);
+                }, _callee, null, [[0, 8]]);
               }))(); // await
 
               _context2.next = 14;
@@ -72767,7 +72903,7 @@ var MoonWindow = function MoonWindow() {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center"
-  }, /*#__PURE__*/React__default.createElement(CircularProgress$1, null))) : app.App ? /*#__PURE__*/React__default.createElement(reactErrorBoundary_umd.exports.ErrorBoundary, {
+  }, /*#__PURE__*/React__default.createElement(CircularProgress$1, null))) : /*#__PURE__*/React__default.createElement(reactErrorBoundary_umd.exports.ErrorBoundary, {
     FallbackComponent: /*#__PURE__*/React__default.createElement(Box, {
       flex: 1,
       display: "flex",
@@ -72778,7 +72914,7 @@ var MoonWindow = function MoonWindow() {
       icon: faExclamationTriangle,
       size: "xl"
     }))
-  }, /*#__PURE__*/React__default.createElement(MoonAppContext.Provider, {
+  }, app.App ? /*#__PURE__*/React__default.createElement(MoonAppContext.Provider, {
     value: {
       item: props.item,
       path: props.item.path,
@@ -72798,13 +72934,13 @@ var MoonWindow = function MoonWindow() {
     path: props.item.path,
     setPath: setPath,
     pushPath: pushPath
-  }))) : /*#__PURE__*/React__default.createElement(Box, {
+  })) : /*#__PURE__*/React__default.createElement(Box, {
     flex: 1,
     display: "flex",
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center"
-  }, "App Removed")); // check position
+  }, "App Removed"))); // check position
 
   if (props.isElectron) return windowBody; // return jsx
 
@@ -103576,5 +103712,5 @@ var MoonPost = function MoonPost() {
 
 // import local
 
-export { MoonApp as App, MoonAuthContext as AuthContext, MoonAuthEmitter as AuthEmitter, MoonAuthWrap as AuthProvider, LoadingButton$1 as Button, MoonDesktop as Desktop, MoonDesktopContext as DesktopContext, DesktopEmitter, MoonDesktopProvider as DesktopProvider, Link, MoonNFTAvatar as NFTAvatar, MoonNFTContract as NFTContract, MoonNFTImage as NFTImage, MoonNFTList as NFTList, MoonNFTPicker as NFTPicker, MoonPost as Post, MoonPostCreate as PostCreate, MoonPostList as PostList, MoonPostTyping as PostTyping, MoonRoute as Route, NFTScrollBar as ScrollBar, MoonSocketContext as SocketContext, MoonSocketEmitter as SocketEmitter, MoonSocketProvider as SocketProvider, MoonTask as Task, MoonTaskBar as TaskBar, MoonThemeContext as ThemeContext, ThemeEmitter, MoonThemeProvider as ThemeProvider, MoonWindow as Window, MoonWindowBar as WindowBar, mainTheme as theme, useApps, useAuth, useDesktop, useFeed, useFollow, useId, useInstall, useMember, useNFTs, useParams, usePost, usePosts, useSocket, useSpaces, useThemes, useTyping };
+export { MoonApp as App, MoonAuthContext as AuthContext, MoonAuthEmitter as AuthEmitter, MoonAuthWrap as AuthProvider, LoadingButton$1 as Button, MoonDesktop as Desktop, MoonDesktopContext as DesktopContext, DesktopEmitter, MoonDesktopProvider as DesktopProvider, Link, MoonNFTAvatar as NFTAvatar, MoonNFTContract as NFTContract, MoonNFTImage as NFTImage, MoonNFTList as NFTList, MoonNFTPicker as NFTPicker, MoonPost as Post, MoonPostCreate as PostCreate, MoonPostList as PostList, MoonPostTyping as PostTyping, MoonRoute as Route, NFTScrollBar as ScrollBar, MoonSocketContext as SocketContext, MoonSocketEmitter as SocketEmitter, MoonSocketProvider as SocketProvider, MoonTask as Task, MoonTaskBar as TaskBar, MoonThemeContext as ThemeContext, ThemeEmitter, MoonThemeProvider as ThemeProvider, MoonWindow as Window, MoonWindowBar as WindowBar, mainTheme as theme, usePost$1 as useAcls, useApps, useAuth, useDesktop, useFeed, useFollow, useId, useInstall, useMember, useNFTs, useParams, usePost, usePosts, useSocket, useSpaces, useThemes, useTyping };
 //# sourceMappingURL=app.min.ts.map

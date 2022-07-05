@@ -1,6 +1,11 @@
 
 // emitter
+import mainTheme from './index';
 import { EventEmitter } from 'events';
+
+// debouncer
+const timeouts = {};
+const promises = {};
 
 /**
  * theme emitter class
@@ -94,8 +99,9 @@ export default class ThemeEmitter extends EventEmitter {
       create : this.createTheme,
       delete : this.deleteTheme,
 
-      theme  : this.theme,
-      themes : this.themes,
+      theme   : this.theme,
+      themes  : this.themes,
+      default : mainTheme,
     };
   }
 
@@ -174,6 +180,54 @@ export default class ThemeEmitter extends EventEmitter {
     }
   }
 
+  
+  ////////////////////////////////////////////////////////////////////////
+  //
+  // MISC FUNCTIONALITY
+  //
+  ////////////////////////////////////////////////////////////////////////
+
+  /**
+   * debounce function
+   *
+   * @param key 
+   * @param fn 
+   * @param to 
+   */
+  debounce (key, fn, to = 500) {
+    // clear
+    clearTimeout(timeouts[key]);
+  
+    // get resolver
+    let [promise, resolver] = promises[key] || [];
+  
+    // if no promise
+    if (!promise || !resolver) {
+      // create new promise
+      promise = new Promise((resolve) => {
+        resolver = resolve;
+      });
+  
+      // set
+      promises[key] = [promise, resolver];
+    }
+  
+    // set timeout
+    timeouts[key] = setTimeout(async () => {
+      // execute debounce function
+      const result = await fn();
+  
+      // resolve
+      resolver(result);
+  
+      // delete
+      delete promises[key];
+    }, to);
+  
+    // return promise
+    return promise;
+  }
+
 
   ////////////////////////////////////////////////////////////////////////
   //
@@ -222,7 +276,7 @@ export default class ThemeEmitter extends EventEmitter {
     // try/catch
     try {
       // loaded
-      loadedThemes = await this.socket.get('/theme/list');
+      loadedThemes = await this.socket.get('/theme/installed');
 
       // themes
       for (let i = (this.themes.length - 1); i >= 0; i--) {
@@ -287,7 +341,7 @@ export default class ThemeEmitter extends EventEmitter {
    * @param param0 
    * @returns 
    */
-  async createTheme({ theme, chosen }) {
+  async createTheme({ theme, chosen, name, published, description }) {
     // set loading
     this.loading = 'create';
 
@@ -298,8 +352,11 @@ export default class ThemeEmitter extends EventEmitter {
     try {
       // load
       createdTheme = await this.socket.post('/theme', {
+        name,
         theme,
         chosen,
+        published,
+        description,
       }, this.timeout);
 
       // set themes
@@ -345,7 +402,7 @@ export default class ThemeEmitter extends EventEmitter {
    * @param save 
    * @returns 
    */
-  async updateTheme({ id, theme, chosen }, save = true) {
+  async updateTheme({ id, theme, name, description, published, chosen }, save = true) {
     // set loading
     if (save) {
       // loading
@@ -359,9 +416,12 @@ export default class ThemeEmitter extends EventEmitter {
     if (!localTheme) {
       // set theme
       localTheme = {
-        id,
+        name,
         theme,
+        chosen,
         chosenAt : chosen ? new Date() : null,
+        publishedAt : published ? new Date() : null,
+        description,
       };
 
       // push
@@ -369,8 +429,11 @@ export default class ThemeEmitter extends EventEmitter {
     }
 
     // keys
+    if (typeof name !== 'undefined') localTheme.name = name;
     if (typeof theme !== 'undefined') localTheme.theme = theme;
     if (typeof chosen !== 'undefined') localTheme.chosenAt = chosen ? new Date() : null;
+    if (typeof published !== 'undefined') localTheme.publishedAt = published ? new Date() : null;
+    if (typeof description !== 'undefined') localTheme.description = description;
 
     // check theme
     if (localTheme && new Date(localTheme.chosenAt || 0) > new Date(this.theme?.chosenAt || 0)) {
@@ -380,7 +443,6 @@ export default class ThemeEmitter extends EventEmitter {
 
     // update
     if (!save) {
-
       // update
       return this.updated = new Date();
     } else {
@@ -388,35 +450,41 @@ export default class ThemeEmitter extends EventEmitter {
       this.updated = new Date();
     }
 
-    // loaded
-    let loadedTheme = localTheme;
-
-    // try/catch
-    try {
-      // load
-      loadedTheme = await this.socket.patch(`/theme/${id}`, {
-        theme,
-        chosen,
-      });
-
-      // loop
-      Object.keys(loadedTheme).forEach((key) => {
-        // add to loaded
-        localTheme[key] = loadedTheme[key];
-      });
-
-      // set themes
-      this.updated = new Date();
-    } catch (e) {
-      // loading
-      throw e;
-    }
-
-    // done loading
-    this.loading = null;
-
-    // return themes
-    return loadedTheme;
+    // debounce save
+    return this.debounce(`${id}.update`, async () => {
+      // loaded
+      let loadedTheme = localTheme;
+  
+      // try/catch
+      try {
+        // load
+        loadedTheme = await this.socket.patch(`/theme/${id}`, {
+          chosen,
+          published,
+          name        : localTheme.name,
+          theme       : localTheme.theme,
+          description : localTheme.description,
+        });
+  
+        // loop
+        Object.keys(loadedTheme).forEach((key) => {
+          // add to loaded
+          localTheme[key] = loadedTheme[key];
+        });
+  
+        // set themes
+        this.updated = new Date();
+      } catch (e) {
+        // loading
+        throw e;
+      }
+  
+      // done loading
+      this.loading = null;
+  
+      // return themes
+      return loadedTheme;
+    }, 1000);
   }
 
   /**

@@ -11,6 +11,8 @@ import { faFire, faUpDown } from '@fortawesome/pro-regular-svg-icons';
 // local
 import Items from './Items';
 import ThemeStoreTheme from './Theme';
+import ThemeStoreUpdate from './Update';
+import ThemeStoreInstalled from './Installed';
 
 /**
  * create space app
@@ -38,15 +40,6 @@ const ThemeApp = (props = {}) => {
     props.pushPath(`/theme/${item.id}`);
   };
 
-  // on update
-  const onUpdate = (theme) => {
-    // update theme
-    themes.update({
-      id : themes.theme?.id,
-      theme,
-    });
-  };
-
   // return jsx
   return (
     <App
@@ -63,12 +56,12 @@ const ThemeApp = (props = {}) => {
             </ListItemText>
           </MenuItem>
           <Divider />
-          <MenuItem selected={ props.path === '/mine' } onClick={ () => props.pushPath('/mine') }>
+          <MenuItem selected={ props.path === '/installed' } onClick={ () => props.pushPath('/installed') }>
             <ListItemIcon>
               <FontAwesomeIcon icon={ faUpDown } size="sm" />
             </ListItemIcon>
             <ListItemText>
-              My Themes
+              Installed
             </ListItemText>
           </MenuItem>
         </MenuList>
@@ -87,14 +80,20 @@ const ThemeApp = (props = {}) => {
         </Box>
       </Route>
 
-      <Route path="/mine">
-        <Box>
-          Latest
-        </Box>
+      <Route path="/create">
+        <ThemeStoreUpdate { ...props } isCreate onSelect={ onSelect } />
+      </Route>
+
+      <Route path="/installed">
+        <ThemeStoreInstalled { ...props } onSelect={ onSelect } />
       </Route>
 
       <Route path="/theme/:id">
-        <ThemeStoreTheme />
+        <ThemeStoreTheme { ...props } onSelect={ onSelect } />
+      </Route>
+
+      <Route path="/theme/:id/update">
+        <ThemeStoreUpdate { ...props } onSelect={ onSelect } />
       </Route>
     </App>
   );

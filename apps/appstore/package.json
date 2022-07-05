@@ -1,6 +1,6 @@
 {
   "name": "@moonup/appstore",
-  "version": "0.0.133",
+  "version": "0.0.135",
   "description": "Explore Moon web3 Applications",
   "main": "dist/index.js",
   "type": "module",
@@ -10,7 +10,7 @@
     "watch": "rollup -w -c"
   },
   "moon": {
-    "name": "Moon AppStore",
+    "name": "Moon Apps",
     "icon": "https://img.edenup.com/chrome_Mp3T7BAqeh.png",
     "space": "spaceid",
     "banner": "https://img.edenup.com/chrome_4woZKQKUBB.png",

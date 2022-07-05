@@ -1,7 +1,7 @@
 
 // import react
-import React, { useRef, useMemo, useState } from 'react';
 import AliceCarousel from 'react-alice-carousel';
+import React, { useRef, useMemo } from 'react';
 import { Box, Stack, IconButton, Typography, useTheme } from '@mui/material';
 
 // font awesome icon
@@ -46,8 +46,6 @@ const AppStoreItems = (props = {}) => {
       );
     });
   }, [app.apps?.length, app.apps.map((item) => item.id).join(',')]);
-
-  console.log('test', app.apps);
 
   // return jsx
   return (

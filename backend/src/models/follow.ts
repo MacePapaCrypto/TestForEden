@@ -1,8 +1,9 @@
 
 import Model, { Type } from '../base/model';
 import AppModel from './app';
-import SpaceModel from './space';
 import UserModel from './user';
+import ThemeModel from './theme';
+import SpaceModel from './space';
 
 /**
  * export model
@@ -25,7 +26,8 @@ export default class FollowModel extends Model {
     const toModel = (
       (modelType === 'app' && await AppModel.findById(to)) ||
       (modelType === 'user' && await UserModel.findById(to)) ||
-      (modelType === 'space' && await SpaceModel.findById(to))
+      (modelType === 'space' && await SpaceModel.findById(to)) ||
+      (modelType === 'theme' && await ThemeModel.findById(to))
     );
 
     // check to model
@@ -87,7 +89,8 @@ export default class FollowModel extends Model {
         const lockedToModel = (
           (modelType === 'app' && await AppModel.findById(to)) ||
           (modelType === 'user' && await UserModel.findById(to)) ||
-          (modelType === 'space' && await SpaceModel.findById(to))
+          (modelType === 'space' && await SpaceModel.findById(to)) ||
+          (modelType === 'theme' && await ThemeModel.findById(to))
         );
   
         // try/catch
@@ -125,7 +128,8 @@ export default class FollowModel extends Model {
     const toModel = (
       (modelType === 'app' && await AppModel.findById(to)) ||
       (modelType === 'user' && await UserModel.findById(to)) ||
-      (modelType === 'space' && await SpaceModel.findById(to))
+      (modelType === 'space' && await SpaceModel.findById(to)) ||
+      (modelType === 'theme' && await ThemeModel.findById(to))
     );
 
     // check to model
@@ -168,7 +172,8 @@ export default class FollowModel extends Model {
         const lockedToModel = (
           (modelType === 'app' && await AppModel.findById(to)) ||
           (modelType === 'user' && await UserModel.findById(to)) ||
-          (modelType === 'space' && await SpaceModel.findById(to))
+          (modelType === 'space' && await SpaceModel.findById(to)) ||
+          (modelType === 'theme' && await ThemeModel.findById(to))
         );
 
         // get count

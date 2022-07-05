@@ -10,6 +10,7 @@ import ThemeModel from '../models/theme';
 import DesktopModel from '../models/desktop';
 import ShortcutModel from '../models/shortcut';
 import TaskGroupModel from '../models/taskGroup';
+import ThemeInstallModel from '../models/themeInstall';
 import ShortcutGroupModel from '../models/shortcutGroup';
 
 /**
@@ -1002,12 +1003,29 @@ export default class DesktopController extends NFTController {
   }
 
   /**
-   * segment get endpoint
+   * list explore themes
    * 
    * @returns
    */
   @Route('GET', '/api/v1/theme/list')
   async themeListAction(req, { data, params }, next) {
+    // force default apps
+    const themes = await ThemeModel.findByRef('published:true', data.limit || 12, data.sort || 'createdAt', data.direction || 'desc');
+
+    // return
+    return {
+      result  : await Promise.all(themes.map((t) => t.toJSON())),
+      success : true,
+    };
+  }
+
+  /**
+   * list installed themes
+   * 
+   * @returns
+   */
+  @Route('GET', '/api/v1/app/installed')
+  async themeInstalledAction(req, { data, params }, next) {
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
@@ -1019,9 +1037,16 @@ export default class DesktopController extends NFTController {
     
     // load themes
     const themes = await ThemeModel.findByAccount(lowerAccount);
+    const installs = await ThemeInstallModel.findByAccount(lowerAccount);
+
+    // all themes
+    const allThemes = [
+      ...themes,
+      ...installs,
+    ];
 
     // check themes
-    if (!themes.length) {
+    if (!allThemes.length) {
       // create new theme
       const newTheme = new ThemeModel({
         refs : [
@@ -1038,7 +1063,7 @@ export default class DesktopController extends NFTController {
       await newTheme.save();
 
       // push to themes
-      themes.push(newTheme);
+      allThemes.push(newTheme);
     }
 
     // subscribe
@@ -1046,7 +1071,7 @@ export default class DesktopController extends NFTController {
 
     // return
     return {
-      result  : await Promise.all(themes.map((t) => t.toJSON())),
+      result  : await Promise.all(allThemes.map((t) => t.toJSON())),
       success : true,
     };
   }
@@ -1060,6 +1085,10 @@ export default class DesktopController extends NFTController {
    */
   @Route('GET', '/api/v1/theme/:id')
   async themeGetAction(req, { data, params }, next) {
+    // check id
+    if (params.id === 'list') return this.themeListAction(req, { data, params }, next);
+    if (params.id === 'installed') return this.themeInstalledAction(req, { data, params }, next);
+
     // lowerAccount
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
@@ -1071,6 +1100,15 @@ export default class DesktopController extends NFTController {
 
     // load actual segment
     const getTheme = await ThemeModel.findById(params.id);
+
+    // check theme
+    if (!getTheme) {
+      // return
+      return {
+        message : 'Theme not found',
+        success : false,
+      };
+    }
 
     // sanitised
     const sanitisedTheme = await getTheme.toJSON();
@@ -1106,10 +1144,12 @@ export default class DesktopController extends NFTController {
         lowerAccount ? `account:${lowerAccount}` : `session:${req.ssid}`,
       ],
 
-      theme    : data.theme || {},
-      account  : lowerAccount,
-      session  : lowerAccount ? null : req.ssid,
-      chosenAt : data.chosen ? new Date() : null,
+      name        : data.name,
+      theme       : data.theme || {},
+      account     : lowerAccount,
+      session     : lowerAccount ? null : req.ssid,
+      chosenAt    : data.chosen ? new Date() : null,
+      description : data.description,
     });
 
     // save
@@ -1142,18 +1182,64 @@ export default class DesktopController extends NFTController {
     };
 
     // load actual segment
-    const updateTheme = await ThemeModel.findById(params.id);
+    let updateTheme = await ThemeModel.findById(params.id);
+
+    // check theme
+    if (!updateTheme) {
+      // not found
+      return {
+        message : 'Theme not found',
+        success : false,
+      };
+    }
 
     // check account
     // @todo proper acl
-    if (!updateTheme || updateTheme.get('account').toLowerCase() !== lowerAccount) return {
-      message : 'Permission Denied',
-      success : false,
-    };
+    if (updateTheme.get('account').toLowerCase() !== lowerAccount) {
+      // check published
+      if (!updateTheme.get('publishedAt')) {
+        // not found
+        return {
+          message : 'Theme not found',
+          success : false,
+        };
+      }
+
+      // theme id
+      const themeId = updateTheme.get('id');
+
+      // load install
+      updateTheme = await ThemeInstallModel.findByAccountTheme(lowerAccount, themeId) || new ThemeInstallModel({
+        refs  : [
+          `account:${lowerAccount}`,
+          `theme:${lowerAccount}:${themeId}`,
+        ],
+        theme   : themeId,
+        account : lowerAccount,
+      });
+    }
 
     // update member
+    if (typeof data.name !== 'undefined') updateTheme.set('name', data.name);
     if (typeof data.theme !== 'undefined') updateTheme.set('theme', JSON5.stringify(data.theme || {}));
     if (typeof data.chosen !== 'undefined') updateTheme.set('chosenAt', new Date());
+    if (typeof data.published !== 'undefined') updateTheme.set('publishedAt', data.published ? new Date() : false);
+    if (typeof data.description !== 'undefined') updateTheme.set('description', data.description);
+
+    // check published
+    if (updateTheme.get('publishedAt')) {
+      // check exists
+      if (!updateTheme.get('refs').includes('published:true')) {
+        // push refs
+        updateTheme.get('refs').push('published:true');
+      }
+    } else {
+      // check exists
+      if (updateTheme.get('refs').includes('published:true')) {
+        // push refs
+        updateTheme.set('refs', updateTheme.get('refs').filter((r) => r !== 'published:true'));
+      }
+    }
 
     // save
     await updateTheme.save();

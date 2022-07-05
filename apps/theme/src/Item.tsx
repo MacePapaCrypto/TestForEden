@@ -2,7 +2,8 @@
 // import react
 import React from 'react';
 import dotProp from 'dot-prop';
-import { Box, Card, CardMedia, CardContent, Typography, useTheme, Tooltip } from '@mui/material';
+import { useThemes } from '@moonup/ui';
+import { Box, Card, CardContent, Typography, useTheme, Tooltip } from '@mui/material';
 
 // font awesome icon
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -16,6 +17,7 @@ import { faHexagonCheck } from '@fortawesome/pro-regular-svg-icons';
 const ThemeStoreItem = (props = {}) => {
   // theme
   const theme = useTheme();
+  const themes = useThemes();
 
   // size
   const width = props.size === 'small' ? 240 : 345;
@@ -23,14 +25,14 @@ const ThemeStoreItem = (props = {}) => {
   // get theme thing
   const getTheme = (el) => {
     // get from theme
-    return dotProp.get(props.item, `theme.${el}`) || dotProp.get(theme, el);
+    return dotProp.get(props.item || {}, `theme.${el}`) || dotProp.get(themes.default, el) || dotProp.get(theme, el);
   };
 
   // return jsx
   return (
     <Box paddingRight={ 2 } maxWidth={ `calc(${width}px + ${theme.spacing(2)})` }>
       <Card sx={ {
-        border       : `${theme.shape.borderWidth} solid ${theme.palette.divider}`,
+        border       : `${theme.shape.borderWidth} solid ${themes.theme?.id === props.item.id ? theme.palette.border.active : theme.palette.border.primary}`,
         cursor       : 'pointer',
         maxWidth     : width,
         minWidth     : width,
@@ -50,7 +52,7 @@ const ThemeStoreItem = (props = {}) => {
 
             backgroundSize     : 'cover',
             backgroundColor    : getTheme('palette.background.default'),
-            backgroundImage    : getTheme('theme.shape.background') && `url(https://img.moon.social/?height=${props.size === 'small' ? 140 : 180}&src=${getTheme('theme.shape.background')})`,
+            backgroundImage    : getTheme('shape.backgroundImage') ? `url(https://img.moon.social/?width=${width}&src=${getTheme('shape.backgroundImage')})` : null,
             backgroundPosition : 'center',
           } }>
             <Box sx={ {
@@ -60,6 +62,7 @@ const ThemeStoreItem = (props = {}) => {
               bottom        : '10%',
               display       : 'flex',
               position      : 'absolute',
+              background    : getTheme('palette.background.paper'),
               flexDirection : 'column',
 
               borderWidth  : `calc(${getTheme('shape.borderWidth')} / 2)`,
@@ -104,12 +107,16 @@ const ThemeStoreItem = (props = {}) => {
               </Tooltip>
             ) }
             <Typography variant="h6">
-              { props.item.name }
+              { props.item.name || (
+                <i>N/A</i>
+              ) }
             </Typography>
           </Box>
           { props.size !== 'small' && (
             <Typography variant="body2" color="text.secondary">
-              { props.item.description }
+              { props.item.description || (
+                <i>N/A</i>
+              ) }
             </Typography>
           ) }
         </CardContent>

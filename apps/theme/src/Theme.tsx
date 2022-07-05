@@ -4,7 +4,7 @@ import React, { useEffect, useState } from 'react';
 import { Box, Stack, Tooltip, Typography, CircularProgress, useTheme } from '@mui/material';
 
 // socket
-import { useSocket, useFollow, useDesktop, useParams, useInstall, ScrollBar, Button } from '@moonup/ui';
+import { useAuth, useSocket, useFollow, useParams, useThemes, ScrollBar, Button } from '@moonup/ui';
 
 // font awesome icon
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -25,13 +25,13 @@ const ThemeStoreTheme = (props = {}) => {
   const [loading, setLoading] = useState(true);
 
   // socket
+  const auth = useAuth();
   const theme = useTheme();
   const socket = useSocket();
-  const desktop = useDesktop();
+  const themes = useThemes();
 
   // follow
-  const follow = useFollow(item, 'theme');
-  const install = useInstall(item);
+  const follow = useFollow(item);
 
   // load theme
   const loadTheme = async () => {
@@ -51,7 +51,7 @@ const ThemeStoreTheme = (props = {}) => {
   // get theme thing
   const getTheme = (el) => {
     // get from theme
-    return dotProp.get(item || {}, `theme.${el}`) || dotProp.get(theme, el);
+    return dotProp.get(item || {}, `theme.${el}`) || dotProp.get(themes.default, el) || dotProp.get(theme, el);
   };
 
   // use callback
@@ -79,14 +79,52 @@ const ThemeStoreTheme = (props = {}) => {
                   sx={ {
                     width        : '100%',
                     height       : bannerHeight,
+                    position     : 'relative',
                     borderRadius : 2,
 
                     backgroundSize     : 'cover',
                     backgroundColor    : getTheme('palette.background.default'),
-                    backgroundImage    : getTheme('theme.shape.background') && `url(https://img.moon.social/?height=${props.size === 'small' ? 140 : 180}&src=${getTheme('theme.shape.background')})`,
+                    backgroundImage    : getTheme('shape.backgroundImage') ? `url(https://img.moon.social/?height=${bannerHeight}&src=${getTheme('shape.backgroundImage')})` : null,
                     backgroundPosition : 'center',
                   } }
-                />
+                >
+                  <Box sx={ {
+                    top           : '10%',
+                    width         : bannerHeight,
+                    right         : '5%',
+                    bottom        : '10%',
+                    display       : 'flex',
+                    position      : 'absolute',
+                    background    : getTheme('palette.background.paper'),
+                    flexDirection : 'column',
+
+                    borderWidth  : `calc(${getTheme('shape.borderWidth')} / 2)`,
+                    borderStyle  : 'solid',
+                    borderColor  : getTheme('palette.border.active'),
+                    borderRadius : 1,
+                  } }>
+                    <Box sx={ {
+                      flex     : 0,
+                      color    : getTheme('palette.text.primary'),
+                      padding  : 1,
+                      fontSize : getTheme('typography.body2.fontSize'),
+
+                      borderBottomStyle : 'solid',
+                      borderBottomColor : getTheme('palette.border.primary'),
+                      borderBottomWidth : `calc(${getTheme('shape.borderWidth')} / 2)`,
+                    } }>
+                      App Name
+                    </Box>
+                    <Box sx={ {
+                      flex     : 1,
+                      color    : getTheme('palette.text.primary'),
+                      padding  : 1,
+                      fontSize : getTheme('typography.body2.fontSize'),
+                    } }>
+                      Moon App
+                    </Box>
+                  </Box>
+                </Box>
               </Box>
               <Box padding={ 2 }>
                 <Box sx={ {
@@ -108,9 +146,12 @@ const ThemeStoreTheme = (props = {}) => {
                     <Button onClick={ () => follow.follow ? follow.remove() : follow.create() } loading={ follow.loading }>
                       { `${follow.followers} followers` }
                     </Button>
-                    { !item.default && (
-                      <Button onClick={ () => install.install ? install.remove() : install.create() } loading={ install.loading }>
-                        { `${install.installs} installs` }
+                    <Button variant={ themes.theme?.id === item.id ? 'contained' : undefined } onClick={ () => themes.choose(item) } loading={ themes.loading }>
+                      { themes.theme?.id === item.id ? 'Chosen' : 'Choose Theme' }
+                    </Button>
+                    { (item.account === (auth?.account || '').toLowerCase()) && (
+                      <Button onClick={ () => props.pushPath(`/theme/${item.id}/update`) }>
+                        Update Theme
                       </Button>
                     ) }
                   </Stack>
@@ -135,13 +176,12 @@ const ThemeStoreTheme = (props = {}) => {
             <Button variant={ follow.follow ? 'contained' : undefined } onClick={ () => follow.follow ? follow.remove() : follow.create() } loading={ follow.loading }>
               { follow.follow ? 'Following' : 'Follow' }
             </Button>
-            { item.default ? (
-              <Button variant="contained" onClick={ () => desktop.findOrCreateTask({ theme : item.id, path : '/' }) } loading={ desktop.loading === 'create' }>
-                Open Theme
-              </Button>
-            ) : (
-              <Button variant={ install.install ? 'contained' : undefined } onClick={ () => install.install ? install.remove() : install.create() } loading={ install.loading }>
-                { install.install ? 'Installed' : 'Install' }
+            <Button variant={ themes.theme?.id === item.id ? 'contained' : undefined } onClick={ () => themes.choose(item) } loading={ themes.loading }>
+              { themes.theme?.id === item.id ? 'Chosen' : 'Choose Theme' }
+            </Button>
+            { (item.account === (auth?.account || '').toLowerCase()) && (
+              <Button onClick={ () => props.pushPath(`/theme/${item.id}/update`) }>
+                Update Theme
               </Button>
             ) }
           </Stack>

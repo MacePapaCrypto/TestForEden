@@ -26,6 +26,7 @@ import ThemeProvider from './Theme/Provider';
 
 // hooks
 import useId from './useId';
+import useAcls from './useAcls';
 import useNFTs from './useNFTs';
 import useApps from './useApps';
 import useFeed from './useFeed';
@@ -105,6 +106,7 @@ export {
 
   // hooks
   useId,
+  useAcls,
   useNFTs,
   useFeed,
   usePost,

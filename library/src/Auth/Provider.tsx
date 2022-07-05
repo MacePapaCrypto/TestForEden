@@ -73,8 +73,6 @@ const MoonAuthProvider = (props = {}) => {
     // get provider
     const signer = (new providers.Web3Provider(window.ethereum)).getSigner();
 
-    console.log('test', account);
-
     // create message
     const message = new SiweMessage({
       nonce,

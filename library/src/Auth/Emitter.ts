@@ -241,7 +241,6 @@ export default class MoonAuthEmitter extends EventEmitter {
       // return result
       return result;
     } catch (e) {
-      console.log('test', e);
       // logout
       this.logout();
     }
