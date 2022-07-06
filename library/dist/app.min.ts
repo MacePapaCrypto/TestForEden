@@ -55202,8 +55202,7 @@ var MoonAuthProvider = function MoonAuthProvider() {
 
 
   var login = function login() {
-    console.log('do login'); // activate wallet
-
+    // activate wallet
     return activateBrowserWallet();
   };
   /**
@@ -55214,8 +55213,7 @@ var MoonAuthProvider = function MoonAuthProvider() {
   var logout = function logout() {
     var _localStorage2;
 
-    console.log('do logout'); // session id
-
+    // session id
     (_localStorage2 = localStorage) === null || _localStorage2 === void 0 ? void 0 : _localStorage2.removeItem('acid');
     deactivate();
   };
@@ -59305,7 +59303,9 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "debounce",
     value: function debounce(key, fn) {
       var to = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
-      // clear
+      // check running
+      if ((promises$1[key] || [])[2]) return promises$1[key][0]; // clear
+
       clearTimeout(timeouts$1[key]); // get resolver
 
       var _ref = promises$1[key] || [],
@@ -59320,7 +59320,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
           resolver = resolve;
         }); // set
 
-        promises$1[key] = [promise, resolver];
+        promises$1[key] = [promise, resolver, false];
       } // set timeout
 
 
@@ -59330,17 +59330,20 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                _context.next = 2;
+                // set running
+                promises$1[key][2] = true; // execute debounce function
+
+                _context.next = 3;
                 return fn();
 
-              case 2:
+              case 3:
                 result = _context.sent;
                 // resolve
                 resolver(result); // delete
 
                 delete promises$1[key];
 
-              case 5:
+              case 6:
               case "end":
                 return _context.stop();
             }
@@ -60442,20 +60445,20 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
   }, {
     key: "bringTaskToFront",
     value: function bringTaskToFront(task) {
+      var _this6 = this;
+
       // check loading
       if (this.loading === task.id) return; // check already active
 
-      if (this.activeTask === task.id) return; // set active task
+      if (this.activeTask === task.id) return; // get window
 
-      this.activeTask = task.id; // get window
-
-      var item = this.tasks.find(function (t) {
+      var updatingItem = this.tasks.find(function (t) {
         return t.id === task.id;
       }); // check item
 
-      if (!item) return; // remove all
+      if (!updatingItem) return; // remove all
 
-      item.zIndex = this.tasks.length + 1; // sort
+      updatingItem.zIndex = this.tasks.length + 100; // sort
 
       _toConsumableArray$1(this.tasks).sort(function (a, b) {
         // indexing
@@ -60463,10 +60466,18 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
         if (a.zIndex < b.zIndex) return -1;
         return 0;
       }).forEach(function (item, i) {
-        // set z index
-        item.zIndex = i + 1;
-      }); // update
+        // get window
+        var actualItem = _this6.tasks.find(function (t) {
+          return t.id === item.id;
+        }); // set z index
 
+
+        actualItem.zIndex = i + 1;
+      }); // set active task
+
+
+      this.updated = new Date();
+      this.activeTask = updatingItem.id; // update
 
       this.updateTasks();
     }
@@ -60676,7 +60687,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "updateTask",
     value: function () {
       var _updateTask = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee18(updatingTask) {
-        var _this6 = this;
+        var _this7 = this;
 
         var save,
             id,
@@ -60734,7 +60745,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
                           _context17.prev = 1;
                           _context17.next = 4;
-                          return _this6.socket.patch("/task/".concat(id), {
+                          return _this7.socket.patch("/task/".concat(id), {
                             app: localTask.app,
                             path: localTask.path,
                             order: localTask.order,
@@ -60751,7 +60762,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                             localTask[key] = loadedTask[key];
                           }); // set tasks
 
-                          _this6.updated = new Date();
+                          _this7.updated = new Date();
                           _context17.next = 12;
                           break;
 
@@ -60762,7 +60773,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
                         case 12:
                           // done loading
-                          _this6.loading = null; // return tasks
+                          _this7.loading = null; // return tasks
 
                           return _context17.abrupt("return", loadedTask);
 
@@ -60800,14 +60811,10 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "updateTasks",
     value: function updateTasks() {
       var _this$desktop6,
-          _this7 = this;
+          _this8 = this;
 
-      var updates = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : this.tasks;
-      var digestBackendUpdates = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : false;
       // check desktop
-      if (!((_this$desktop6 = this.desktop) !== null && _this$desktop6 !== void 0 && _this$desktop6.id)) return; // set spaces
-
-      this.updated = new Date(); // debounce
+      if (!((_this$desktop6 = this.desktop) !== null && _this$desktop6 !== void 0 && _this$desktop6.id)) return; // debounce
 
       return this.debounce('tasks', /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee19() {
         var loadedTasks;
@@ -60816,63 +60823,41 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
             switch (_context19.prev = _context19.next) {
               case 0:
                 // loading
-                _this7.loading = 'tasks'; // loaded
+                _this8.loading = 'tasks'; // loaded
 
                 loadedTasks = []; // try/catch
 
                 _context19.prev = 2;
                 _context19.next = 5;
-                return _this7.socket.post("/task/updates", {
-                  updates: updates,
-                  desktop: _this7.desktop.id
+                return _this8.socket.post("/task/updates", {
+                  updates: _this8.tasks,
+                  desktop: _this8.desktop.id
                 });
 
               case 5:
                 loadedTasks = _context19.sent;
-
-                // check digest backend
-                if (digestBackendUpdates) {
-                  // replace all info
-                  loadedTasks.forEach(function (task) {
-                    // local
-                    var localTask = _this7.tasks.find(function (s) {
-                      return s.id === task.id;
-                    }); // check local space
-
-
-                    if (!localTask) return _this7.tasks.push(task); // update info
-
-                    Object.keys(task).forEach(function (key) {
-                      // space key
-                      localTask[key] = task[key];
-                    });
-                  }); // set spaces
-
-                  _this7.updated = new Date();
-                }
-
-                _context19.next = 13;
+                _context19.next = 12;
                 break;
 
-              case 9:
-                _context19.prev = 9;
+              case 8:
+                _context19.prev = 8;
                 _context19.t0 = _context19["catch"](2);
                 // loading
-                _this7.loading = null;
+                _this8.loading = null;
                 throw _context19.t0;
 
-              case 13:
+              case 12:
                 // done loading
-                _this7.loading = null; // return loaded
+                _this8.loading = null; // return loaded
 
                 return _context19.abrupt("return", loadedTasks);
 
-              case 15:
+              case 14:
               case "end":
                 return _context19.stop();
             }
           }
-        }, _callee19, null, [[2, 9]]);
+        }, _callee19, null, [[2, 8]]);
       })), 500);
     }
     /**

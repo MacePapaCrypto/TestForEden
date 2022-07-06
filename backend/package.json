@@ -60,6 +60,7 @@
     "reflect-metadata": "^0.1.13",
     "request": "^2.88.2",
     "semver": "^7.3.7",
+    "shortid": "^2.2.16",
     "sirv": "^2.0.2",
     "siwe": "^1.1.6",
     "socket.io": "^4.4.1",

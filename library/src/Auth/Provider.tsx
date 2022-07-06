@@ -51,7 +51,6 @@ const MoonAuthProvider = (props = {}) => {
    * login
    */
   const login = () => {
-    console.log('do login');
     // activate wallet
     return activateBrowserWallet();
   };
@@ -60,7 +59,6 @@ const MoonAuthProvider = (props = {}) => {
    * logout function
    */
   const logout = () => {
-    console.log('do logout');
     // session id
     localStorage?.removeItem('acid');
     deactivate();

@@ -284,6 +284,9 @@ export default class DesktopEmitter extends EventEmitter {
    * @param to 
    */
   debounce (key, fn, to = 500) {
+    // check running
+    if ((promises[key] || [])[2]) return promises[key][0];
+
     // clear
     clearTimeout(timeouts[key]);
   
@@ -298,11 +301,14 @@ export default class DesktopEmitter extends EventEmitter {
       });
   
       // set
-      promises[key] = [promise, resolver];
+      promises[key] = [promise, resolver, false];
     }
   
     // set timeout
     timeouts[key] = setTimeout(async () => {
+      // set running
+      promises[key][2] = true;
+
       // execute debounce function
       const result = await fn();
   
@@ -1002,17 +1008,14 @@ export default class DesktopEmitter extends EventEmitter {
     // check already active
     if (this.activeTask === task.id) return;
 
-    // set active task
-    this.activeTask = task.id;
-
     // get window
-    const item = this.tasks.find((t) => t.id === task.id);
+    const updatingItem = this.tasks.find((t) => t.id === task.id);
 
     // check item
-    if (!item) return;
+    if (!updatingItem) return;
 
     // remove all
-    item.zIndex = this.tasks.length + 1;
+    updatingItem.zIndex = this.tasks.length + 100;
 
     // sort
     [...this.tasks].sort((a, b) => {
@@ -1021,9 +1024,16 @@ export default class DesktopEmitter extends EventEmitter {
       if (a.zIndex < b.zIndex) return -1;
       return 0;
     }).forEach((item, i) => {
+      // get window
+      const actualItem = this.tasks.find((t) => t.id === item.id);
+
       // set z index
-      item.zIndex = i + 1;
+      actualItem.zIndex = i + 1;
     });
+
+    // set active task
+    this.updated    = new Date();
+    this.activeTask = updatingItem.id;
 
     // update
     this.updateTasks();
@@ -1221,12 +1231,9 @@ export default class DesktopEmitter extends EventEmitter {
    * @param digestBackendUpdates 
    * @returns 
    */
-  updateTasks(updates = this.tasks, digestBackendUpdates = false) {
+  updateTasks() {
     // check desktop
     if (!this.desktop?.id) return;
-
-    // set spaces
-    this.updated = new Date();
 
     // debounce
     return this.debounce('tasks', async () => {
@@ -1240,30 +1247,9 @@ export default class DesktopEmitter extends EventEmitter {
       try {
         // load
         loadedTasks = await this.socket.post(`/task/updates`, {
-          updates,
+          updates : this.tasks,
           desktop : this.desktop.id,
         });
-
-        // check digest backend
-        if (digestBackendUpdates) {
-          // replace all info
-          loadedTasks.forEach((task) => {
-            // local
-            const localTask = this.tasks.find((s) => s.id === task.id);
-
-            // check local space
-            if (!localTask) return this.tasks.push(task);
-
-            // update info
-            Object.keys(task).forEach((key) => {
-              // space key
-              localTask[key] = task[key];
-            });
-          });
-
-          // set spaces
-          this.updated = new Date();
-        }
       } catch (e) {
         // loading
         this.loading = null;

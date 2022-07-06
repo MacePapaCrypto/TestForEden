@@ -33,11 +33,6 @@ const AppSpaceItem = (props = {}) => {
     // opening
     setOpening(true);
 
-    console.log('ON OPEN', {
-      app  : props.app?.id,
-      path : `/space/${props.item.id}`,
-    });
-
     // find or create
     await desktop.findOrCreateTask({
       app  : props.app?.id,

@@ -79,8 +79,6 @@ const useTags = (props = {}) => {
     };
   }, [auth?.account]);
 
-  console.log('test', tags);
-
   // return tags
   const MoonTags = {
     list : listTags,

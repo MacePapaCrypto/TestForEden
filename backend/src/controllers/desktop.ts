@@ -669,7 +669,7 @@ export default class DesktopController extends NFTController {
     const lowerAccount = req.account ? `${req.account}`.toLowerCase() : null;
 
     // check account
-    if (false && !lowerAccount) return {
+    if (!lowerAccount) return {
       message : 'Account Required',
       success : false,
     };
@@ -681,7 +681,7 @@ export default class DesktopController extends NFTController {
     const updateTask = await TaskModel.findById(params.id);
 
     // actual updates
-    if (false && (!updateTask || updateTask.get('account') !== lowerAccount)) {
+    if (!updateTask || (updateTask.get('account') !== lowerAccount)) {
       // unlock
       unlock();
 
@@ -711,7 +711,7 @@ export default class DesktopController extends NFTController {
     if (typeof data.path !== 'undefined') updateTask.set('path', data.path);
     if (typeof data.order !== 'undefined') updateTask.set('order', data.order);
     if (typeof data.parent !== 'undefined') updateTask.set('parent', data.parent);
-    if (typeof data.zIndex !== 'undefined') updateTask.set('zIndex', data.zIndex);
+    // if (typeof data.zIndex !== 'undefined') updateTask.set('zIndex', data.zIndex);
     if (typeof data.position !== 'undefined') updateTask.set('position', data.position);
 
     // save

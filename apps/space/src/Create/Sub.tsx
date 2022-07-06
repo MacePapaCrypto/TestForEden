@@ -69,19 +69,19 @@ const AppSpaceCreateSub = (props = {}) => {
     });
 
     // find actual space
-    let actualSpace = (desktop.tasks || []).find((t) => t.type === 'space' && t.path === props.space?.id);
+    let actualSpace = (desktop.tasks || []).find((t) => t.app === props.app?.id && t.path.startsWith(`/space/${props.space?.id}`));
 
     // check exists
     if (!actualSpace) {
       // create task
       actualSpace = await desktop.createTask({
-        type : 'space',
-        path : `${props.space?.id}/${createdSpace?.id}`,
+        app  : props.app?.id,
+        path : `/space/${props.space?.id}/${createdSpace?.id}`,
       });
     } else {
       await desktop.updateTask({
         id   : actualSpace.id,
-        path : `${props.space?.id}/${createdSpace?.id}`,
+        path : `/space/${props.space?.id}/${createdSpace?.id}`,
       });
     }
 

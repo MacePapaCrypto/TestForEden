@@ -21,7 +21,7 @@ import SideBarExplore from './SideBar/Explore';
  */
 const SpaceApp = (props = {}) => {
   // action
-  const [,,spaceId, action] = props.path.split('/');
+  const [,,spaceId, action, subSpaceId] = props.path.split('/');
 
   // space
   const [space, setSpace] = useState(null);
@@ -34,7 +34,7 @@ const SpaceApp = (props = {}) => {
     requireSpace : true,
   });
   const [feed, setFeed] = useState(['hot', 'new'].find((t) => t === action));
-  const [subSpace, setSubSpace] = useState(subSpaces.spaces.find((s) => s.id === action));
+  const [subSpace, setSubSpace] = useState(subSpaces.spaces.find((s) => s.id === subSpaceId));
 
   // load space
   const loadSpace = async (spaceId) => {
@@ -46,6 +46,9 @@ const SpaceApp = (props = {}) => {
       // return
       return;
     }
+
+    // cehck exists
+    if (spaceId === space?.id) return;
 
     // get space
     setLoading(true);
@@ -65,7 +68,7 @@ const SpaceApp = (props = {}) => {
     setSubSpace(null);
 
     // set new path
-    props.pushPath(`/${space}/${feed}`);
+    props.pushPath(`/space/${spaceId}/${feed}`);
   };
 
   // save subspace
@@ -74,17 +77,17 @@ const SpaceApp = (props = {}) => {
     setSubSpace(subSpace);
 
     // set new path
-    props.pushPath(`/${space}${subSpace?.id ? `/${subSpace.id}` : ''}`);
+    props.pushPath(`/space/${spaceId}${subSpace?.id ? `/sub/${subSpace.id}` : ''}`);
   };
 
   // path change
   useEffect(() => {
     // action
-    const [,,spaceId,action] = props.path.split('/');
+    const [,,spaceId, action, subSpaceId] = props.path.split('/');
 
     // set space
     setFeed(['hot', 'new'].find((t) => t === action));
-    setSubSpace(subSpaces.spaces.find((s) => s.id === action));
+    setSubSpace(subSpaces.spaces.find((s) => s.id === subSpaceId));
 
     // load space
     loadSpace(spaceId);
@@ -92,22 +95,25 @@ const SpaceApp = (props = {}) => {
 
   // use effect
   useEffect(() => {
+    // action
+    const [,,spaceId, action, subSpaceId] = props.path.split('/');
+
     // check space
     if (subSpace) return;
     if (!subSpaces.spaces?.length) return;
 
     // set sub space
-    setSubSpace(subSpaces.spaces.find((s) => s.id === action));
+    setSubSpace(subSpaces.spaces.find((s) => s.id === subSpaceId));
   }, [subSpaces.spaces?.length]);
 
   // default props
   const defaultProps = {
     position : {
-      x : .1,
-      y : .1,
+      x : `${props.path}`.includes('/create') ? .2 : .1,
+      y : `${props.path}`.includes('/create') ? .2 : .1,
 
-      width  : .8,
-      height : .8,
+      width  : `${props.path}`.includes('/create') ? .6 : .8,
+      height : `${props.path}`.includes('/create') ? .6 : .8,
     },
   };
 
@@ -130,12 +136,43 @@ const SpaceApp = (props = {}) => {
           <Route path="/following">
             <SideBarExplore { ...props } />
           </Route>
-          <Route path="/space/:space">
-            <SideBar { ...props } space={ space } subSpaces={ subSpaces } loading={ loading } />
-          </Route>
-          <Route path="/space/:space/:route">
-            <SideBar { ...props } space={ space } subSpaces={ subSpaces } loading={ loading } />
-          </Route>
+          { !`${props.path}`.includes('/create') && (
+            <>
+              <Route path="/space/:space">
+                <SideBar
+                  { ...props }
+                  feed={ feed }
+                  space={ space }
+                  onFeed={ saveFeed }
+                  subSpace={ subSpace }
+                  subSpaces={ subSpaces }
+                  setSubSpace={ saveSubspace }
+                />
+              </Route>
+              <Route path="/space/:space/:route">
+                <SideBar
+                  { ...props }
+                  feed={ feed }
+                  space={ space }
+                  onFeed={ saveFeed }
+                  subSpace={ subSpace }
+                  subSpaces={ subSpaces }
+                  setSubSpace={ saveSubspace }
+                />
+              </Route>
+              <Route path="/space/:space/:route/:sub">
+                <SideBar
+                  { ...props }
+                  feed={ feed }
+                  space={ space }
+                  onFeed={ saveFeed }
+                  subSpace={ subSpace }
+                  subSpaces={ subSpaces }
+                  setSubSpace={ saveSubspace }
+                />
+              </Route>
+            </>
+          ) }
         </>
       ) }
 
@@ -186,13 +223,12 @@ const SpaceApp = (props = {}) => {
         <Feed
           { ...props }
           feed="hot"
-          space={ null }
           onFeed={ saveFeed }
-          subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
 
           space={ space }
           loading={ loading }
+          subSpace={ subSpace }
           subSpaces={ subSpaces }
         />
       </Route>
@@ -200,13 +236,12 @@ const SpaceApp = (props = {}) => {
         <Feed
           { ...props }
           feed="hot"
-          space={ null }
           onFeed={ saveFeed }
-          subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
 
           space={ space }
           loading={ loading }
+          subSpace={ subSpace }
           subSpaces={ subSpaces }
         />
       </Route>
@@ -214,13 +249,13 @@ const SpaceApp = (props = {}) => {
         <Feed
           { ...props }
           feed="latest"
-          space={ null }
           onFeed={ saveFeed }
           subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
 
           space={ space }
           loading={ loading }
+          subSpace={ subSpace }
           subSpaces={ subSpaces }
         />
       </Route>
@@ -228,13 +263,25 @@ const SpaceApp = (props = {}) => {
         <Feed
           { ...props }
           feed="mooning"
-          space={ null }
           onFeed={ saveFeed }
-          subSpaces={ subSpaces }
           setSubSpace={ saveSubspace }
 
           space={ space }
           loading={ loading }
+          subSpace={ subSpace }
+          subSpaces={ subSpaces }
+        />
+      </Route>
+      <Route path="/space/:space/sub/:subSpace">
+        <Feed
+          { ...props }
+          feed="mooning"
+          onFeed={ saveFeed }
+          setSubSpace={ saveSubspace }
+
+          space={ space }
+          loading={ loading }
+          subSpace={ subSpace }
           subSpaces={ subSpaces }
         />
       </Route>

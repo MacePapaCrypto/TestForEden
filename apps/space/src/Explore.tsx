@@ -41,7 +41,7 @@ const AppSpaceExplore = (props = {}) => {
 
   // on tag
   const onTag = (tag) => {
-    console.log('test', tag);
+    
   };
 
   // use effect
