@@ -32,25 +32,25 @@ const Main = (props = {}) => {
       
       <SocketProvider>
         <AuthProvider>
-          <BrowserRouter>
-            <DesktopProvider>
-              { !!task && (
-                <Box height="100vh" width="100vw">
-                  <Window
-                    key={ `window-${task.id}` }
-                    item={ task }
-                    desktop={ desktop }
-                    position={ null }
-                    isElectron
-                    
-                    onMoveUp={ (e) => {} }
-                    onMoveDown={ (e) => {} }
-                    bringToFront={ (id) => {} }
-                  />
-                </Box>
-              ) }
-            </DesktopProvider>
-          </BrowserRouter>
+            <BrowserRouter>
+              <DesktopProvider>
+                { !!task && (
+                  <Box height="100vh" width="100vw">
+                    <Window
+                      key={ `window-${task.id}` }
+                      item={ task }
+                      desktop={ desktop }
+                      position={ null }
+                      isElectron
+                      
+                      onMoveUp={ (e) => {} }
+                      onMoveDown={ (e) => {} }
+                      bringToFront={ (id) => {} }
+                    />
+                  </Box>
+                ) }
+              </DesktopProvider>
+            </BrowserRouter>
         </AuthProvider>
       </SocketProvider>
     </ThemeProvider>

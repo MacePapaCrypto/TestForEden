@@ -48,12 +48,12 @@ export default class FeedController extends NFTController {
     let actualFeed = await FeedModel.findById(feed);
     
     // check path
-    if (['hot', 'new', 'following'].includes(feed)) {
+    if (['me', 'hot', 'following'].includes(feed)) {
       // check feed
       if (feed === 'hot') {
         data.dir  = 'desc';
         data.sort = 'rank.score';
-      } else if (feed === 'new') {
+      } else if (feed === 'me') {
         data.dir  = 'desc';
         data.sort = 'createdAt';
       }

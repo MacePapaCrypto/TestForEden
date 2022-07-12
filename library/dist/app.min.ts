@@ -2,7 +2,7 @@ import * as React from 'react';
 import React__default, { useRef, useEffect, useState, createContext, useReducer, useContext, useCallback, useMemo, createElement as createElement$1, Component, useLayoutEffect, Fragment as Fragment$2 } from 'react';
 import { Link as Link$1, useHistory } from 'react-router-dom';
 import * as Mui from '@mui/material';
-import { styled, Box, createTheme, ThemeProvider, useTheme, Stack, Button, Tooltip, Paper, CircularProgress as CircularProgress$1, ClickAwayListener, Typography, Avatar, Skeleton, Popper, Grow, FormControl, InputLabel, OutlinedInput, InputAdornment, IconButton, Grid, MenuList, MenuItem, Menu, Divider, Card, CardContent, AvatarGroup, CardMedia, Chip, AppBar, Tabs, Tab, Badge } from '@mui/material';
+import { styled, Box, createTheme, ThemeProvider, useTheme, Stack, Button, Tooltip, Paper, CircularProgress as CircularProgress$1, ClickAwayListener, Avatar, Skeleton, Popper, Grow, FormControl, InputLabel, OutlinedInput, InputAdornment, IconButton, Typography, Grid, MenuList, MenuItem, Menu, Divider, Card, CardContent, AvatarGroup, CardMedia, Chip, AppBar, Tabs, Tab, Badge } from '@mui/material';
 import { jsx, Fragment as Fragment$1, jsxs } from 'react/jsx-runtime';
 import * as FontAwesome from '@fortawesome/react-fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -58995,6 +58995,8 @@ var MoonSocketProvider = function MoonSocketProvider() {
   }, props.children);
 }; // export default
 
+var shortid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10); // debouncer
+
 var timeouts$1 = {};
 var promises$1 = {};
 /**
@@ -59045,7 +59047,8 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
     _defineProperty$4(_assertThisInitialized$1(_this), "__activeTask", null);
 
-    _this.props = _this.props.bind(_assertThisInitialized$1(_this)); // bind desktop methods
+    _this.props = _this.props.bind(_assertThisInitialized$1(_this));
+    _this.debounce = _this.debounce.bind(_assertThisInitialized$1(_this)); // bind desktop methods
 
     _this.getDesktop = _this.getDesktop.bind(_assertThisInitialized$1(_this));
     _this.emitDesktop = _this.emitDesktop.bind(_assertThisInitialized$1(_this));
@@ -59303,10 +59306,8 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "debounce",
     value: function debounce(key, fn) {
       var to = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 500;
-      // check running
-      if ((promises$1[key] || [])[2]) return promises$1[key][0]; // clear
-
-      clearTimeout(timeouts$1[key]); // get resolver
+      // clear
+      if (timeouts$1[key]) clearTimeout(timeouts$1[key]); // get resolver
 
       var _ref = promises$1[key] || [],
           _ref2 = _slicedToArray$1(_ref, 2),
@@ -59314,15 +59315,16 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
           resolver = _ref2[1]; // if no promise
 
 
-      if (!promise || !resolver) {
+      if (typeof promise === 'undefined') {
         // create new promise
         promise = new Promise(function (resolve) {
           resolver = resolve;
         }); // set
 
-        promises$1[key] = [promise, resolver, false];
-      } // set timeout
+        promises$1[key] = [promise, resolver];
+      }
 
+      console.log(key, timeouts$1[key], promises$1[key]); // set timeout
 
       timeouts$1[key] = setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
         var result;
@@ -59330,20 +59332,17 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
           while (1) {
             switch (_context.prev = _context.next) {
               case 0:
-                // set running
-                promises$1[key][2] = true; // execute debounce function
-
-                _context.next = 3;
+                _context.next = 2;
                 return fn();
 
-              case 3:
+              case 2:
                 result = _context.sent;
                 // resolve
                 resolver(result); // delete
 
                 delete promises$1[key];
 
-              case 6:
+              case 5:
               case "end":
                 return _context.stop();
             }
@@ -60687,7 +60686,8 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "updateTask",
     value: function () {
       var _updateTask = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee18(updatingTask) {
-        var _this7 = this;
+        var _localTask,
+            _this7 = this;
 
         var save,
             id,
@@ -60705,8 +60705,17 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
                 localTask = this.tasks.find(function (s) {
                   return s.id === id;
-                }); // check local task
+                }); // check nonce
 
+                if (!(!save && updatingTask.nonce && ((_localTask = localTask) === null || _localTask === void 0 ? void 0 : _localTask.nonce) === updatingTask.nonce)) {
+                  _context18.next = 6;
+                  break;
+                }
+
+                return _context18.abrupt("return");
+
+              case 6:
+                // check local task
                 if (!localTask) {
                   // set task
                   localTask = _objectSpread2$1({}, updatingTask); // push
@@ -60717,35 +60726,42 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
                 Object.keys(updatingTask).forEach(function (key) {
                   // check typeof
-                  if (typeof updatingTask[key] === 'undefined') return; // update task
+                  if (typeof updatingTask[key] === 'undefined') return; // check key
+
+                  if (!save && ['zIndex'].includes(key)) return; // update task
 
                   localTask[key] = updatingTask[key];
                 }); // update
 
                 if (save) {
-                  _context18.next = 10;
+                  _context18.next = 12;
                   break;
                 }
 
                 return _context18.abrupt("return", this.updated = new Date());
 
-              case 10:
+              case 12:
                 // update in place
                 this.updated = new Date();
 
-              case 11:
+              case 13:
                 return _context18.abrupt("return", this.debounce("task.".concat(id), /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee17() {
-                  var loadedTask;
+                  var nonce, loadedTask;
                   return regeneratorRuntime.wrap(function _callee17$(_context17) {
                     while (1) {
                       switch (_context17.prev = _context17.next) {
                         case 0:
-                          // loaded
-                          loadedTask = localTask; // try/catch
+                          // create nonce
+                          nonce = shortid(); // loaded
 
-                          _context17.prev = 1;
-                          _context17.next = 4;
+                          loadedTask = localTask; // set nonce
+
+                          localTask.nonce = nonce; // try/catch
+
+                          _context17.prev = 3;
+                          _context17.next = 6;
                           return _this7.socket.patch("/task/".concat(id), {
+                            nonce: nonce,
                             app: localTask.app,
                             path: localTask.path,
                             order: localTask.order,
@@ -60754,7 +60770,7 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                             position: localTask.position
                           });
 
-                        case 4:
+                        case 6:
                           loadedTask = _context17.sent;
                           // loop
                           Object.keys(loadedTask).forEach(function (key) {
@@ -60763,29 +60779,29 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                           }); // set tasks
 
                           _this7.updated = new Date();
-                          _context17.next = 12;
+                          _context17.next = 14;
                           break;
 
-                        case 9:
-                          _context17.prev = 9;
-                          _context17.t0 = _context17["catch"](1);
+                        case 11:
+                          _context17.prev = 11;
+                          _context17.t0 = _context17["catch"](3);
                           throw _context17.t0;
 
-                        case 12:
+                        case 14:
                           // done loading
                           _this7.loading = null; // return tasks
 
                           return _context17.abrupt("return", loadedTask);
 
-                        case 14:
+                        case 16:
                         case "end":
                           return _context17.stop();
                       }
                     }
-                  }, _callee17, null, [[1, 9]]);
+                  }, _callee17, null, [[3, 11]]);
                 })), 500));
 
-              case 12:
+              case 14:
               case "end":
                 return _context18.stop();
             }
@@ -78345,19 +78361,7 @@ var MoonDesktop = function MoonDesktop() {
       backgroundImage: theme.shape.backgroundImage ? "url(".concat(theme.shape.backgroundImage, ")") : "radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px), radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px)",
       backgroundPosition: theme.shape.backgroundImage ? 'center' : "0 0,10px 10px"
     }
-  }, !(theme.shape.backgroundImage || theme.shape.backgroundVideo) && /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      mx: 'auto',
-      px: 4,
-      py: 2,
-      display: 'flex',
-      alignItems: 'center',
-      background: theme.palette.background["default"],
-      justifyContent: 'center'
-    }
-  }, /*#__PURE__*/React__default.createElement(Typography, {
-    variant: "h2"
-  }, "WELCOME TO MOON")), !!theme.shape.backgroundVideo && /*#__PURE__*/React__default.createElement(Box, {
+  }, !!theme.shape.backgroundVideo && /*#__PURE__*/React__default.createElement(Box, {
     sx: {
       width: '100%!important',
       height: '100%!important',

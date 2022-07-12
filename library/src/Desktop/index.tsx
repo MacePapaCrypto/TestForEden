@@ -151,22 +151,6 @@ const MoonDesktop = (props = {}) => {
       backgroundImage    : theme.shape.backgroundImage ? `url(${theme.shape.backgroundImage})` : `radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px), radial-gradient(rgba(255,255,255,0.25) 0.5px, transparent 0.5px)`,
       backgroundPosition : theme.shape.backgroundImage ? 'center' : `0 0,10px 10px`,
     } }>
-      { !(theme.shape.backgroundImage || theme.shape.backgroundVideo) && (
-        <Box sx={ {
-          mx             : 'auto',
-          px             : 4,
-          py             : 2,
-          display        : 'flex',
-          alignItems     : 'center',
-          background     : theme.palette.background.default,
-          justifyContent : 'center',
-        } }>
-          <Typography variant="h2">
-            WELCOME TO MOON
-          </Typography>
-        </Box>
-      ) }
-
       { !!theme.shape.backgroundVideo && (
         <Box
           sx={ {

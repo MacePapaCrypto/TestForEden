@@ -1,6 +1,10 @@
 
 // emitter
 import { EventEmitter } from 'events';
+import { customAlphabet } from 'nanoid';
+
+// create alphabet
+const shortid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 10);
 
 // debouncer
 const timeouts = {};
@@ -37,6 +41,7 @@ export default class DesktopEmitter extends EventEmitter {
 
     // bind
     this.props = this.props.bind(this);
+    this.debounce = this.debounce.bind(this);
 
     // bind desktop methods
     this.getDesktop = this.getDesktop.bind(this);
@@ -284,31 +289,27 @@ export default class DesktopEmitter extends EventEmitter {
    * @param to 
    */
   debounce (key, fn, to = 500) {
-    // check running
-    if ((promises[key] || [])[2]) return promises[key][0];
-
     // clear
-    clearTimeout(timeouts[key]);
+    if (timeouts[key]) clearTimeout(timeouts[key]);
   
     // get resolver
     let [promise, resolver] = promises[key] || [];
   
     // if no promise
-    if (!promise || !resolver) {
+    if (typeof promise === 'undefined') {
       // create new promise
       promise = new Promise((resolve) => {
         resolver = resolve;
       });
   
       // set
-      promises[key] = [promise, resolver, false];
+      promises[key] = [promise, resolver];
     }
+
+    console.log(key, timeouts[key], promises[key]);
   
     // set timeout
     timeouts[key] = setTimeout(async () => {
-      // set running
-      promises[key][2] = true;
-
       // execute debounce function
       const result = await fn();
   
@@ -1157,6 +1158,9 @@ export default class DesktopEmitter extends EventEmitter {
     // update task
     let localTask = this.tasks.find((s) => s.id === id);
 
+    // check nonce
+    if (!save && updatingTask.nonce && localTask?.nonce === updatingTask.nonce) return;
+
     // check local task
     if (!localTask) {
       // set task
@@ -1173,6 +1177,9 @@ export default class DesktopEmitter extends EventEmitter {
       // check typeof
       if (typeof updatingTask[key] === 'undefined') return;
 
+      // check key
+      if (!save && ['zIndex'].includes(key)) return;
+
       // update task
       localTask[key] = updatingTask[key];
     });
@@ -1188,13 +1195,21 @@ export default class DesktopEmitter extends EventEmitter {
 
     // return debounce
     return this.debounce(`task.${id}`, async () => {
+      // create nonce
+      const nonce = shortid();
+  
       // loaded
       let loadedTask = localTask;
+
+      // set nonce
+      localTask.nonce = nonce;
   
       // try/catch
       try {
         // load
         loadedTask = await this.socket.patch(`/task/${id}`, {
+          nonce,
+
           app      : localTask.app,
           path     : localTask.path,
           order    : localTask.order,

@@ -4,6 +4,7 @@ global.appRoot = __dirname;
 
 // import
 import AuthEmitter from '@moonup/ui/src/Auth/Emitter';
+import ThemeEmitter from '@moonup/ui/src/Theme/Emitter';
 import SocketEmitter from '@moonup/ui/src/Socket/Emitter';
 import DesktopEmitter from '@moonup/ui/src/Desktop/Emitter';
 import { customAlphabet } from 'nanoid';
@@ -15,6 +16,7 @@ const nanoid = customAlphabet('1234567890abcdefghijklmnopqrstuvwxyz', 40);
 import store from './utilities/store';
 import TaskController from './controllers/task';
 import AuthController from './controllers/auth';
+import ThemeController from './controllers/theme';
 import SocketController from './controllers/socket';
 
 /**
@@ -52,6 +54,7 @@ class MoonElectron {
     // build socket
     await this.buildSocket();
     await this.buildAuth();
+    await this.buildTheme();
     await this.buildDesktop();
   }
 
@@ -95,6 +98,23 @@ class MoonElectron {
 
     // create task controller
     const authController = new AuthController(this.auth, this.windows);
+  }
+
+  /**
+   * build auth
+   */
+  async buildTheme() {
+    // building desktop
+    console.log('BUILDING THEME');
+
+    // create new socket
+    this.theme = new ThemeEmitter({
+      auth   : this.auth,
+      socket : this.socket?.state,
+    });
+
+    // create task controller
+    const themeController = new ThemeController(this.theme, this.windows);
   }
 
   /**

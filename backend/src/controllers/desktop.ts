@@ -449,8 +449,14 @@ export default class DesktopController extends NFTController {
    * @param post 
    */
   async taskListener(socket, task) {
+    // load task
+    const actualTask = await TaskModel.findById(task.id);
+
+    // sanitise
+    const sanitised = await actualTask.toJSON({}, socket);
+
     // send post to socket
-    socket.emit('task', task);
+    socket.emit('task', sanitised);
   }
 
   /**
@@ -709,9 +715,10 @@ export default class DesktopController extends NFTController {
 
     // set
     if (typeof data.path !== 'undefined') updateTask.set('path', data.path);
+    if (typeof data.nonce !== 'undefined') updateTask.set('nonce', data.nonce);
     if (typeof data.order !== 'undefined') updateTask.set('order', data.order);
     if (typeof data.parent !== 'undefined') updateTask.set('parent', data.parent);
-    // if (typeof data.zIndex !== 'undefined') updateTask.set('zIndex', data.zIndex);
+    if (typeof data.zIndex !== 'undefined') updateTask.set('zIndex', data.zIndex);
     if (typeof data.position !== 'undefined') updateTask.set('position', data.position);
 
     // save
