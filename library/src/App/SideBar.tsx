@@ -1,31 +1,28 @@
 
 // import react
+import React from 'react';
 import { Box, useTheme } from '@mui/material';
-import React, { useState } from 'react';
+import useStyles from '../useStyles';
 
 // sub spaces
 const MoonAppSideBar = (props = {}) => {
   // theme
   const theme = useTheme();
-
-  // skeleton height
-  const subspaceWidth = parseInt(theme.spacing(30).replace('px', ''));
+  const styles = useStyles('MoonAppSideBar');
 
   // return jsx
   return (
     <>
-      <Box sx={ {
-        px          : theme.spacing(2),
-        py          : theme.spacing(2),
-        width       : subspaceWidth,
-        height      : '100%',
-        borderRight : `.1rem solid ${theme.palette.border.primary}`,
-
-        '&:empty' : {
-          display : 'none',
-        }
-      } }>
-        { props.children }
+      <Box sx={ styles } className={ 
+        [
+          'MoonAppSideBar-root',
+          props.hasSub ? 'MoonAppSideBar-withSub' : 'MoonAppSideBar-withoutSub',
+          props.collapsed ? 'MoonAppSideBar-collapsed' : 'MoonAppSideBar-expanded',
+        ].join(' ')
+      }>
+        <Box className="MoonAppSideBar-content">
+          { props.children }
+        </Box>
       </Box>
     </>
   )

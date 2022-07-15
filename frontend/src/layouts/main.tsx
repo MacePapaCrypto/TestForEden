@@ -1,7 +1,6 @@
 
 import React from 'react';
 import { Box } from '@mui/material';
-import { useParams } from 'react-router-dom';
 import { TaskBar, DesktopProvider } from '@moonup/ui';
 
 /**
@@ -10,12 +9,9 @@ import { TaskBar, DesktopProvider } from '@moonup/ui';
  * @param props 
  */
 const MainLayout = (props = {}) => {
-  // params
-  const { feed, post, space, account } = useParams();
-
   // position
   const taskBarStyle = 'fixed';
-  const taskBarPosition = 'bottom';
+  const taskBarPosition = 'left';
 
   // return jsx
   return (

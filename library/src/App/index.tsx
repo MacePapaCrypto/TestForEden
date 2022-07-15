@@ -1,12 +1,13 @@
 
 // import react
 import { Box, useTheme } from '@mui/material';
-import React, { useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect } from 'react';
 
 // locals
 import Bar from '../Window/Bar';
 import SideBar from './SideBar';
 import Context from '../Window/Context';
+import useStyles from '../useStyles';
 import useDesktop from '../useDesktop';
 
 /**
@@ -17,10 +18,14 @@ import useDesktop from '../useDesktop';
 const MoonApp = (props = {}) => {
   // desktop
   const theme = useTheme();
+  const styles = useStyles('MoonApp');
   const desktop = useDesktop();
 
   // use context
   const task = useContext(Context);
+  
+  // sub space
+  const subspaceWidth = parseInt(theme.spacing(8).replace('px', ''));
 
   // large grid size
   const largeGridSize = 20;
@@ -68,21 +73,42 @@ const MoonApp = (props = {}) => {
     <>
       <Bar
         name={ props.name }
+        menu={ !!props.menu }
         active={ desktop.activeTask === task.item?.id }
 
         onDelete={ () => desktop.deleteTask(task.item) }
         onMoveUp={ task.onMoveUp }
+        collapsed={ task.item?.collapsed }
+        onCollapse={ task.onCollapse }
         onMoveDown={ task.onMoveDown }
         isElectron={ task.isElectron }
       />
       <Box flex={ 1 } display="flex" flexDirection="row">
-        { !!props.menu && (
-          <SideBar>
-            { props.menu }
-          </SideBar>
+        { !!props.sub && (
+          <Box width={ subspaceWidth }>
+            { props.sub}
+          </Box>
         ) }
-        <Box flex={ 1 } display="flex" flexDirection="column">
-          { props.children }
+        <Box sx={ {
+          ...styles,
+
+          flexDirection : 'row',
+        } } className={
+          [
+            'MoonApp-root',
+            !!props.sub ? 'MoonApp-withSub' : null,
+            !!props.menu ? 'MoonApp-withMenu' : null,
+            !!task.item?.collapsed ? 'MoonApp-collapsed' : 'MoonApp-shown',
+          ].filter((v) => v).join(' ')
+        }>
+          { !!props.menu && (
+            <SideBar collapsed={ task.item?.collapsed } hasSub={ !!props.sub }>
+              { props.menu }
+            </SideBar>
+          ) }
+          <Box display="flex" flex={ 1 } flexDirection="column">
+            { props.children }
+          </Box>
         </Box>
       </Box>
     </>

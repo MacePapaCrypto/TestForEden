@@ -40,7 +40,7 @@ const FeedAppSideBar = (props = {}) => {
         </ListItemText>
       </MenuItem>
     </MenuList>
-  )
+  );
 };
 
 // export default

@@ -720,6 +720,7 @@ export default class DesktopController extends NFTController {
     if (typeof data.parent !== 'undefined') updateTask.set('parent', data.parent);
     if (typeof data.zIndex !== 'undefined') updateTask.set('zIndex', data.zIndex);
     if (typeof data.position !== 'undefined') updateTask.set('position', data.position);
+    if (typeof data.collapsed !== 'undefined') updateTask.set('collapsed', !!data.collapsed);
 
     // save
     await updateTask.save();

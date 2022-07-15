@@ -13,6 +13,7 @@ import { faExclamationTriangle } from '@fortawesome/pro-regular-svg-icons';
 import Bar from './Bar';
 import useApp from '../useApp';
 import Context from './Context';
+import useStyles from '../useStyles';
 import useDesktop from '../useDesktop';
 
 // debounce
@@ -28,7 +29,9 @@ const MoonWindow = (props = {}) => {
   // use theme
   const app = useApp(props.item.application, props.item.path);
   const theme = useTheme();
+  const styles = useStyles('MoonWindow');
   const desktop = useDesktop();
+  const appStyles = useStyles('MoonApp');
 
   // ref
   const dragRef = useRef(null);
@@ -111,16 +114,20 @@ const MoonWindow = (props = {}) => {
 
   // window body
   const windowBody = (
-    <Paper sx={ {
-      width         : '100%',
-      height        : '100%',
-      display       : 'flex',
-      borderWidth   : props.isElectron ? 0 : theme.shape.borderWidth,
-      borderStyle   : 'solid',
-      borderColor   : desktop.activeTask === props.item.id ? theme.palette.border.active : theme.palette.border.primary,
-      borderRadius  : 2,
-      flexDirection : 'column',
-    } } ref={ windowRef } elevation={ 2 } onMouseDown={ bringToFront }>
+    <Paper
+      sx={ styles }
+      ref={ windowRef }
+      className={
+        [
+          'MoonWindow-root',
+          desktop.activeTask === props.item.id ? ' MoonWindow-active' : null,
+          props.isElectron ? 'MoonWindow-electron' : null
+        ].filter((v) => v).join(' ')
+      }
+      onMouseDown={ bringToFront }
+
+      { ...(theme.components.MoonWindow?.defaultProps || {}) }
+    >
       { app.loading ? (
         <>
           <Bar
@@ -132,13 +139,23 @@ const MoonWindow = (props = {}) => {
             isElectron={ props.isElectron }
             onMoveDown={ props.onMoveDown }
           />
-          <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+          <Box sx={ {
+            ...appStyles,
+
+            alignItems     : 'center',
+            justifyContent : 'center',
+          } } className="MoonApp-root">
             <CircularProgress />
           </Box>
         </>
       ) : (
         <ErrorBoundary FallbackComponent={ (
-          <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+          <Box sx={ {
+            ...appStyles,
+
+            alignItems     : 'center',
+            justifyContent : 'center',
+          } } className="MoonApp-root">
             <FontAwesomeIcon icon={ faExclamationTriangle } size="xl" />
           </Box>
         ) }>
@@ -149,6 +166,7 @@ const MoonWindow = (props = {}) => {
               onMoveUp   : props.onMoveUp,
               isElectron : props.isElectron,
               onMoveDown : props.onMoveDown,
+              onCollapse : props.onCollapse,
 
               // save place
               place,
@@ -168,7 +186,12 @@ const MoonWindow = (props = {}) => {
               />
             </Context.Provider>
           ) : (
-            <Box flex={ 1 } display="flex" flexDirection="column" alignItems="center" justifyContent="center">
+            <Box sx={ {
+              ...appStyles,
+  
+              alignItems     : 'center',
+              justifyContent : 'center',
+            } } className="MoonApp-root">
               App Removed
             </Box>
           ) }

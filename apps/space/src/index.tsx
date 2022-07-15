@@ -122,6 +122,11 @@ const SpaceApp = (props = {}) => {
     <App
       name={ space?.name || 'Explore Spaces' }
 
+      sub={ (
+        <Box>
+          SUP
+        </Box>
+      ) }
       menu={ (
         <>
           <Route path="/">

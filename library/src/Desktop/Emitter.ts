@@ -26,6 +26,7 @@ export default class DesktopEmitter extends EventEmitter {
 
   // getter/setter
   private __loading    = null;
+  private __updates    = new Set();
   private __updated    = null;
   private __desktop    = null;
   private __activeTask = null;
@@ -305,8 +306,6 @@ export default class DesktopEmitter extends EventEmitter {
       // set
       promises[key] = [promise, resolver];
     }
-
-    console.log(key, timeouts[key], promises[key]);
   
     // set timeout
     timeouts[key] = setTimeout(async () => {
@@ -1152,14 +1151,23 @@ export default class DesktopEmitter extends EventEmitter {
       id,
     } = updatingTask;
 
+    // check updating task
+    if (!updatingTask.nonce) {
+      // create nonce
+      const nonce = shortid();
+
+      // set nonce
+      updatingTask.nonce = nonce;
+  
+      // push nonce
+      this.__updates.add(updatingTask.nonce);
+    }
+
     // set loading
     if (save) this.loading = id;
 
     // update task
     let localTask = this.tasks.find((s) => s.id === id);
-
-    // check nonce
-    if (!save && updatingTask.nonce && localTask?.nonce === updatingTask.nonce) return;
 
     // check local task
     if (!localTask) {
@@ -1195,31 +1203,26 @@ export default class DesktopEmitter extends EventEmitter {
 
     // return debounce
     return this.debounce(`task.${id}`, async () => {
-      // create nonce
-      const nonce = shortid();
-  
       // loaded
       let loadedTask = localTask;
-
-      // set nonce
-      localTask.nonce = nonce;
   
       // try/catch
       try {
         // load
         loadedTask = await this.socket.patch(`/task/${id}`, {
-          nonce,
+          nonce     : updatingTask.nonce,
 
-          app      : localTask.app,
-          path     : localTask.path,
-          order    : localTask.order,
-          parent   : localTask.parent,
-          zIndex   : localTask.zIndex,
-          position : localTask.position,
+          app       : localTask.app,
+          path      : localTask.path,
+          order     : localTask.order,
+          parent    : localTask.parent,
+          zIndex    : localTask.zIndex,
+          position  : localTask.position,
+          collapsed : localTask.collapsed,
         });
   
         // loop
-        Object.keys(loadedTask).forEach((key) => {
+        ['id', 'app', 'createdAt', 'updatedAt'].forEach((key) => {
           // add to loaded
           localTask[key] = loadedTask[key];
         });
@@ -1328,7 +1331,8 @@ export default class DesktopEmitter extends EventEmitter {
 
       // update
       this.updated = new Date();
-    } else {
+    } else if (!task.nonce || !this.__updates.has(task.nonce)) {
+      console.log('test', task, task.nonce);
       // update
       this.updateTask(task, false);
     }

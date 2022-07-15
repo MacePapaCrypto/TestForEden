@@ -1,6 +1,6 @@
 
 import ReactPlayer from 'react-player';
-import { Box, Typography, useTheme } from '@mui/material';
+import { Box, useTheme } from '@mui/material';
 import React, { useCallback, useEffect, useState } from 'react';
 
 // window
@@ -250,6 +250,7 @@ const MoonDesktop = (props = {}) => {
             
             onMoveUp={ (e) => onMoveUp(item, e) }
             onMoveDown={ (e) => onMoveDown(item, e) }
+            onCollapse={ (e) => desktop.updateTask({ id : item.id, collapsed: !item.collapsed }) }
             bringToFront={ (id) => onBringToFront(id || item.id) }
           />
         );

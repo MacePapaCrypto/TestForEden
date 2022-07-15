@@ -4,10 +4,11 @@ import { Link as Link$1, useHistory } from 'react-router-dom';
 import * as Mui from '@mui/material';
 import { styled, Box, createTheme, ThemeProvider, useTheme, Stack, Button, Tooltip, Paper, CircularProgress as CircularProgress$1, ClickAwayListener, Avatar, Skeleton, Popper, Grow, FormControl, InputLabel, OutlinedInput, InputAdornment, IconButton, Typography, Grid, MenuList, MenuItem, Menu, Divider, Card, CardContent, AvatarGroup, CardMedia, Chip, AppBar, Tabs, Tab, Badge } from '@mui/material';
 import { jsx, Fragment as Fragment$1, jsxs } from 'react/jsx-runtime';
+import { darken, styled as styled$1, useThemeProps } from '@mui/material/styles';
 import * as FontAwesome from '@fortawesome/react-fontawesome';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import * as FontAwesomeRegular from '@fortawesome/pro-regular-svg-icons';
-import { faWindowMinimize, faSquare, faXmarkLarge, faExclamationTriangle, faMoon, faUser, faImageSlash, faSearch, faSignOut, faSignIn, faChevronRight, faBell, faChevronLeft, faComment, faHashtag, faFeed, faGalleryThumbnails, faSpinnerThird, faShareNodes, faEllipsis } from '@fortawesome/pro-regular-svg-icons';
+import { faBars, faWindowMinimize, faSquare, faXmarkLarge, faExclamationTriangle, faMoon, faUser, faImageSlash, faSearch, faSignOut, faSignIn, faChevronRight, faBell, faChevronLeft, faComment, faHashtag, faFeed, faGalleryThumbnails, faSpinnerThird, faShareNodes, faEllipsis } from '@fortawesome/pro-regular-svg-icons';
 import { Rnd } from 'react-rnd';
 import ReactDOM from 'react-dom';
 import Carousel from 'react-material-ui-carousel';
@@ -17,7 +18,6 @@ import Image from '@mui/icons-material/Image';
 import ShortText from '@mui/icons-material/ShortText';
 import VideoLibrary from '@mui/icons-material/VideoLibrary';
 import { capitalize, unstable_useId } from '@mui/material/utils';
-import { styled as styled$1, useThemeProps } from '@mui/material/styles';
 import Button$1 from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
 
@@ -59041,6 +59041,8 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
     _defineProperty$4(_assertThisInitialized$1(_this), "__loading", null);
 
+    _defineProperty$4(_assertThisInitialized$1(_this), "__updates", new Set());
+
     _defineProperty$4(_assertThisInitialized$1(_this), "__updated", null);
 
     _defineProperty$4(_assertThisInitialized$1(_this), "__desktop", null);
@@ -59322,9 +59324,8 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
         }); // set
 
         promises$1[key] = [promise, resolver];
-      }
+      } // set timeout
 
-      console.log(key, timeouts$1[key], promises$1[key]); // set timeout
 
       timeouts$1[key] = setTimeout( /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee() {
         var result;
@@ -60686,11 +60687,11 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
     key: "updateTask",
     value: function () {
       var _updateTask = _asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee18(updatingTask) {
-        var _localTask,
-            _this7 = this;
+        var _this7 = this;
 
         var save,
             id,
+            nonce,
             localTask,
             _args18 = arguments;
         return regeneratorRuntime.wrap(function _callee18$(_context18) {
@@ -60699,23 +60700,24 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
               case 0:
                 save = _args18.length > 1 && _args18[1] !== undefined ? _args18[1] : true;
                 // const
-                id = updatingTask.id; // set loading
+                id = updatingTask.id; // check updating task
+
+                if (!updatingTask.nonce) {
+                  // create nonce
+                  nonce = shortid(); // set nonce
+
+                  updatingTask.nonce = nonce; // push nonce
+
+                  this.__updates.add(updatingTask.nonce);
+                } // set loading
+
 
                 if (save) this.loading = id; // update task
 
                 localTask = this.tasks.find(function (s) {
                   return s.id === id;
-                }); // check nonce
+                }); // check local task
 
-                if (!(!save && updatingTask.nonce && ((_localTask = localTask) === null || _localTask === void 0 ? void 0 : _localTask.nonce) === updatingTask.nonce)) {
-                  _context18.next = 6;
-                  break;
-                }
-
-                return _context18.abrupt("return");
-
-              case 6:
-                // check local task
                 if (!localTask) {
                   // set task
                   localTask = _objectSpread2$1({}, updatingTask); // push
@@ -60734,74 +60736,71 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
                 }); // update
 
                 if (save) {
-                  _context18.next = 12;
+                  _context18.next = 11;
                   break;
                 }
 
                 return _context18.abrupt("return", this.updated = new Date());
 
-              case 12:
+              case 11:
                 // update in place
                 this.updated = new Date();
 
-              case 13:
+              case 12:
                 return _context18.abrupt("return", this.debounce("task.".concat(id), /*#__PURE__*/_asyncToGenerator( /*#__PURE__*/regeneratorRuntime.mark(function _callee17() {
-                  var nonce, loadedTask;
+                  var loadedTask;
                   return regeneratorRuntime.wrap(function _callee17$(_context17) {
                     while (1) {
                       switch (_context17.prev = _context17.next) {
                         case 0:
-                          // create nonce
-                          nonce = shortid(); // loaded
+                          // loaded
+                          loadedTask = localTask; // try/catch
 
-                          loadedTask = localTask; // set nonce
-
-                          localTask.nonce = nonce; // try/catch
-
-                          _context17.prev = 3;
-                          _context17.next = 6;
+                          _context17.prev = 1;
+                          _context17.next = 4;
                           return _this7.socket.patch("/task/".concat(id), {
-                            nonce: nonce,
+                            nonce: updatingTask.nonce,
                             app: localTask.app,
                             path: localTask.path,
                             order: localTask.order,
                             parent: localTask.parent,
                             zIndex: localTask.zIndex,
-                            position: localTask.position
+                            position: localTask.position,
+                            collapsed: localTask.collapsed
                           });
 
-                        case 6:
+                        case 4:
                           loadedTask = _context17.sent;
                           // loop
-                          Object.keys(loadedTask).forEach(function (key) {
+                          ['id', 'app', 'createdAt', 'updatedAt'].forEach(function (key) {
                             // add to loaded
                             localTask[key] = loadedTask[key];
                           }); // set tasks
 
                           _this7.updated = new Date();
-                          _context17.next = 14;
+                          _context17.next = 12;
                           break;
 
-                        case 11:
-                          _context17.prev = 11;
-                          _context17.t0 = _context17["catch"](3);
+                        case 9:
+                          _context17.prev = 9;
+                          _context17.t0 = _context17["catch"](1);
                           throw _context17.t0;
 
-                        case 14:
+                        case 12:
                           // done loading
                           _this7.loading = null; // return tasks
 
                           return _context17.abrupt("return", loadedTask);
 
-                        case 16:
+                        case 14:
                         case "end":
                           return _context17.stop();
                       }
                     }
-                  }, _callee17, null, [[3, 11]]);
+                  }, _callee17, null, [[1, 9]]);
                 })), 500));
 
-              case 14:
+              case 13:
               case "end":
                 return _context18.stop();
             }
@@ -60959,8 +60958,9 @@ var DesktopEmitter = /*#__PURE__*/function (_EventEmitter) {
 
 
         this.updated = new Date();
-      } else {
-        // update
+      } else if (!task.nonce || !this.__updates.has(task.nonce)) {
+        console.log('test', task, task.nonce); // update
+
         this.updateTask(task, false);
       }
     }
@@ -61307,39 +61307,209 @@ var MoonDesktopProvider = function MoonDesktopProvider() {
   }, props.children);
 }; // export default
 
-// create theme
+// darken
+
 var mainTheme = {
   palette: {
     mode: 'dark',
-    text: {
-      primary: '#c9d1d9'
-    },
+    text: {},
     border: {
       active: '#808080',
       primary: '#30363d'
     },
     divider: '#30363d',
     primary: {
-      main: '#fdc07b'
+      main: '#FA627D'
     },
     background: {
-      paper: '#0D1116',
-      "default": '#01040A'
+      paper: '#222526',
+      "default": '#101315'
     }
   },
   typography: {
-    fontFamily: "'Cutive Mono', monospace, 'Roboto', sans-serif"
+    fontFamily: "'Inter', sans-serif"
   },
   components: {
+    MoonApp: {
+      styleOverrides: {
+        root: function root(_ref) {
+          var theme = _ref.theme;
+          return {
+            flex: 1,
+            display: 'flex',
+            background: theme.palette.background.paper,
+            flexDirection: 'column',
+            borderBottomRightRadius: "".concat(theme.shape.borderRadius * 2, "px"),
+            '&.MoonApp-withMenu.MoonApp-shown, &.MoonApp-withSub': {
+              borderTopLeftRadius: "".concat(theme.shape.borderRadius * 2, "px")
+            }
+          };
+        }
+      }
+    },
+    MoonAppSideBar: {
+      styleOverrides: {
+        root: function root(_ref2) {
+          var theme = _ref2.theme;
+          return {
+            px: theme.shape.borderWidth ? theme.spacing(2) : 0,
+            py: theme.spacing(2),
+            width: theme.shape.sidebarWidth,
+            height: '100%',
+            background: darken(theme.palette.background.paper, 0.16),
+            borderRightStyle: 'solid',
+            borderRightColor: theme.palette.border.primary,
+            borderRightWidth: theme.shape.borderWidth,
+            borderTopLeftRadius: "".concat(theme.shape.borderRadius * 2, "px"),
+            '&:empty': {
+              display: 'none'
+            },
+            '&.MoonAppSideBar-collapsed': {
+              px: 0,
+              width: 0,
+              overflow: 'hidden'
+            },
+            '&.MoonAppSideBar-root.MoonAppSideBar-withoutSub': {
+              borderTopLeftRadius: 0
+            },
+            '&.MoonAppSideBar-collapsed > .MoonAppSideBar-content': {
+              display: 'none'
+            }
+          };
+        }
+      }
+    },
+    MoonWindow: {
+      defaultProps: {
+        elevation: 3
+      },
+      styleOverrides: {
+        root: function root(_ref3) {
+          var theme = _ref3.theme;
+          return {
+            width: '100%',
+            height: '100%',
+            display: 'flex',
+            background: darken(theme.palette.background.paper, 0.32),
+            borderWidth: theme.shape.borderWidth,
+            borderStyle: 'solid',
+            borderColor: theme.palette.border.primary,
+            borderRadius: 2,
+            flexDirection: 'column',
+            '&.MoonWindow-active': {
+              borderColor: theme.palette.border.active
+            },
+            '&.MoonWindow-electron': {
+              borderWidth: 0
+            }
+          };
+        }
+      }
+    },
+    MoonWindowBar: {
+      styleOverrides: {
+        root: function root(_ref4) {
+          var theme = _ref4.theme;
+          return {
+            width: '100%',
+            height: theme.shape.windowBarHeight,
+            display: 'flex',
+            borderTopLeftRadius: "".concat(theme.shape.borderRadius * 2, "px"),
+            borderTopRightRadius: "".concat(theme.shape.borderRadius * 2, "px")
+          };
+        }
+      }
+    },
+    MoonTaskBar: {
+      styleOverrides: {
+        root: function root(_ref5) {
+          var theme = _ref5.theme;
+          return {
+            display: 'flex',
+            '&.MoonTaskBar-floating': {
+              margin: theme.spacing(1)
+            },
+            '&.MoonTaskBar-vertical': {
+              width: theme.shape.taskBarSize,
+              height: '100vh'
+            },
+            '&.MoonTaskBar-vertical.MoonTaskBar-floating': {
+              height: "calc(100vh - ".concat(theme.spacing(2), ")")
+            },
+            '&.MoonTaskBar-horizontal': {
+              width: '100vw',
+              height: theme.shape.taskBarSize
+            },
+            '&.MoonTaskBar-horizontal.MoonTaskBar-floating': {
+              width: "calc(100vw - ".concat(theme.spacing(2), ")")
+            },
+            '&.MoonTaskBar-floating .MoonTaskBarContent-root': {
+              border: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary),
+              borderRadius: 2
+            },
+            '&.MoonTaskBar-fixed.MoonTaskBar-left .MoonTaskBarContent-root': {
+              borderRight: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
+            },
+            '&.MoonTaskBar-fixed.MoonTaskBar-right .MoonTaskBarContent-root': {
+              borderLeft: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
+            },
+            '&.MoonTaskBar-fixed.MoonTaskBar-top .MoonTaskBarContent-root': {
+              borderBottom: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
+            },
+            '&.MoonTaskBar-fixed.MoonTaskBar-bottom .MoonTaskBarContent-root': {
+              borderTop: "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
+            }
+          };
+        }
+      }
+    },
+    MoonTaskBarContent: {
+      defaultProps: {
+        elevation: 3
+      },
+      styleOverrides: {
+        root: function root(_ref6) {
+          var theme = _ref6.theme;
+          return {
+            flex: 1,
+            display: 'flex',
+            background: darken(theme.palette.background.paper, 0.32),
+            '& .MoonTaskBarContent-stack': {
+              flex: 1
+            },
+            '&.MoonTaskBarContent-floating .MoonTaskBarContent-stack': {
+              borderRadius: 2
+            },
+            '&.MoonTaskBarContent-vertical .MoonTaskBarContent-stack': {
+              py: theme.spacing(1),
+              justifyContent: 'center'
+            },
+            '&.MoonTaskBarContent-horizontal .MoonTaskBarContent-stack': {
+              px: theme.spacing(1),
+              alignItems: 'center'
+            }
+          };
+        }
+      }
+    },
     MuiLink: {
       defaultProps: {
         underline: 'none'
       }
     },
     MuiPaper: {
+      defaultProps: {
+        elevation: 1
+      },
       styleOverrides: {
-        root: {
-          backgroundImage: 'none'
+        root: function root(_ref7) {
+          var theme = _ref7.theme;
+          return {
+            borderWidth: theme.shape.borderWidth,
+            borderStyle: 'solid',
+            borderColor: theme.palette.border.primary,
+            backgroundImage: 'none'
+          };
         }
       }
     },
@@ -61349,11 +61519,25 @@ var mainTheme = {
           overflow: 'hidden'
         }
       }
+    },
+    MuiListItemText: {
+      styleOverrides: {
+        root: function root(_ref8) {
+          _ref8.theme;
+          return {
+            borderRadius: 1
+          };
+        }
+      }
     }
   },
   shape: {
-    borderWidth: '.1rem',
-    borderRadius: 4
+    borderWidth: 0,
+    taskBarSize: 98,
+    borderRadius: 4,
+    dividerWidth: 1,
+    sidebarWidth: 240,
+    windowBarHeight: 32
   }
 };
 
@@ -70866,20 +71050,48 @@ var useInstall = function useInstall(subject) {
   return MoonInstall;
 }; // export default
 
+/**
+ * use styles
+ *
+ * @param name 
+ */
+
+var useStyles = function useStyles(name) {
+  // get theme
+  var theme = useTheme(); // use memo
+
+  return useMemo(function () {
+    var _theme$components$nam;
+
+    // get styles
+    var newStyles = _objectSpread2$1({}, ((_theme$components$nam = theme.components[name]) === null || _theme$components$nam === void 0 ? void 0 : _theme$components$nam.styleOverrides) || {}); // check root
+
+
+    if (typeof newStyles.root === 'function') {
+      // setup styles
+      newStyles = _objectSpread2$1(_objectSpread2$1({}, newStyles), newStyles.root({
+        theme: theme
+      })); // delete root
+
+      delete newStyles.root;
+    } // return styles
+
+
+    return newStyles;
+  }, [theme]);
+};
+
 var MoonWindowBar = function MoonWindowBar() {
   var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   // theme
-  var theme = useTheme(); // widths
+  var theme = useTheme();
+  var styles = useStyles('MoonWindowBar'); // widths
 
-  var windowBarSize = parseInt(theme.spacing(4).replace('px', ''));
   var windowBarItemSize = parseInt(theme.spacing(3).replace('px', '')); // return jsx
 
   return /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      width: '100%',
-      height: windowBarSize,
-      display: 'flex'
-    }
+    sx: _objectSpread2$1({}, styles || {}),
+    className: "MoonWindowBar-root"
   }, /*#__PURE__*/React__default.createElement(Stack, {
     direction: "row",
     spacing: 0.5,
@@ -70891,7 +71103,22 @@ var MoonWindowBar = function MoonWindowBar() {
       borderBottomWidth: theme.shape.borderWidth,
       borderBottomColor: theme.palette.border.primary
     }
-  }, /*#__PURE__*/React__default.createElement(Stack, {
+  }, !!props.menu && /*#__PURE__*/React__default.createElement(Button, {
+    sx: {
+      color: theme.palette.text.primary,
+      height: "".concat(windowBarItemSize, "px"),
+      minWidth: "".concat(windowBarItemSize, "px"),
+      background: 'transparent'
+    },
+    variant: "text",
+    onClick: function onClick() {
+      return props.onCollapse(!props.collapsed);
+    }
+  }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
+    icon: faBars,
+    size: "sm",
+    fixedWidth: true
+  })), /*#__PURE__*/React__default.createElement(Stack, {
     direction: "row",
     sx: _objectSpread2$1({
       px: theme.spacing(1),
@@ -70966,22 +71193,15 @@ var MoonWindowBar = function MoonWindowBar() {
 var MoonAppSideBar = function MoonAppSideBar() {
   var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   // theme
-  var theme = useTheme(); // skeleton height
-
-  var subspaceWidth = parseInt(theme.spacing(30).replace('px', '')); // return jsx
+  useTheme();
+  var styles = useStyles('MoonAppSideBar'); // return jsx
 
   return /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      px: theme.spacing(2),
-      py: theme.spacing(2),
-      width: subspaceWidth,
-      height: '100%',
-      borderRight: ".1rem solid ".concat(theme.palette.border.primary),
-      '&:empty': {
-        display: 'none'
-      }
-    }
-  }, props.children));
+    sx: styles,
+    className: ['MoonAppSideBar-root', props.hasSub ? 'MoonAppSideBar-withSub' : 'MoonAppSideBar-withoutSub', props.collapsed ? 'MoonAppSideBar-collapsed' : 'MoonAppSideBar-expanded'].join(' ')
+  }, /*#__PURE__*/React__default.createElement(Box, {
+    className: "MoonAppSideBar-content"
+  }, props.children)));
 }; // export default
 
 // socketio client
@@ -70995,14 +71215,17 @@ var MoonAppContext = /*#__PURE__*/createContext({}); // connect to url
  */
 
 var MoonApp = function MoonApp() {
-  var _props$default5, _task$item;
+  var _props$default5, _task$item, _task$item2, _task$item3, _task$item4;
 
   var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   // desktop
   var theme = useTheme();
+  var styles = useStyles('MoonApp');
   var desktop = useDesktop(); // use context
 
-  var task = useContext(MoonAppContext); // large grid size
+  var task = useContext(MoonAppContext); // sub space
+
+  var subspaceWidth = parseInt(theme.spacing(8).replace('px', '')); // large grid size
 
   var largeGridSize = 20; // use effect
 
@@ -71037,22 +71260,37 @@ var MoonApp = function MoonApp() {
 
   return /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(MoonWindowBar, {
     name: props.name,
+    menu: !!props.menu,
     active: desktop.activeTask === ((_task$item = task.item) === null || _task$item === void 0 ? void 0 : _task$item.id),
     onDelete: function onDelete() {
       return desktop.deleteTask(task.item);
     },
     onMoveUp: task.onMoveUp,
+    collapsed: (_task$item2 = task.item) === null || _task$item2 === void 0 ? void 0 : _task$item2.collapsed,
+    onCollapse: task.onCollapse,
     onMoveDown: task.onMoveDown,
     isElectron: task.isElectron
   }), /*#__PURE__*/React__default.createElement(Box, {
     flex: 1,
     display: "flex",
     flexDirection: "row"
-  }, !!props.menu && /*#__PURE__*/React__default.createElement(MoonAppSideBar, null, props.menu), /*#__PURE__*/React__default.createElement(Box, {
-    flex: 1,
+  }, !!props.sub && /*#__PURE__*/React__default.createElement(Box, {
+    width: subspaceWidth
+  }, props.sub), /*#__PURE__*/React__default.createElement(Box, {
+    sx: _objectSpread2$1(_objectSpread2$1({}, styles), {}, {
+      flexDirection: 'row'
+    }),
+    className: ['MoonApp-root', !!props.sub ? 'MoonApp-withSub' : null, !!props.menu ? 'MoonApp-withMenu' : null, !!((_task$item3 = task.item) !== null && _task$item3 !== void 0 && _task$item3.collapsed) ? 'MoonApp-collapsed' : 'MoonApp-shown'].filter(function (v) {
+      return v;
+    }).join(' ')
+  }, !!props.menu && /*#__PURE__*/React__default.createElement(MoonAppSideBar, {
+    collapsed: (_task$item4 = task.item) === null || _task$item4 === void 0 ? void 0 : _task$item4.collapsed,
+    hasSub: !!props.sub
+  }, props.menu), /*#__PURE__*/React__default.createElement(Box, {
     display: "flex",
+    flex: 1,
     flexDirection: "column"
-  }, props.children)));
+  }, props.children))));
 }; // export default
 
 // import react
@@ -72777,13 +73015,15 @@ var debounce$3 = function debounce(fn) {
 
 
 var MoonWindow = function MoonWindow() {
-  var _props$item$position, _props$item, _props$item3, _props$item5, _props$item$applicati;
+  var _props$item$position, _props$item, _props$item3, _props$item5, _theme$components$Moo, _props$item$applicati;
 
   var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   // use theme
   var app = useApp(props.item.application, props.item.path);
   var theme = useTheme();
-  var desktop = useDesktop(); // ref
+  var styles = useStyles('MoonWindow');
+  var desktop = useDesktop();
+  var appStyles = useStyles('MoonApp'); // ref
 
   var dragRef = useRef(null);
   var windowRef = useRef(null); // position
@@ -72884,21 +73124,14 @@ var MoonWindow = function MoonWindow() {
     savePlace(newPlace);
   }, [props.position]); // window body
 
-  var windowBody = /*#__PURE__*/React__default.createElement(Paper, {
-    sx: {
-      width: '100%',
-      height: '100%',
-      display: 'flex',
-      borderWidth: props.isElectron ? 0 : theme.shape.borderWidth,
-      borderStyle: 'solid',
-      borderColor: desktop.activeTask === props.item.id ? theme.palette.border.active : theme.palette.border.primary,
-      borderRadius: 2,
-      flexDirection: 'column'
-    },
+  var windowBody = /*#__PURE__*/React__default.createElement(Paper, _extends$4({
+    sx: styles,
     ref: windowRef,
-    elevation: 2,
+    className: ['MoonWindow-root', desktop.activeTask === props.item.id ? ' MoonWindow-active' : null, props.isElectron ? 'MoonWindow-electron' : null].filter(function (v) {
+      return v;
+    }).join(' '),
     onMouseDown: bringToFront
-  }, app.loading ? /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(MoonWindowBar, {
+  }, ((_theme$components$Moo = theme.components.MoonWindow) === null || _theme$components$Moo === void 0 ? void 0 : _theme$components$Moo.defaultProps) || {}), app.loading ? /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(MoonWindowBar, {
     name: "Loading ".concat((_props$item$applicati = props.item.application) === null || _props$item$applicati === void 0 ? void 0 : _props$item$applicati.name),
     active: desktop.activeTask === props.item.id,
     onDelete: function onDelete() {
@@ -72908,18 +73141,18 @@ var MoonWindow = function MoonWindow() {
     isElectron: props.isElectron,
     onMoveDown: props.onMoveDown
   }), /*#__PURE__*/React__default.createElement(Box, {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center"
+    sx: _objectSpread2$1(_objectSpread2$1({}, appStyles), {}, {
+      alignItems: 'center',
+      justifyContent: 'center'
+    }),
+    className: "MoonApp-root"
   }, /*#__PURE__*/React__default.createElement(CircularProgress$1, null))) : /*#__PURE__*/React__default.createElement(reactErrorBoundary_umd.exports.ErrorBoundary, {
     FallbackComponent: /*#__PURE__*/React__default.createElement(Box, {
-      flex: 1,
-      display: "flex",
-      flexDirection: "column",
-      alignItems: "center",
-      justifyContent: "center"
+      sx: _objectSpread2$1(_objectSpread2$1({}, appStyles), {}, {
+        alignItems: 'center',
+        justifyContent: 'center'
+      }),
+      className: "MoonApp-root"
     }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
       icon: faExclamationTriangle,
       size: "xl"
@@ -72931,6 +73164,7 @@ var MoonWindow = function MoonWindow() {
       onMoveUp: props.onMoveUp,
       isElectron: props.isElectron,
       onMoveDown: props.onMoveDown,
+      onCollapse: props.onCollapse,
       // save place
       place: place,
       placed: placed,
@@ -72945,11 +73179,11 @@ var MoonWindow = function MoonWindow() {
     setPath: setPath,
     pushPath: pushPath
   })) : /*#__PURE__*/React__default.createElement(Box, {
-    flex: 1,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center"
+    sx: _objectSpread2$1(_objectSpread2$1({}, appStyles), {}, {
+      alignItems: 'center',
+      justifyContent: 'center'
+    }),
+    className: "MoonApp-root"
   }, "App Removed"))); // check position
 
   if (props.isElectron) return windowBody; // return jsx
@@ -78451,6 +78685,12 @@ var MoonDesktop = function MoonDesktop() {
       onMoveDown: function onMoveDown(e) {
         return _onMoveDown(item, e);
       },
+      onCollapse: function onCollapse(e) {
+        return desktop.updateTask({
+          id: item.id,
+          collapsed: !item.collapsed
+        });
+      },
       bringToFront: function bringToFront(id) {
         return onBringToFront(id || item.id);
       }
@@ -79402,22 +79642,26 @@ var MoonStartMenu = function MoonStartMenu() {
 }; // export default
 
 var MoonTaskBar = function MoonTaskBar() {
+  var _theme$components$Moo;
+
   var props = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   // theme
   var theme = useTheme();
   var style = props.style || 'floating';
+  var styles = useStyles('MoonTaskBar');
   var desktop = useDesktop();
   var position = props.position || 'bottom';
 
   var _useState = useState(false),
       _useState2 = _slicedToArray$1(_useState, 2),
       startMenu = _useState2[0],
-      setStartMenu = _useState2[1]; // menu ref
+      setStartMenu = _useState2[1];
 
+  var contentStyles = useStyles('MoonTaskBarContent'); // menu ref
 
   var startMenuRef = useRef(null); // widths
 
-  var taskBarSize = parseInt(theme.spacing(8).replace('px', ''));
+  parseInt(theme.spacing(8).replace('px', ''));
   var taskBarItemSize = parseInt(theme.spacing(6).replace('px', '')); // is vertical
 
   var isVertical = ['left', 'right'].includes(position); // bring to front
@@ -79442,62 +79686,32 @@ var MoonTaskBar = function MoonTaskBar() {
 
 
   return /*#__PURE__*/React__default.createElement(React__default.Fragment, null, /*#__PURE__*/React__default.createElement(Box, {
-    sx: {
-      width: isVertical ? taskBarSize : style === 'floating' ? "calc(100vw - ".concat(theme.spacing(2), ")") : '100vw',
-      height: isVertical ? style === 'floating' ? "calc(100vh - ".concat(theme.spacing(2), ")") : '100vh' : taskBarSize,
-      margin: style === 'floating' ? theme.spacing(1) : undefined,
-      display: 'flex'
-    },
-    ref: startMenuRef
-  }, /*#__PURE__*/React__default.createElement(Paper, {
-    sx: {
-      flex: 1,
-      display: 'flex',
-      borderRadius: style === 'fixed' ? undefined : 2
-    },
-    elevation: 1
-  }, /*#__PURE__*/React__default.createElement(Stack, {
+    sx: styles,
+    ref: startMenuRef,
+    className: ['MoonTaskBar-root', "MoonTaskBar-".concat(position), isVertical ? 'MoonTaskBar-vertical' : 'MoonTaskBar-horizontal', style === 'floating' ? 'MoonTaskBar-floating' : 'MoonTaskBar-fixed'].filter(function (b) {
+      return b;
+    }).join(' ')
+  }, /*#__PURE__*/React__default.createElement(Paper, _extends$4({
+    sx: contentStyles,
+    className: ['MoonTaskBarContent-root', "MoonTaskBarContent-".concat(position), isVertical ? 'MoonTaskBarContent-vertical' : 'MoonTaskBarContent-horizontal', style === 'floating' ? 'MoonTaskBarContent-floating' : 'MoonTaskBarContent-fixed'].join(' ')
+  }, ((_theme$components$Moo = theme.components.MoonTaskBarContent) === null || _theme$components$Moo === void 0 ? void 0 : _theme$components$Moo.defaultProps) || {}), /*#__PURE__*/React__default.createElement(Stack, {
+    className: "MoonTaskBarContent-stack",
     direction: isVertical ? 'column' : 'row',
-    spacing: 1,
-    sx: {
-      px: isVertical ? undefined : theme.spacing(1),
-      py: isVertical ? theme.spacing(1) : undefined,
-      flex: 1,
-      border: style === 'floating' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      alignItems: isVertical ? undefined : 'center',
-      borderRadius: style === 'fixed' ? undefined : 2,
-      justifyContent: isVertical ? 'center' : undefined,
-      borderTop: style === 'fixed' && position === 'bottom' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      borderLeft: style === 'fixed' && position === 'right' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      borderRight: style === 'fixed' && position === 'left' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-      borderBottom: style === 'fixed' && position === 'top' ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined
-    }
+    spacing: 1
   }, /*#__PURE__*/React__default.createElement(Button, {
     sx: {
-      mx: isVertical ? 'auto!important' : undefined,
       width: "".concat(taskBarItemSize, "px"),
-      color: theme.palette.text.primary,
-      height: "".concat(taskBarItemSize, "px"),
-      minWidth: "".concat(taskBarItemSize, "px"),
-      background: 'transparent',
-      borderWidth: theme.shape.borderWidth,
-      borderColor: startMenu ? undefined : 'transparent'
+      height: "".concat(taskBarItemSize, "px")
     },
-    variant: "outlined",
     color: "primary",
+    className: "MoonTaskBarContent-button",
     onClick: function onClick(e) {
       return setStartMenu(true);
     }
   }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
     icon: faMoon,
     size: "lg"
-  })), /*#__PURE__*/React__default.createElement(Box, {
-    mx: isVertical ? 'auto!important' : undefined,
-    width: isVertical ? theme.spacing(4) : undefined,
-    height: isVertical ? undefined : theme.spacing(4),
-    borderTop: isVertical ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-    borderRight: isVertical ? undefined : "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
-  }), /*#__PURE__*/React__default.createElement(Stack, {
+  })), /*#__PURE__*/React__default.createElement(Stack, {
     direction: isVertical ? 'column' : 'row',
     sx: {
       px: theme.spacing(1),
@@ -79514,22 +79728,13 @@ var MoonTaskBar = function MoonTaskBar() {
         return _onBringToFront(task.id);
       }
     });
-  })), /*#__PURE__*/React__default.createElement(Box, {
-    mx: isVertical ? 'auto!important' : undefined,
-    width: isVertical ? theme.spacing(4) : undefined,
-    height: isVertical ? undefined : theme.spacing(4),
-    borderTop: isVertical ? "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary) : undefined,
-    borderRight: isVertical ? undefined : "".concat(theme.shape.borderWidth, " solid ").concat(theme.palette.border.primary)
-  }), /*#__PURE__*/React__default.createElement(Button, {
+  })), /*#__PURE__*/React__default.createElement(Button, {
     sx: {
-      mx: isVertical ? 'auto!important' : undefined,
       width: "".concat(taskBarItemSize, "px"),
-      color: theme.palette.text.primary,
-      height: "".concat(taskBarItemSize, "px"),
-      minWidth: "".concat(taskBarItemSize, "px"),
-      background: 'transparent'
+      height: "".concat(taskBarItemSize, "px")
     },
-    variant: "text"
+    color: "primary",
+    className: "MoonTaskBarContent-button"
   }, /*#__PURE__*/React__default.createElement(FontAwesomeIcon, {
     icon: faBell,
     size: "lg"

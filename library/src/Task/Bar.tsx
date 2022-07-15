@@ -7,6 +7,7 @@ import { Box, Stack, Paper, Button, useTheme } from '@mui/material';
 
 // local
 import Task from './index';
+import useStyles from '../useStyles';
 import StartMenu from '../StartMenu';
 import useDesktop from '../useDesktop';
 
@@ -15,9 +16,11 @@ const MoonTaskBar = (props = {}) => {
   // theme
   const theme = useTheme();
   const style = props.style || 'floating';
+  const styles = useStyles('MoonTaskBar');
   const desktop = useDesktop();
   const position = props.position || 'bottom';
   const [startMenu, setStartMenu] = useState(false);
+  const contentStyles = useStyles('MoonTaskBarContent');
 
   // menu ref
   const startMenuRef = useRef(null);
@@ -49,51 +52,29 @@ const MoonTaskBar = (props = {}) => {
   // return jsx
   return (
     <>
-      <Box sx={ {
-        width   : isVertical ? taskBarSize : (style === 'floating' ? `calc(100vw - ${theme.spacing(2)})` : '100vw'),
-        height  : isVertical ? (style === 'floating' ? `calc(100vh - ${theme.spacing(2)})` : '100vh') : taskBarSize,
-        margin  : style === 'floating' ? theme.spacing(1) : undefined,
-        display : 'flex',
-      } } ref={ startMenuRef }>
-        <Paper sx={ {
-          flex         : 1,
-          display      : 'flex',
-          borderRadius : style === 'fixed' ? undefined : 2,
-        } } elevation={ 1 }>
-          <Stack direction={ isVertical ? 'column' : 'row' } spacing={ 1 } sx={ {
-            px             : isVertical ? undefined : theme.spacing(1),
-            py             : isVertical ? theme.spacing(1) : undefined,
-            flex           : 1,
-            border         : style === 'floating' ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : undefined,
-            alignItems     : isVertical ? undefined : 'center',
-            borderRadius   : style === 'fixed' ? undefined : 2,
-            justifyContent : isVertical ? 'center' : undefined,
-
-            borderTop    : style === 'fixed' && position === 'bottom' ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : undefined,
-            borderLeft   : style === 'fixed' && position === 'right' ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : undefined,
-            borderRight  : style === 'fixed' && position === 'left' ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : undefined,
-            borderBottom : style === 'fixed' && position === 'top' ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : undefined,
-          } }>
+      <Box sx={ styles } ref={ startMenuRef } className={
+        [
+          'MoonTaskBar-root',
+          `MoonTaskBar-${position}`,
+          isVertical ? 'MoonTaskBar-vertical' : 'MoonTaskBar-horizontal',
+          style === 'floating' ? 'MoonTaskBar-floating' : 'MoonTaskBar-fixed',
+        ].filter(b => b).join(' ')
+      }>
+        <Paper sx={ contentStyles } className={
+          [
+            'MoonTaskBarContent-root',
+            `MoonTaskBarContent-${position}`,
+            isVertical ? 'MoonTaskBarContent-vertical' : 'MoonTaskBarContent-horizontal',
+            style === 'floating' ? 'MoonTaskBarContent-floating' : 'MoonTaskBarContent-fixed',
+          ].join(' ')
+        } { ...(theme.components.MoonTaskBarContent?.defaultProps || {}) }>
+          <Stack className="MoonTaskBarContent-stack" direction={ isVertical ? 'column' : 'row' } spacing={ 1 }>
             <Button sx={ {
-              mx          : isVertical ? 'auto!important' : undefined,
-              width       : `${taskBarItemSize}px`,
-              color       : theme.palette.text.primary,
-              height      : `${taskBarItemSize}px`,
-              minWidth    : `${taskBarItemSize}px`,
-              background  : 'transparent',
-              borderWidth : theme.shape.borderWidth,
-              borderColor : startMenu ? undefined : 'transparent',
-            } } variant="outlined" color="primary" onClick={ (e) => setStartMenu(true) }>
+              width  : `${taskBarItemSize}px`,
+              height : `${taskBarItemSize}px`,
+            } } color="primary" className="MoonTaskBarContent-button" onClick={ (e) => setStartMenu(true) }>
               <FontAwesomeIcon icon={ faMoon } size="lg" />
             </Button>
-
-            <Box
-              mx={ isVertical ? 'auto!important' : undefined }
-              width={ isVertical ? theme.spacing(4) : undefined }
-              height={ isVertical ? undefined : theme.spacing(4) }
-              borderTop={ isVertical ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : undefined }
-              borderRight={ isVertical ? undefined : `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` }
-            />
 
             <Stack direction={ isVertical ? 'column' : 'row' } sx={ {
               px             : theme.spacing(1),
@@ -109,22 +90,10 @@ const MoonTaskBar = (props = {}) => {
               }) }
             </Stack>
 
-            <Box
-              mx={ isVertical ? 'auto!important' : undefined }
-              width={ isVertical ? theme.spacing(4) : undefined }
-              height={ isVertical ? undefined : theme.spacing(4) }
-              borderTop={ isVertical ? `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` : undefined }
-              borderRight={ isVertical ? undefined : `${theme.shape.borderWidth} solid ${theme.palette.border.primary}` }
-            />
-
             <Button sx={ {
-              mx         : isVertical ? 'auto!important' : undefined,
-              width      : `${taskBarItemSize}px`,
-              color      : theme.palette.text.primary,
-              height     : `${taskBarItemSize}px`,
-              minWidth   : `${taskBarItemSize}px`,
-              background : 'transparent',
-            } } variant="text">
+              width  : `${taskBarItemSize}px`,
+              height : `${taskBarItemSize}px`,
+            } } color="primary" className="MoonTaskBarContent-button">
               <FontAwesomeIcon icon={ faBell } size="lg" />
             </Button>
           </Stack>
