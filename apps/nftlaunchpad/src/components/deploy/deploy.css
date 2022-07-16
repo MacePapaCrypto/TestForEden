@@ -1,0 +1,15 @@
+.deployCardsContainer {
+    flex-direction: row;
+    display: flex;
+}
+
+.deployCards {
+    margin-top: 1rem;
+    padding: 1rem;
+}
+
+.homeIcon {
+    align-items: left;
+    margin: 2rem;
+    justify-content: left;
+}
