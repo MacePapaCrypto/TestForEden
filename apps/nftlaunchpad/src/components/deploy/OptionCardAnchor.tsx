@@ -6,9 +6,9 @@ const OptionCardAnchor = (props: any) => {
 
     return (
         <div className="deployCards">
-            <Card sx={{ minWidth: 275, opacity: 0.75}}>
+            <Card sx={{ minWidth: 275 }}>
                 <CardContent>
-                    <Typography sx={{ fontSize: 20 }} color="black">
+                    <Typography sx={{ fontSize: 20 }}>
                         {props.description}
                     </Typography>
                 </CardContent>
