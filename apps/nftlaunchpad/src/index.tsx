@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import Deploy from './components/deploy/Deploy';
 import LandingPage from './components/landing/LandingPage';
 import Manage from './components/manage/Manage';
+import './App.css';
 
 const NFTLaunchpad = (props = {}) => {  
 

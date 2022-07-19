@@ -1,26 +1,26 @@
 import React from 'react';
 import { Button, Card, CardContent, CardActions, Typography } from "@mui/material";
-import './deploy.css';
+import { Link } from '@moonup/ui';
+import "./deploy.css";
 
-const OptionCard = (props: any) => {
-    function setOpacity(e: any) {
-        e.target.style.opacity = 1;
-    }
+const OptionCardRouter = (props: any) => {
 
     return (
         <div className="deployCards">
-            <Card onMouseEnter={setOpacity} sx={{ minWidth: 275, opacity: 0.5}}>
+            <Card sx={{ minWidth: 275, opacity: 0.75}}>
                 <CardContent>
-                    <Typography sx={{ fontSize: 20 }} color="grey">
+                    <Typography sx={{ fontSize: 20 }} color="black">
                         {props.description}
                     </Typography>
                 </CardContent>
                 <CardActions>
-                    <Button size="small">{props.buttonWords}</Button>
+                    <Link to={props.buttonLink}>
+                        <Button size="small">{props.buttonWords}</Button>
+                    </Link>
                 </CardActions>
             </Card>
         </div>
     );
 }
 
-export default OptionCard;
+export default OptionCardRouter;
