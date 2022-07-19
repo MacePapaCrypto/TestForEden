@@ -1,19 +1,21 @@
 import React from 'react';
-import { Button, Card, CardContent, CardActions, Typography } from "@mui/material";
-import { Link } from '@moonup/ui';
-import "./deploy.css";
+import { Button, Card, CardContent, CardActions, Typography, Container } from "@mui/material";
 
 const OptionCardRouter = (props: any) => {
 
     // on select
-    const onSelect = (item) => {
+    const onSelect = (props) => {
         // set path
         props.pushPath(`/deploy/startDeploy`);
     };
 
     return (
-        <div className="deployCards">
-            <Card sx={{ minWidth: 275 }}>
+        <Container sx={ {
+            marginTop : '1rem',
+            padding: '1rem',
+            width: '50%'
+        } }>
+            <Card sx={{ minWidth: 275, minHeight: 150 }}>
                 <CardContent>
                     <Typography sx={{ fontSize: 20 }}>
                         {props.description}
@@ -23,7 +25,7 @@ const OptionCardRouter = (props: any) => {
                     <Button size="small" onClick={onSelect}>{props.buttonWords}</Button>
                 </CardActions>
             </Card>
-        </div>
+        </Container>
     );
 }
 

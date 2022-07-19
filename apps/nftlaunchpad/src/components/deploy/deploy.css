@@ -1,9 +1,0 @@
-.deployCardsContainer {
-    flex-direction: row;
-    display: flex;
-}
-
-.deployCards {
-    margin-top: 1rem;
-    padding: 1rem;
-}

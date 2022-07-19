@@ -63,17 +63,15 @@ const NFTLaunchpad = (props = {}) => {
         ready={ true }
         default={ defaultProps }
     >
-      <div className="App">
-        <Route path='/'>
-          <LandingPage/>
-        </Route>
-        <Route path='/deploy'>
-          <Deploy/>
-        </Route>
-        <Route path='/manage'>
-          <Manage/>
-        </Route>
-      </div>
+      <Route path='/'>
+        <LandingPage/>
+      </Route>
+      <Route path='/deploy'>
+        <Deploy/>
+      </Route>
+      <Route path='/manage'>
+        <Manage/>
+      </Route>
     </App>
   );
 }

@@ -1,12 +1,17 @@
 import React from 'react';
-import { Button, Card, CardContent, CardActions, Typography } from "@mui/material";
-import "./deploy.css";
+import { Button, Card, CardContent, CardActions, Typography, Container } from "@mui/material";
 
 const OptionCardAnchor = (props: any) => {
 
+
+
     return (
-        <div className="deployCards">
-            <Card sx={{ minWidth: 275 }}>
+        <Container sx={ {
+            marginTop : '1rem',
+            padding: '1rem',
+            width: '50%'
+        } }>
+            <Card sx={{ minWidth: 275, minHeight: 150 }}>
                 <CardContent>
                     <Typography sx={{ fontSize: 20 }}>
                         {props.description}
@@ -18,7 +23,7 @@ const OptionCardAnchor = (props: any) => {
                     </a>
                 </CardActions>
             </Card>
-        </div>
+        </Container>
     );
 }
 
