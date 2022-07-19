@@ -1,6 +1,5 @@
 import React from 'react';
 import { Button, Card, CardContent, CardActions, Typography } from "@mui/material";
-import "./deploy.css";
 
 const OptionCard = (props: any) => {
     function setOpacity(e: any) {
