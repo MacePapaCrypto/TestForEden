@@ -2,7 +2,6 @@ import React from 'react';
 import { App, Route, ScrollBar, useThemes } from '@moonup/ui';
 import { Box, Divider, MenuList, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { solid, regular, duotone } from '@fortawesome/fontawesome-svg-core/import.macro';
 import Deploy from './components/deploy/Deploy';
 import LandingPage from './components/landing/LandingPage';
 import Manage from './components/manage/Manage';
@@ -37,7 +36,7 @@ const NFTLaunchpad = (props = {}) => {
         <MenuList>
           <MenuItem selected={ props.path === '/' } onClick={ () => props.pushPath('/') }>
             <ListItemIcon>
-              <FontAwesomeIcon icon={ duotone('house') } />
+              <FontAwesomeIcon icon={ ['fad', 'house'] } />
             </ListItemIcon>
             <ListItemText>
               Home
@@ -45,7 +44,7 @@ const NFTLaunchpad = (props = {}) => {
           </MenuItem>
           <MenuItem selected={ props.path === '/deploy' } onClick={ () => props.pushPath('/deploy') }>
             <ListItemIcon>
-              <FontAwesomeIcon icon={duotone('rocket')} />
+              <FontAwesomeIcon icon={ ['fad', 'rocket'] } />
             </ListItemIcon>
             <ListItemText>
               Deploy
@@ -53,7 +52,7 @@ const NFTLaunchpad = (props = {}) => {
           </MenuItem>
           <MenuItem selected={ props.path === '/manage' } onClick={ () => props.pushPath('/manage') }>
             <ListItemIcon>
-              <FontAwesomeIcon icon={ duotone('toolbox') } />
+              <FontAwesomeIcon icon={ ['fad', 'toolbox'] } />
             </ListItemIcon>
             <ListItemText>
               Manage

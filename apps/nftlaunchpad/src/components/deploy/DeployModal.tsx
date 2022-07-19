@@ -16,8 +16,9 @@ const style = {
 const DeployModal = () => {
 
   const [open, setOpen] = React.useState(true);
-  const handleClose = () => {
+  const handleClose = (props) => {
     setOpen(false);
+    props.pushPath(`/deploy`);
   }
 
   return (

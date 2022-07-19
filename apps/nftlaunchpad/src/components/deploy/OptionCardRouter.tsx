@@ -5,6 +5,12 @@ import "./deploy.css";
 
 const OptionCardRouter = (props: any) => {
 
+    // on select
+    const onSelect = (item) => {
+        // set path
+        props.pushPath(`/deploy/startDeploy`);
+    };
+
     return (
         <div className="deployCards">
             <Card sx={{ minWidth: 275 }}>
@@ -14,9 +20,7 @@ const OptionCardRouter = (props: any) => {
                     </Typography>
                 </CardContent>
                 <CardActions>
-                    <Link to={props.buttonLink}>
-                        <Button size="small">{props.buttonWords}</Button>
-                    </Link>
+                    <Button size="small" onClick={onSelect}>{props.buttonWords}</Button>
                 </CardActions>
             </Card>
         </div>
