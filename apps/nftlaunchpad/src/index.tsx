@@ -1,22 +1,14 @@
 import React from 'react';
-import ReactDOM from 'react-dom/client';
-import Launchpad from './Launchpad';
 import { App, Route, ScrollBar, useThemes } from '@moonup/ui';
 import { Box, Divider, MenuList, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
-import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
+import HomeIcon from '@mui/icons-material/Home';
+import RocketLaunchIcon from '@mui/icons-material/RocketLaunch';
+import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import Deploy from './components/deploy/Deploy';
 import LandingPage from './components/landing/LandingPage';
 import Manage from './components/manage/Manage';
 
-const NFTLaunchpad = (props = {}) => {
-  function HomeIcon(props) {
-    return (
-      <SvgIcon {...props}>
-        <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-      </SvgIcon>
-    );
-  }
-  
+const NFTLaunchpad = (props = {}) => {  
 
   // themes
   const themes = useThemes();
@@ -45,7 +37,7 @@ const NFTLaunchpad = (props = {}) => {
         <MenuList>
           <MenuItem selected={ props.path === '/' } onClick={ () => props.pushPath('/') }>
             <ListItemIcon>
-              <HomeIcon color="action" size="sm" />
+              <HomeIcon/>
             </ListItemIcon>
             <ListItemText>
               Home
@@ -53,7 +45,7 @@ const NFTLaunchpad = (props = {}) => {
           </MenuItem>
           <MenuItem selected={ props.path === '/deploy' } onClick={ () => props.pushPath('/deploy') }>
             <ListItemIcon>
-              <HomeIcon color="action" size="sm" />
+              <RocketLaunchIcon />
             </ListItemIcon>
             <ListItemText>
               Deploy
@@ -61,7 +53,7 @@ const NFTLaunchpad = (props = {}) => {
           </MenuItem>
           <MenuItem selected={ props.path === '/manage' } onClick={ () => props.pushPath('/manage') }>
             <ListItemIcon>
-              <HomeIcon color="action" size="sm" />
+              <ManageAccountsIcon />
             </ListItemIcon>
             <ListItemText>
               Manage
