@@ -1,11 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
-import './index.css';
 import Launchpad from './Launchpad';
 import { App, Route, ScrollBar, useThemes } from '@moonup/ui';
 import { Box, Divider, MenuList, MenuItem, ListItemIcon, ListItemText } from '@mui/material';
 import SvgIcon, { SvgIconProps } from '@mui/material/SvgIcon';
-import { BrowserRouter as Router, Link, Routes } from 'react-router-dom';
 import Deploy from './components/deploy/Deploy';
 import LandingPage from './components/landing/LandingPage';
 import Manage from './components/manage/Manage';
@@ -75,13 +73,15 @@ const NFTLaunchpad = (props = {}) => {
         default={ defaultProps }
     >
       <div className="App">
-        <Router>
-          <Routes>
-            <Route path='/' element={<LandingPage/>}/>
-            <Route path='/deploy' element={<Deploy/>}/>
-            <Route path='/manage' element={<Manage/>}/>
-          </Routes>
-        </Router>
+        <Route path='/'>
+          <LandingPage/>
+        </Route>
+        <Route path='/deploy'>
+          <Deploy/>
+        </Route>
+        <Route path='/manage'>
+          <Manage/>
+        </Route>
       </div>
     </App>
   );
