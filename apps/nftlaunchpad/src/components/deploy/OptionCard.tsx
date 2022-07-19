@@ -1,9 +1,5 @@
 import React from 'react';
-import Button from "@mui/material/Button";
-import Card from "@mui/material/Card";
-import CardContent from "@mui/material/CardContent";
-import CardActions from "@mui/material/CardActions";
-import Typography from "@mui/material/Typography";
+import { Button, Card, CardContent, CardActions, Typography } from "@mui/material";
 import "./deploy.css";
 
 const OptionCard = (props: any) => {

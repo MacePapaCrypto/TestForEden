@@ -1,6 +1,6 @@
 {
   "name": "@moonup/nftlaunchpad",
-  "version": "0.0.124",
+  "version": "0.0.126",
   "description": "NFT Launchpad",
   "main": "dist/index.js",
   "type": "module",
