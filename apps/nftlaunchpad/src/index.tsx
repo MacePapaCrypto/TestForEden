@@ -68,10 +68,7 @@ const NFTLaunchpad = (props = {}) => {
         <Manage { ...props } />
       </Route>
       <Route path="/deploy/:id">
-          <DeploySteps 
-            { ...props }
-             
-          />
+        <DeploySteps { ...props } />
       </Route>
     </App>
   );

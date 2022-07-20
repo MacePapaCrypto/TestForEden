@@ -11,7 +11,7 @@ const OptionCardRouter = (props = {}) => {
                 </Typography>
             </CardContent>
             <CardActions>
-                <Button size="small" onClick={ () => props.pushPath('/deploy/1') }>{props.buttonWords}</Button>
+                <Button size="small" onClick={ () => props.pushPath('/deploy/0') }>{props.buttonWords}</Button>
             </CardActions>
         </Card>
     );
