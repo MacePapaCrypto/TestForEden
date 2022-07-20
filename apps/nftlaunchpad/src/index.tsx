@@ -6,6 +6,7 @@ import Deploy from './components/deploy/Deploy';
 import LandingPage from './components/landing/LandingPage';
 import Manage from './components/manage/Manage';
 import './App.css';
+import DeploySteps from './components/deploy/DeploySteps';
 
 const NFTLaunchpad = (props = {}) => {  
 
@@ -21,12 +22,6 @@ const NFTLaunchpad = (props = {}) => {
       width  : .8,
       height : .8,
     },
-  };
-
-  // on select
-  const onSelect = (item) => {
-    // set path
-    props.pushPath(`/theme/${item.id}`);
   };
   
   return (
@@ -64,13 +59,19 @@ const NFTLaunchpad = (props = {}) => {
         default={ defaultProps }
     >
       <Route path='/'>
-        <LandingPage/>
+        <LandingPage { ...props } />
       </Route>
       <Route path='/deploy'>
-        <Deploy/>
+        <Deploy { ...props } />
       </Route>
       <Route path='/manage'>
-        <Manage/>
+        <Manage { ...props } />
+      </Route>
+      <Route path="/deploy/:id">
+          <DeploySteps 
+            { ...props }
+             
+          />
       </Route>
     </App>
   );
